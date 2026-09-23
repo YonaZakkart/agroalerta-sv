@@ -8,6 +8,13 @@ backend/dist/
 frontend/dist/
 frontend/.angular/
 
+# Node
+backend/src/generated/
+backend/.claude/skills/
+backend/.windsurf/skills/
+backend/.agents/skills/
+backend/skills-lock.json
+
 # Variables de entorno
 .env
 *.env.local
