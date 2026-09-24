@@ -7,8 +7,24 @@ generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
   moduleFormat = "cjs"
+  importFileExtension = ""
 }
 
 datasource db {
   provider = "mysql"
+}
+
+// Parte 1 — Autenticación
+model Usuario {
+  id             Int      @id @default(autoincrement())
+  nombres        String   @db.VarChar(100)
+  apellidos      String   @db.VarChar(100)
+  correo         String   @unique @db.VarChar(255)
+  contrasenaHash String   @map("contrasena_hash") @db.VarChar(255)
+  duiHash        String   @unique @map("dui_hash") @db.Char(64)
+  distrito      String   @db.VarChar(100)
+  verificado     Boolean  @default(false)
+  fechaRegistro  DateTime @default(now()) @map("fecha_registro")
+
+  @@map("usuarios")
 }
