@@ -1,0 +1,85 @@
+AgroAlerta Morazán
+Sistema Web de Prevención de Riesgos Agrícolas
+Arquitectura: Orientada a Eventos (EDA)
+
+--------------------------------------------------
+1. QUÉ ES
+--------------------------------------------------
+Plataforma web para agricultores del departamento de Morazán, El Salvador.
+Objetivo principal: dar información útil y oportuna antes de sembrar, y reaccionar automáticamente cuando cambian las condiciones climáticas o se registra una nueva siembra.
+
+El sistema combina tres fuentes de información:
+- Viabilidad de cultivo por zona (referencia CENTA)
+- Datos climáticos actualizados (Open-Meteo)
+- Datos de inversión y siembra que aporta el propio agricultor
+
+A partir de eso genera:
+- Estimación de rendimiento e ingresos
+- Nivel de riesgo
+- Recomendaciones concretas
+
+Todo de forma automática. El agricultor no tiene que pedir el recálculo cada vez que cambia el clima.
+
+--------------------------------------------------
+2. PROBLEMA QUE RESUELVE
+--------------------------------------------------
+- Las decisiones de siembra se basan principalmente en costumbre y experiencia previa, no en datos actualizados de viabilidad ni clima.
+- No existe un mecanismo simple que avise con anticipación sobre sequía o exceso de lluvia y sugiera ajustes (por ejemplo, riego).
+- La información de qué grano es apto en qué zona está dispersa (mapas institucionales) y no se combina con los datos reales del agricultor.
+- No hay un historial personal de inversiones e ingresos de temporadas anteriores que permita mejorar las estimaciones futuras.
+
+--------------------------------------------------
+3. CÓMO FUNCIONA (Arquitectura orientada a eventos)
+--------------------------------------------------
+Cada acción importante genera un evento. Módulos independientes escuchan esos eventos y reaccionan:
+
+Eventos principales:
+- AgricultorRegistrado
+- SiembraRegistrada
+- ActualizacionMeteorologica
+- CondicionClimaticaActualizada
+
+Módulos:
+- Viabilidad: responde a registro de agricultor/siembra y verifica si el grano es apto para la zona y temporada.
+- Climático: consulta periódicamente Open-Meteo, clasifica la condición (sequía / exceso de lluvia / invierno aceptable) y emite el evento correspondiente.
+- Estimación: escucha cambios de clima y nuevas siembras, recalcula proyección de cosecha e ingresos, y genera recomendaciones.
+
+El agricultor ve la información actualizada sin tener que solicitar el cálculo manualmente.
+
+--------------------------------------------------
+4. FUNCIONALIDADES CLAVE
+--------------------------------------------------
+- Registro e inicio de sesión (correo + contraseña + DUI hasheado + distrito)
+- Dashboard con estado climático, zona de viabilidad y temporada
+- Formulario detallado de siembra (estado, fechas, grano, área, cantidad de semilla, uso de maquinaria/riego/alquiler, inversión)
+- Estimación automática de costos (usando precios promedio + redondeo hacia arriba)
+- Reporte de proyección (base + ajuste climático)
+- Nivel de riesgo y recomendación
+- Historial de evaluaciones anteriores
+- Vista de clima por zona
+
+--------------------------------------------------
+5. STACK TECNOLÓGICO INICIAL (puede ajustarse)
+--------------------------------------------------
+- Lenguaje principal: TypeScript
+- Backend: Node.js con EventEmitter  o  Laravel (PHP)
+- Frontend: Angular (o equivalente orientado a componentes)
+- Clima: API Open-Meteo
+- Base de datos: MySQL
+- Autenticación: correo + contraseña + DUI hasheado + verificación por correo
+- Despliegue: Docker
+
+--------------------------------------------------
+6. PRINCIPIOS DE DESARROLLO
+--------------------------------------------------
+- Priorizar bajo acoplamiento entre módulos (para que la arquitectura de eventos funcione bien).
+- Evitar conflictos de merge: cada integrante trabaja en partes lo más independientes posible.
+- Documentar todo cambio relevante en Estado_del_Proyecto.txt.
+- Respetar el diseño visual base (login.html y dashboard.html mejorado).
+- El formulario de siembra debe ser lo suficientemente detallado para permitir cálculos realistas de inversión y rendimiento.
+
+--------------------------------------------------
+7. NOTA FINAL
+--------------------------------------------------
+Este documento es la versión operativa de la propuesta. Se usa como contexto compartido del proyecto.
+Cualquier cambio importante de alcance o arquitectura debe reflejarse aquí y en Estado_del_Proyecto.txt.

@@ -1,0 +1,359 @@
+============================================================
+ESTADO DEL PROYECTO – AgroAlerta Morazán
+Última actualización: 23 de septiembre de 2026
+============================================================
+
+1. RESUMEN DE LA IDEA
+Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador.
+Integra:
+- Viabilidad de cultivo por zona (referencia CENTA)
+- Monitoreo climático (Open-Meteo)
+- Estimación de cosecha e ingresos basada en reglas
+- Recomendaciones automáticas ante cambios climáticos o nuevos registros de siembra
+
+El sistema reacciona automáticamente a eventos (registro de siembra, actualización meteorológica, cambio de condición climática) sin que el usuario tenga que solicitar el recálculo manualmente.
+
+Nota geográfica (desde RAMA 2): tras la reorganización territorial, el departamento de Morazán tiene solo 2 municipios (Morazán Norte y Morazán Sur). Los 26 antiguos municipios (Chilanga, etc.) son ahora DISTRITOS. El sistema trabaja a nivel de distrito, porque es la unidad que importa para zonas de viabilidad y estaciones climáticas. El campo del usuario se llama "distrito" (ya no "municipio"). Ver detalle en RAMA 2.
+
+2. ESTRUCTURA INICIAL DE ARCHIVOS
+Repositorio: agroalerta-sv (GitHub, privado). Owner: Yona. Colaboradores: Smith, Requeno, Pocho.
+
+agroalerta-sv/
+├── README.md
+├── .gitignore                 (incluye node_modules/, dist/, .angular/, .env, logs, editor/SO; se amplió en RAMA 1 — ver esa sección)
+├── docker-compose.yml         (nuevo en RAMA 1 — servicio "db" de MySQL para desarrollo)
+├── docker/
+│   └── mysql-init/
+│       └── grant-shadow.sql   (nuevo en RAMA 1)
+├── docs/                      (al mismo nivel que backend/ y frontend/; se sube en la rama docs/agregar-documentacion, posterior a RAMA 2: Propuesta_Inicial.txt, Mapa_inicial.txt, Estado_del_Proyecto.txt)
+├── backend/
+│   ├── package.json           (typescript fijado en ^5.9.0; prisma y @prisma/client fijados en ^7.10.0 — ver RAMA 1; argon2@0.45.1 agregado en RAMA 2)
+│   ├── package-lock.json
+│   ├── tsconfig.json          (rootDir: "./src"; "include": ["src/**/*"] agregado en RAMA 1)
+│   ├── prisma7.config.ts      (nuevo en RAMA 1, autogenerado por Prisma — config del CLI, fuera de src/)
+│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER)
+│   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env)
+│   ├── prisma/
+│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2)
+│   │   └── migrations/        (nuevo en RAMA 2 — migración add_usuarios; se versiona)
+│   └── src/
+│       ├── auth/
+│       │   ├── registro.service.ts   (nuevo en RAMA 2 — hashing, creación de usuario, emisión de evento)
+│       │   └── registro.routes.ts    (nuevo en RAMA 2 — POST /auth/registro y validación de entrada)
+│       ├── viabilidad/         (vacío, para Parte 2)
+│       ├── clima/              (vacío, para Parte 3)
+│       ├── siembra/            (vacío, para Parte 4)
+│       ├── estimacion/         (vacío, para Parte 5)
+│       ├── events/             (bus de eventos compartido; punto de contacto entre partes)
+│       │   ├── bus.ts          (nuevo en RAMA 2 — instancia única de EventEmitter)
+│       │   └── types.ts        (nuevo en RAMA 2 — nombres de eventos y tipos de payload)
+│       ├── config/
+│       │   └── prisma.ts       (nuevo en RAMA 1 — cliente Prisma compartido, punto de contacto entre partes)
+│       ├── generated/          (nuevo en RAMA 1 — cliente Prisma generado, NO se sube al repo, ver .gitignore)
+│       └── index.ts            (servidor Express + GET /health + montaje de /auth desde RAMA 2)
+└── frontend/                  (Angular, generado con Angular CLI, verificado con ng serve)
+
+NOTA IMPORTANTE: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt aún NO están subidos al repositorio; se suben en la rama docs/agregar-documentacion (carpeta docs/). Ver Pendientes.
+
+3. HERRAMIENTAS Y TECNOLOGÍAS (DEFINITIVAS)
+- Lenguaje principal: TypeScript
+- Backend: Node.js + Express + EventEmitter nativo (definido; se descartan Laravel, Django y NestJS como alternativas)
+- Frontend: Angular
+- API Climática: Open-Meteo
+- Base de datos: MySQL
+- ORM: Prisma, fijado en la versión 7.10.0 (prisma y @prisma/client) — ver nota de versión más abajo y detalle en RAMA 1
+- Driver adapter de base de datos: @prisma/adapter-mariadb (obligatorio en Prisma 7 para proveedores SQL, usado tanto para MySQL como MariaDB)
+- Autenticación: correo + contraseña + DUI hasheado + verificación por correo
+  - Contraseña: argon2id, paquete argon2@0.45.1 (decidido en RAMA 2)
+  - DUI: HMAC-SHA256 con secreto de servidor (DUI_PEPPER en .env), NO bcrypt/argon2 (decidido en RAMA 2, ver justificación y desviación del Mapa en esa sección)
+- Despliegue: Docker
+- Control de versiones: Git + GitHub (flujo por ramas + PR)
+- Entorno de desarrollo de base de datos: MySQL vía Docker (contenedor local por integrante, sin instancia compartida) — ver docker-compose.yml en la raíz
+
+Nota sobre TypeScript: en backend/package.json la versión de "typescript" quedó fijada en ^5.9.0. TypeScript 7.0.2 (el nuevo compilador nativo) es incompatible con ts-node-dev a la fecha de este documento. No actualizar typescript en backend/ sin antes confirmar compatibilidad con la herramienta de desarrollo en uso.
+
+Nota sobre versión de Prisma: al día de esta actualización, instalar el paquete "prisma" sin fijar versión (npm install prisma) resuelve a Prisma Next (línea 8.0.0-rc.x), la reescritura del ORM en Early Access, no recomendada para producción por el propio equipo de Prisma. El proyecto usa Prisma 7 (7.10.0), la línea estable y recomendada para producción actualmente. No actualizar prisma/@prisma/client sin fijar versión explícita ni sin confirmar antes en este documento, por el mismo motivo que la nota de TypeScript.
+
+Nota sobre el generator de Prisma (desde RAMA 2): el generator prisma-client está configurado con moduleFormat = "cjs" e importFileExtension = "" (imports sin extensión). Sin esta última opción, el cliente generado hace require("./internal/class.js") y ts-node-dev falla, porque el archivo generado es .ts. No quitar esa línea de schema.prisma.
+
+Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión: los datos de zonas/granos viables se extraen a mano y se cargan como tabla estática precargada en MySQL (Parte 2, Puntos A y B del Mapa_inicial.txt). Queda abierta la posibilidad de automatizar esa extracción más adelante (ver Propuestas), sin que eso afecte el stack ya definido.
+
+Estas tecnologías ya no están sujetas a cambio salvo justificación documentada aquí.
+
+4. DISEÑO VISUAL BASE
+- login_base.html          → Pantalla de autenticación / registro (diseño definitivo, sin cambios)
+- dashboard_base.html      → Dashboard principal (referencia visual base)
+- Login: se mantiene exactamente como el archivo original.
+- Dashboard: se adopta la segunda versión mejorada (sidebar responsive, indicadores de sistema vivo, formulario agrupado, reporte de dos niveles, badges de riesgo, timeline vacío).
+- Nota: ambos archivos HTML/CSS fueron creados únicamente para probar y fijar el estilo visual; la implementación real se hará en componentes Angular (el sidebar, por ejemplo, deberá pasar del "checkbox hack" en CSS puro a manejo de estado por componente).
+- Cambio (RAMA 2): en la implementación Angular del registro, la etiqueta "Municipio (Morazán)" pasa a "Distrito (Morazán)" y el campo se envía como "distrito". login_base.html NO se modifica; sigue siendo referencia visual.
+Colores, tipografía (Plus Jakarta Sans) y jerarquía visual se respetan como referencia.
+
+5. CONDICIONES DE EQUIPO Y PLAZO
+- Plazo total: 7 semanas.
+- 3 de los 4 integrantes seguirán trabajando en paralelo al proyecto, lo que limita el avance real principalmente a fines de semana.
+- Estrategia acordada: definir y completar primero una base funcional que cumpla todos los requisitos mínimos del Mapa_inicial.txt; solo si queda tiempo disponible, avanzar en automatizaciones o mejoras adicionales (ver Propuestas).
+
+------------------------------------------------------------
+SECCIÓN DE RAMAS (se irá agregando; nunca se modifica lo ya escrito)
+------------------------------------------------------------
+
+RAMA 0 — Base del proyecto (Parte 0 del Mapa_inicial.txt)
+Responsable: Yona (owner del repositorio)
+Fecha: 21 de septiembre de 2026
+
+Qué se hizo:
+- Repositorio creado en GitHub: agroalerta-sv (privado), con README y .gitignore por defecto de Node al momento de creación (reemplazado después).
+- Se agregó como colaboradores a Smith, Requeno y Pocho.
+- Se reemplazó el .gitignore por defecto por uno combinado Node+Angular (node_modules/, dist/, .angular/, .env, logs, archivos de editor/SO en ambas carpetas).
+- Backend inicializado en backend/: Node.js + TypeScript + Express. package.json con scripts dev (ts-node-dev --respawn src/index.ts), build (tsc) y start (node dist/index.js). tsconfig.json generado con npx tsc --init.
+- Estructura interna de backend/src/ creada con una carpeta por módulo de dominio: auth/, viabilidad/, clima/, siembra/, estimacion/, events/ (bus de eventos compartido, EventEmitter nativo de Node) y config/. Todas vacías, listas para Parte 1 y Parte 2.
+- src/index.ts con servidor Express mínimo y endpoint GET /health, verificado funcionando en localhost:3000.
+- Frontend inicializado con Angular CLI (ng new frontend --skip-git --routing --style=css), verificado funcionando en localhost:4200.
+- Primer commit y push a main realizado sin incluir node_modules/ ni archivos de build.
+
+Qué NO se hizo / qué falta:
+- No se instaló ni decidió ningún ORM/query builder para MySQL (necesario antes de que Parte 1-A y Parte 2-A puedan persistir datos reales).
+- No hay CORS configurado en Express ni conexión real entre frontend y backend (esperado en esta etapa; pendiente para cuando Parte 1/2 se expongan al frontend).
+
+Qué se agregó de más (no pedido originalmente):
+- Ninguno; todo corresponde a lo planeado en Parte 0.
+
+Incidencias técnicas durante el setup (relevantes para todo el equipo):
+- npx tsc --init instaló por defecto TypeScript 7.0.2, incompatible con ts-node-dev (falla al correr npm run dev). Solución aplicada: typescript fijado en ^5.9.0 en backend/package.json. Quien instale desde cero con npm install respeta ese pin automáticamente. No actualizar a TypeScript 7.x sin antes confirmar compatibilidad.
+- Se presentó el error de npm "Cannot read properties of null (reading 'edgesOut')", un bug conocido y actualmente abierto en el resolutor de dependencias de npm (Arborist), no relacionado con el proyecto. Se resolvió con npm install --legacy-peer-deps. Si reaparece: probar --legacy-peer-deps primero; si persiste, bajar versión de npm (npm install -g npm@10.8.2).
+
+Puntos de atención para las siguientes ramas:
+- backend/src/{auth,viabilidad,clima,siembra,estimacion} están vacías; cada quien puede trabajar dentro de su propia subcarpeta sin pisar a los demás hasta que haya que conectar módulos (Parte 5).
+- backend/src/events/ es punto de contacto entre partes (bus de eventos compartido); coordinarse antes de modificarlo.
+- Falta subir Mapa_inicial.txt, Propuesta_Inicial.txt y este archivo al repositorio (carpeta docs/ sugerida).
+
+------------------------------------------------------------
+
+RAMA 1 — chore/db-setup (infraestructura de base de datos, pre-requisito de Parte 1-A y 2-A)
+Responsable: Yona
+Fecha: 23 de septiembre de 2026
+
+Qué se hizo:
+- Se eligió Prisma como ORM para MySQL (generación de cliente tipado en TypeScript, migraciones integradas, sin dependencia de decoradores ni arquitectura Nest).
+- Se decidió MySQL de desarrollo vía Docker, un contenedor local por integrante (sin instancia compartida), para evitar costo, exposición de credenciales y puntos únicos de falla dado el equipo trabajando principalmente en fines de semana.
+- Se creó docker-compose.yml en la raíz del repo (no dentro de backend/, porque la Parte 7 lo ampliará con los servicios de backend y frontend) con un servicio db (imagen mysql:8.4, base agroalerta, usuario agroalerta, volumen persistente db_data).
+- Se instalaron y fijaron explícitamente prisma@7.10.0 y @prisma/client@7.10.0 (ver incidencia técnica más abajo), más @prisma/adapter-mariadb y dotenv.
+- Se corrió npx prisma init --datasource-provider mysql --output ../src/generated/prisma, generando backend/prisma/schema.prisma y backend/prisma7.config.ts.
+- Se configuró el generator con provider = "prisma-client" y moduleFormat = "cjs", para mantener el backend en CommonJS y no forzar una migración a ESM de todo el código existente (Prisma 7 es ESM por defecto, pero soporta CJS explícitamente).
+- Se creó backend/src/config/prisma.ts como cliente Prisma compartido (instanciado con @prisma/adapter-mariadb usando el DATABASE_URL), pensado como punto de importación único para todos los módulos de dominio.
+- Se agregó backend/tsconfig.json → "include": ["src/**/*"] para acotar la compilación a src/ (antes tomaba todo backend/ por defecto, incluyendo prisma7.config.ts, que debe quedar fuera de src/).
+- Se agregó docker/mysql-init/grant-shadow.sql, montado en el contenedor MySQL vía docker-compose.yml, que otorga privilegios globales al usuario agroalerta (necesarios para que Prisma cree su shadow database en cada prisma migrate dev).
+- Se agregaron scripts db:generate, db:migrate y db:studio a backend/package.json.
+- Se amplió el .gitignore raíz con: backend/src/generated/ (cliente Prisma generado), y .claude/skills/, .windsurf/skills/, .agents/skills/, skills-lock.json (skills de IA que Prisma instala automáticamente en cada prisma init/generate, no necesarios para el funcionamiento del proyecto).
+- Verificado localmente: npx prisma generate y npx prisma migrate dev --name init conectan correctamente contra MySQL en Docker ("Already in sync", sin errores).
+
+Qué NO se hizo / qué falta:
+- No se definió ningún modelo de dominio en schema.prisma; queda intencionalmente vacío para que cada Parte (1-A Usuario, 2-A Zonas/Granos, 4-A Siembra, 5 Estimación) agregue los suyos en su propia rama.
+- No se probó prisma studio.
+- No se definió estrategia de datos semilla (seed) ni script de seed.
+- Las credenciales de MySQL usadas (agroalerta/agroalerta, root/root) son solo para desarrollo local; no aptas para producción — pendiente definir credenciales reales en Parte 7.
+
+Qué se agregó de más (no pedido originalmente):
+- docker-compose.yml con MySQL de desarrollo no estaba explícito en el Mapa_inicial.txt, pero resultó necesario para completar el chore de forma verificable (no hay forma de probar Prisma sin una base de datos real). Se documenta aquí como extensión justificada del alcance original.
+- Reglas de .gitignore para las carpetas de skills de IA (.claude/, .windsurf/, .agents/) — no relacionadas con Prisma en sí, pero generadas como efecto colateral de correr sus comandos.
+
+Incidencias técnicas durante el setup (relevantes para todo el equipo):
+- npm install prisma sin fijar versión instaló Prisma Next 8.0.0-rc.15 (Early Access, no recomendado para producción), no Prisma 7 estable. Se manifestó como error [CLI.INVALID_ARGUMENTS] No flag registered for --datasource-provider al correr prisma init. Solución: desinstalar y fijar explícitamente prisma@7.10.0 y @prisma/client@7.10.0. No volver a instalar "prisma" a secas sin versión (ver nota en sección 3 de este documento).
+- Prisma 7 requiere Node.js ≥20.19.0 y hace obligatorio un driver adapter para proveedores SQL (antes opcional en v6): se usa @prisma/adapter-mariadb para MySQL/MariaDB.
+- Prisma 7 movió la URL de conexión de datasource en schema.prisma hacia el archivo de configuración del CLI (prisma7.config.ts en este caso, nombre especial mientras conviven las líneas 7 y 8 en el ecosistema de Prisma).
+- El generator prisma-client exporta el cliente desde <output>/client, no desde el índice de la carpeta de salida; el import debe ser explícito: import { PrismaClient } from "../generated/prisma/client".
+- El cliente generado debe quedar dentro de src/ (src/generated/prisma), no en la raíz de backend/, porque tsconfig.json tiene rootDir: "./src"; de lo contrario TypeScript rechaza el archivo por estar fuera de rootDir.
+- El usuario MySQL agroalerta, creado automáticamente por la imagen oficial de Docker vía MYSQL_USER/MYSQL_DATABASE, solo tiene privilegios sobre la base agroalerta, no privilegios globales. prisma migrate dev necesita crear una shadow database temporal en cada corrida y fallaba con error P3014 (acceso denegado). Se resolvió otorgando privilegios globales al usuario vía script de init de MySQL (ver docker/mysql-init/grant-shadow.sql), que se ejecuta automáticamente solo la primera vez que el contenedor levanta con el volumen de datos vacío.
+- La advertencia de MySQL CLI "Using a password on the command line interface can be insecure" al correr GRANT manualmente es solo informativa, no indica fallo del comando.
+
+Puntos de atención para las siguientes ramas:
+- backend/src/config/prisma.ts es ahora punto de contacto compartido, igual que backend/src/events/: cualquier módulo que necesite la base de datos debe importar el cliente desde ahí (import { prisma } from "../config/prisma"), no instanciar PrismaClient por su cuenta.
+- backend/prisma/schema.prisma no tiene modelos todavía; varias Partes van a necesitar editarlo en paralelo (1-A, 2-A, 4-A, 5) — coordinarse antes de tocarlo para evitar conflictos de merge simultáneos sobre el mismo archivo.
+- docker-compose.yml vive en la raíz del repo, no en backend/; todos los comandos docker compose deben correrse desde ahí.
+- Si alguien instala dependencias de Prisma sin fijar versión exacta en el futuro, corre el riesgo de traer Prisma Next (v8) de nuevo — siempre usar prisma@7.10.0 / @prisma/client@7.10.0 explícito, o actualizar este documento primero si se decide subir de versión a propósito.
+
+------------------------------------------------------------
+
+RAMA 2 — feat/auth-registro-usuario (Parte 1, Punto A del Mapa_inicial.txt: Modelo de Usuario + registro)
+Responsable: Yona
+Fecha: 23 de septiembre de 2026
+
+Qué se hizo:
+- Modelo Usuario agregado al final de backend/prisma/schema.prisma (bajo el comentario "Parte 1 — Autenticación"), mapeado a la tabla "usuarios" con columnas en snake_case (@map):
+  - id (Int, autoincrement, PK)
+  - nombres (VarChar 100), apellidos (VarChar 100)
+  - correo (VarChar 255, @unique)
+  - contrasena_hash (VarChar 255)
+  - dui_hash (Char 64, @unique)
+  - distrito (VarChar 100) — ver "Cambio respecto al Mapa"
+  - verificado (Boolean, default false)
+  - fecha_registro (DateTime, default now())
+- Migración add_usuarios generada con npx prisma migrate dev; queda versionada en backend/prisma/migrations/.
+- Hashing de contraseña: argon2id mediante el paquete argon2@0.45.1 (argon2.hash con parámetros por defecto, que ya usan argon2id). Longitud aceptada de contraseña: 8 a 128 caracteres.
+- Hashing de DUI: HMAC-SHA256 con secreto de servidor (variable de entorno DUI_PEPPER), guardado como hexadecimal de 64 caracteres (Char(64)) con índice único. Justificación: un hash con sal aleatoria (bcrypt/argon2) produce un resultado distinto en cada llamada, lo que impide el índice único y la detección de un DUI ya registrado. HMAC con pepper es determinista y permite ambas cosas. Si DUI_PEPPER no está definido, el servicio lanza error explícito.
+- Endpoint POST /auth/registro (backend/src/auth/registro.routes.ts), montado en index.ts con app.use("/auth", registroRouter). Recibe exactamente los campos de login_base.html, con estos nombres en el body JSON: nombres, apellidos, correo, contrasena, dui, distrito.
+  - Validaciones: nombres y apellidos no vacíos (máx. 100); correo con formato válido (máx. 255), se normaliza a minúsculas y sin espacios; contrasena entre 8 y 128 caracteres; dui exactamente 9 dígitos sin guiones; distrito no vacío (máx. 100).
+  - Respuestas: 201 con {id, nombres, apellidos, correo, distrito, verificado, fechaRegistro} (nunca devuelve hashes); 400 con {errores: [...]}; 409 con mensaje único "El correo o el DUI ya están registrados" (se detecta por el código P2002 de Prisma); 500 para errores no controlados.
+- Lógica de negocio separada en backend/src/auth/registro.service.ts (función registrarUsuario, clase RegistroError con status HTTP), para que el router solo valide y traduzca respuestas.
+- Evento AgricultorRegistrado: se emite después de crear el usuario. Se crearon backend/src/events/bus.ts (instancia única de EventEmitter, exportada como "bus") y backend/src/events/types.ts (constante EVENTOS con AGRICULTOR_REGISTRADO y la interfaz AgricultorRegistradoPayload: usuarioId, correo, distrito, fechaRegistro). El payload no incluye hashes ni datos sensibles. La emisión está envuelta en try/catch: si un listener síncrono lanza un error, se registra en consola y NO tumba la petición de registro (el usuario ya fue creado).
+- backend/src/index.ts: se agregó import "dotenv/config" al inicio, el import de registroRouter y app.use("/auth", registroRouter) después de /health. express.json() ya existía.
+- backend/.env.example creado y versionado (DATABASE_URL, DB_*, DUI_PEPPER con valor de ejemplo). Cada integrante debe generar su propio DUI_PEPPER local.
+- backend/prisma/schema.prisma: en el bloque generator se agregó importFileExtension = "" (ver incidencias).
+- backend/package.json y package-lock.json: se agregó la dependencia argon2 (versión resuelta 0.45.1).
+
+Cambio respecto al Mapa (documentado según reglas del proyecto):
+- Mapa_inicial.txt, Parte 1 Punto A, habla de "municipio". El campo se implementó como "distrito", porque Morazán ahora tiene 2 municipios (Morazán Norte y Sur) y 26 distritos (los antiguos municipios); la unidad útil para zonas y clima es el distrito. Consecuencias:
+  - Parte 2 (Puntos A y B): el catálogo debe modelar Municipio (2) y Distrito (26) con relación distrito → municipio; el municipio se deriva desde el catálogo, no se pide al usuario.
+  - El "Enlace con Parte 2" del Mapa (validar contra catálogo) queda pendiente: hoy distrito solo se valida como texto no vacío (TODO en registro.routes.ts).
+  - En el frontend Angular la etiqueta pasa a "Distrito (Morazán)". login_base.html no se toca.
+- Desviación respecto al Mapa: el Mapa indica "bcrypt o argon2 para hashear contraseña y DUI". Contraseña usa argon2id (cumple); DUI usa HMAC-SHA256 con pepper (no cumple literalmente; justificación arriba).
+
+Cumplimiento del punto 1-A:
+- Tabla usuarios con id, nombres, apellidos, correo único, contraseña_hash, dui_hash, municipio→distrito, verificado, fecha_registro: cumplido (con el cambio a distrito).
+- Elegir bcrypt o argon2: argon2 elegido para contraseña; DUI con HMAC (desviación justificada).
+- POST /auth/registro con exactamente los campos del login: cumplido (con distrito en vez de municipio).
+- Emitir AgricultorRegistrado al crear el usuario: cumplido; todavía no hay listeners suscritos (se conectarán con Parte 2 y Parte 5).
+- Validar municipio/distrito contra el catálogo de Parte 2: NO cumplido (depende de Parte 2), queda como pendiente.
+
+Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
+- Registro válido: 201, cuerpo sin hashes, verificado = false, fechaRegistro presente.
+- Mismo correo repetido: 409.
+- Contraseña corta y DUI inválido: 400 con lista de errores.
+- Verificación directa en la base: contrasena_hash con prefijo $argon2id$ y dui_hash de 64 caracteres.
+- No se escribieron pruebas automatizadas.
+
+Qué se modificó:
+- backend/prisma/schema.prisma (modelo Usuario + generator).
+- backend/src/index.ts.
+- backend/package.json y package-lock.json.
+Qué se eliminó: nada.
+
+Archivos tocados fuera de auth/ (puntos de contacto entre partes): backend/src/events/ (bus.ts y types.ts nuevos), backend/prisma/schema.prisma, backend/prisma/migrations/, backend/src/index.ts, backend/package.json. Todos necesarios para la parte, pero compartidos con otras ramas.
+
+Qué NO se hizo / qué falta:
+- Login, JWT/sesión y middleware/guards (Parte 1-B).
+- Verificación de correo (Parte 1-C): el campo verificado existe y queda en false; no hay envío de correo ni flujo simulado.
+- Perfil y endpoint "yo" (Parte 1-D).
+- Validación del distrito contra catálogo (depende de Parte 2).
+- Validación del dígito verificador del DUI (solo se valida formato de 9 dígitos).
+- Rate limiting o protección contra abuso en /auth/registro.
+- Pruebas automatizadas.
+- CORS sigue sin configurarse (pendiente desde RAMA 0).
+- Ningún listener del evento AgricultorRegistrado.
+- Subida de docs/ al repositorio (se hace en una rama aparte, docs/agregar-documentacion, después de mergear esta).
+
+Qué se agregó de más (no pedido originalmente):
+- backend/.env.example (estaba en Propuestas/Pendientes, no en el Mapa).
+- El bus de eventos (events/bus.ts y types.ts): no estaba en el Mapa como entregable propio, pero es imprescindible para emitir AgricultorRegistrado.
+- Separación en registro.service.ts / registro.routes.ts (en lugar de un solo archivo) para reducir conflictos con la Parte 1-B, que agregará su propio login.routes.ts.
+- Cambio de "municipio" a "distrito" (ver arriba).
+
+Incidencias técnicas durante el desarrollo (relevantes para todo el equipo):
+- Error de TypeScript "La propiedad 'usuario' no existe en el tipo PrismaClient<never, ...>" en registro.service.ts: el cliente generado no contenía aún el modelo. Solución: guardar schema.prisma, correr npx prisma generate y reiniciar el servidor de TypeScript del editor (en VS Code: "TypeScript: Restart TS Server"). Regla: después de cada cambio en schema.prisma o al hacer pull de una rama que lo modifique, correr npx prisma generate.
+- Error al correr npm run dev: "Cannot find module './internal/class.js'" (require stack: generated/prisma/client.ts → config/prisma.ts → auth → index.ts). Causa: con moduleFormat = "cjs", el cliente generado importaba "./internal/class.js", pero el archivo real es class.ts y ts-node (CommonJS) no traduce .js a .ts. Solución: agregar importFileExtension = "" en el generator de schema.prisma (soportado por Prisma: extensión vacía = imports sin extensión) y volver a correr npx prisma generate. Como src/generated/ no se versiona, cada integrante debe regenerar el cliente tras hacer pull.
+
+Puntos de atención para las siguientes ramas:
+- Parte 2-A (Zonas/Granos) también edita schema.prisma y genera su migración: conflicto probable en schema.prisma (separar modelos con comentarios de sección y líneas en blanco) y en prisma/migrations/ (si hay conflicto de orden, quien mergee segundo debe regenerar su migración sobre la versión actualizada de main).
+- Parte 2 debe definir el catálogo Municipio (2) / Distrito (26) y luego conectar el campo distrito de Usuario (validación contra catálogo o relación). Definir quién lo hace y avisar a Yona.
+- Parte 1-B (login): crear un archivo propio auth/login.routes.ts y agregar su app.use("/auth", ...) en index.ts (línea adyacente a la de registro: conflicto trivial de resolver). El login debe verificar con argon2.verify contra la columna contrasenaHash (nombre en el cliente Prisma). Si 1-B o 1-D necesitan buscar por DUI, hashDui hoy es privada en registro.service.ts: exportarla o moverla a auth/dui.ts antes de duplicarla.
+- Parte 1-C (verificación de correo): usar el campo verificado (default false); el registro NO envía correo todavía.
+- events/types.ts es archivo compartido: cada parte agrega sus eventos ahí; coordinarse antes de mergear para evitar conflictos.
+- DUI_PEPPER: cada .env local debe tener el suyo; los dui_hash de una base local no coinciden con los de otra con pepper distinto (aceptable en desarrollo). En producción debe existir un único pepper, guardado como secreto, y NO debe rotarse sin un plan de migración, porque invalidaría la detección de DUI duplicados. Definir en Parte 7.
+- Límite conocido del hash de DUI: el espacio de valores es pequeño (~10^8); si un atacante obtiene a la vez la base y el pepper, los DUIs son recuperables por fuerza bruta. Por eso el pepper nunca debe subirse al repo.
+- El 409 usa un mensaje genérico para correo o DUI repetido (no revela cuál), pero el endpoint sigue permitiendo inferir qué correos existen; aceptable para el alcance del proyecto.
+- Quien clone o actualice debe copiar backend/.env.example a backend/.env y generar su DUI_PEPPER (ver pasos de clonado).
+
+------------------------------------------------------------
+IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
+------------------------------------------------------------
+(Válido desde RAMA 2 en adelante.)
+
+Desde la raíz del repositorio, en este orden:
+
+1. Levantar MySQL de desarrollo:
+   docker compose up -d db
+
+2. Instalar dependencias del backend:
+   cd backend
+   npm install
+
+3. Crear backend/.env a partir de la plantilla:
+   cp .env.example .env
+   Generar un DUI_PEPPER propio y reemplazar el valor de ejemplo en .env:
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   Valores esperados del resto de variables (desarrollo local):
+   DATABASE_URL="mysql://agroalerta:agroalerta@localhost:3306/agroalerta"
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=agroalerta
+   DB_PASSWORD=agroalerta
+   DB_NAME=agroalerta
+
+4. Generar el cliente de Prisma (sigue en backend/):
+   npx prisma generate
+
+5. Sincronizar el esquema con la base de datos:
+   npx prisma migrate dev
+
+6. Verificar el backend:
+   npm run dev
+   (debe responder en localhost:3000/health; el registro responde en POST localhost:3000/auth/registro)
+
+7. Frontend, en otra terminal, desde la raíz del repo:
+   cd frontend
+   npm install
+   ng serve
+   (debe responder en localhost:4200)
+
+Nota: todos los comandos docker compose se corren desde la raíz del repo (ahí vive docker-compose.yml), nunca desde backend/. Tras cada pull que modifique schema.prisma, repetir los pasos 4 y 5.
+
+------------------------------------------------------------
+PROPUESTAS (opcionales)
+------------------------------------------------------------
+- Definir temprano un contrato de eventos (nombres y payload) para evitar desalineaciones entre módulos. (Avance en RAMA 2: ya existen events/bus.ts y events/types.ts con AgricultorRegistrado; falta definir SiembraRegistrada, ActualizacionMeteorologica y CondicionClimaticaActualizada.)
+- Crear un pequeño set de datos de prueba (zonas de Morazán + rendimientos promedio) desde el inicio.
+- Automatizar en el futuro (si el tiempo lo permite) la extracción de datos de viabilidad CENTA mediante un script de scraping, en vez de mantenerlos únicamente a mano. No es requisito de la base funcional.
+- Definir un script de seed (datos de prueba: usuario, zona, siembra de ejemplo) una vez existan los modelos de Parte 2 y Parte 4.
+- Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
+- Agregar rate limiting a los endpoints de /auth (registro y login) antes del despliegue.
+- Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento.
+
+------------------------------------------------------------
+PENDIENTES (obligatorio)
+------------------------------------------------------------
+Cuando se cree el formulario de siembra (o registro de cultivo), debe ser más detallado y ajustado a la propuesta real:
+
+Campos obligatorios / recomendados:
+- Estado actual: Sembrado / Por sembrar
+- Fecha: cuándo sembró / cuándo planea sembrar
+- Qué sembró / sembrará: 3 granos principales (Maíz, Frijol, Maicillo)
+- (Opcional, si se obtienen datos): tipos de semilla para cada grano
+- Área sembrada / por sembrar (manzanas y/o km²)
+- Cantidad sembrada / a sembrar (libras o bolsas de semilla)
+
+Detalles sí/no:
+- ¿Alquila la zona sembrada / a sembrar?
+- ¿Usa maquinaria?
+- ¿Usa regadío?
+
+Inversión:
+- Dinero invertido / estimación a invertir (debe incluir: semilla, venenos, fertilizantes, alquiler de tierras, mano de obra, maquinaria y sistema de riego → en general TODO)
+
+Requerimiento adicional de lógica:
+- El sistema debe poder calcular un estimado de inversión antes de que el usuario lo digite, usando:
+  - Precios promedio de materiales (semillas, abonos, venenos, etc.)
+  - Fórmulas por proporción de tierra
+  - Redondeo hacia arriba (ej: 19.2 qq de abono → 20 qq × precio promedio)
+- Mostrar al usuario: "Se estima que invirtió / invertirá aproximadamente $##" como referencia antes de que introduzca su propio valor.
+- Pendiente adicional: definir cómo se obtiene y estructura la tabla de datos CENTA (zonas × granos viables) a partir de extracción manual, y quién del equipo la levanta, antes de que arranque la Parte 2.
+
+Pendientes acumulados y nuevos:
+- Parte 2: modelar el catálogo Municipio (2: Morazán Norte y Sur) y Distrito (26) con la relación entre ambos, y luego validar/relacionar el campo distrito de Usuario contra ese catálogo (deja de ser texto libre).
+- Reflejar el cambio municipio → distrito en Mapa_inicial.txt (Parte 1 Punto A y Parte 2) y en Propuesta_Inicial.txt (sección 4, registro) antes de subirlos a docs/.
+- Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge con esta rama por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2).
+- Definir credenciales de MySQL y un DUI_PEPPER único para entornos reales (staging/producción) en Parte 7; las actuales son solo de desarrollo local.
+- Implementar Partes 1-B (login y guards), 1-C (verificación de correo) y 1-D (perfil y endpoint "yo"); dependen del modelo Usuario de RAMA 2.
+- Configurar CORS en Express cuando el frontend se conecte a /auth (pendiente desde RAMA 0).
+
+Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.

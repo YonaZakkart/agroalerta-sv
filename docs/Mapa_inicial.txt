@@ -1,0 +1,87 @@
+============================================================
+MAPA INICIAL DE DESARROLLO – AgroAlerta Morazán
+Versión 1.0 – 13 de septiembre de 2026
+Este mapa puede modificarse, pero con cuidado y documentando el cambio.
+============================================================
+
+Principio rector: cada parte debe interferir lo menos posible con las demás.
+Las dependencias se marcan explícitamente.
+
+------------------------------------------------------------
+PARTE 0 – Preparación del repositorio y base común
+(Se hace una sola vez, preferiblemente por un solo integrante o en conjunto)
+------------------------------------------------------------
+- Crear repositorio GitHub
+- Agregar colaboradores (los 4 miembros)
+- Estructura de carpetas inicial
+- Archivos de configuración base (package.json / composer.json / etc. según stack final)
+
+------------------------------------------------------------
+PARTE 1 – Autenticación y modelo de Usuario
+Dependencias: ninguna (puede empezar en paralelo)
+------------------------------------------------------------
+Punto A: Modelo de Usuario + registro (correo, contraseña, DUI hasheado, distrito)
+Punto B: Login + middleware / guards de autenticación
+Punto C: Verificación de correo (o flujo simulado)
+Punto D: Perfil básico del agricultor + endpoint de “yo”
+
+------------------------------------------------------------
+PARTE 2 – Datos de viabilidad y zonas de Morazán
+Dependencias: ninguna fuerte (puede avanzar en paralelo con Parte 1)
+------------------------------------------------------------
+Punto A: Tabla / modelo de zonas + granos viables (referencia CENTA)
+Punto B: Carga inicial de datos de Morazán (Chilanga y otras)
+Punto C: Servicio de consulta de viabilidad por zona + grano + temporada
+Punto D: Endpoint y pruebas de la consulta de viabilidad
+
+------------------------------------------------------------
+PARTE 3 – Integración climática (Open-Meteo) + Eventos climáticos
+Dependencias: preferible después de tener zonas definidas (Parte 2)
+------------------------------------------------------------
+Punto A: Cliente / servicio de Open-Meteo por zona
+Punto B: Clasificación de condición climática (sequía / exceso / invierno aceptable)
+Punto C: Emisión de eventos ActualizacionMeteorologica y CondicionClimaticaActualizada
+Punto D: Job / cron o listener que actualice periódicamente
+
+------------------------------------------------------------
+PARTE 4 – Módulo de Siembra + Formulario detallado
+Dependencias: necesita Usuario (Parte 1) y Viabilidad (Parte 2)
+------------------------------------------------------------
+Punto A: Modelo de Siembra / Registro de cultivo (campos detallados del pendiente)
+Punto B: Formulario frontend completo (estado, fechas, granos, área, cantidad, sí/no, inversión)
+Punto C: Lógica de estimación de costos (precios promedio + redondeo hacia arriba)
+Punto D: Emisión del evento SiembraRegistrada + guardado en historial
+
+------------------------------------------------------------
+PARTE 5 – Módulo de Estimación y Recomendaciones (núcleo EDA)
+Dependencias: necesita Siembra (Parte 4) + Clima (Parte 3) + Viabilidad (Parte 2)
+------------------------------------------------------------
+Punto A: Listener de SiembraRegistrada y CondicionClimaticaActualizada
+Punto B: Cálculo de proyección de rendimiento + ingresos
+Punto C: Generación de recomendaciones según riesgo
+Punto D: Persistencia del reporte de estimación + exposición al frontend
+
+------------------------------------------------------------
+PARTE 6 – Frontend Dashboard y vistas principales
+Dependencias: necesita los endpoints de las partes anteriores
+------------------------------------------------------------
+Punto A: Layout general (sidebar, header con indicadores vivos)
+Punto B: Vista Dashboard (formulario + reporte de dos niveles)
+Punto C: Vista Historial de evaluaciones
+Punto D: Vista Clima Zonal + Configuración básica
+
+------------------------------------------------------------
+PARTE 7 – Integración final, Docker y despliegue
+Dependencias: casi todo lo anterior
+------------------------------------------------------------
+Punto A: Docker Compose (backend + db + frontend)
+Punto B: Variables de entorno y configuración de producción
+Punto C: Pruebas de flujo completo EDA
+Punto D: Documentación final + README de despliegue
+
+------------------------------------------------------------
+Notas importantes
+- Las Partes 1 y 2 pueden avanzar casi en paralelo.
+- La Parte 4 (formulario detallado) es crítica y debe respetar exactamente los campos listados en Pendientes de Estado_del_Proyecto.txt.
+- La Parte 5 es el corazón de la arquitectura orientada a eventos; no se debe diluir.
+- Cualquier cambio de orden o fusión de partes debe documentarse en Estado_del_Proyecto.txt.
