@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registrarUsuario, RegistroError } from "./registro.service";
+import { registrarUsuario, verificarUsuario, RegistroError } from "./registro.service";
 
 const router = Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,7 +32,31 @@ router.post("/registro", async (req, res) => {
             dui,
             distrito: distrito.trim(),
         });
-        return res.status(201).json(usuario);
+
+        // NOTA (simulación, Parte 1 Punto C): no hay envío real de correo todavía.
+        // El token se expone aquí solo para pruebas del equipo. Quitar este campo
+        // cuando se integre Nodemailer/SMTP real (ver Estado_del_Proyecto.txt).
+        const { tokenVerificacion, ...usuarioPublico } = usuario;
+        return res.status(201).json({ ...usuarioPublico, tokenVerificacion_DEV: tokenVerificacion });
+
+    } catch (e) {
+        if (e instanceof RegistroError) return res.status(e.status).json({ error: e.message });
+        console.error(e);
+        return res.status(500).json({ error: "Error interno" });
+    }
+});
+
+
+router.get("/verificar/:token", async (req, res) => {
+    const { token } = req.params;
+
+    if (typeof token !== "string" || token.length !== 64) {
+        return res.status(400).json({ error: "token inválido" });
+    }
+
+    try {
+        const usuario = await verificarUsuario(token);
+        return res.status(200).json({ mensaje: "Correo verificado correctamente", usuario });
     } catch (e) {
         if (e instanceof RegistroError) return res.status(e.status).json({ error: e.message });
         console.error(e);

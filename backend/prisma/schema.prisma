@@ -24,6 +24,8 @@ model Usuario {
   duiHash        String   @unique @map("dui_hash") @db.Char(64)
   distrito      String   @db.VarChar(100)
   verificado     Boolean  @default(false)
+  tokenVerificacion       String?   @unique @map("token_verificacion") @db.VarChar(64)
+  tokenVerificacionExpira DateTime? @map("token_verificacion_expira")
   fechaRegistro  DateTime @default(now()) @map("fecha_registro")
 
   @@map("usuarios")
