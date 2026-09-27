@@ -96,6 +96,7 @@ Colores, tipografía (Plus Jakarta Sans) y jerarquía visual se respetan como re
 
 ------------------------------------------------------------
 SECCIÓN DE RAMAS (se irá agregando; nunca se modifica lo ya escrito)
+
 ------------------------------------------------------------
 
 RAMA 0 — Base del proyecto (Parte 0 del Mapa_inicial.txt)
@@ -263,6 +264,77 @@ Puntos de atención para las siguientes ramas:
 - Límite conocido del hash de DUI: el espacio de valores es pequeño (~10^8); si un atacante obtiene a la vez la base y el pepper, los DUIs son recuperables por fuerza bruta. Por eso el pepper nunca debe subirse al repo.
 - El 409 usa un mensaje genérico para correo o DUI repetido (no revela cuál), pero el endpoint sigue permitiendo inferir qué correos existen; aceptable para el alcance del proyecto.
 - Quien clone o actualice debe copiar backend/.env.example a backend/.env y generar su DUI_PEPPER (ver pasos de clonado).
+
+------------------------------------------------------------
+RAMA: feat/1-c-verificacion-correo
+Responsable: Requeno
+Parte 1 — Punto C: Verificación de correo
+------------------------------------------------------------
+
+QUÉ SE HIZO:
+- Se agregaron 2 campos nullable al modelo Usuario en schema.prisma:
+  tokenVerificacion (String, único, VarChar(64)) y
+  tokenVerificacionExpira (DateTime).
+- Migración nueva creada y aplicada: 20260927210046_add_verificacion_correo.
+- En registro.service.ts: nueva función generarTokenVerificacion() (crypto.randomBytes,
+  32 bytes = 64 caracteres hex) con expiración de 24 horas (HORAS_EXPIRACION_TOKEN).
+- registrarUsuario() ahora genera el token al crear el usuario y lo guarda en los
+  campos nuevos.
+- Nueva función verificarUsuario(token) en registro.service.ts: busca por token,
+  valida que no esté ya verificado, valida que no haya expirado, marca
+  verificado=true y limpia el token (uso único).
+- Nuevo endpoint GET /auth/verificar/:token en registro.routes.ts.
+- POST /auth/registro ahora devuelve el token en un campo separado
+  tokenVerificacion_DEV, comentado en el código como simulación temporal
+  (no hay envío real de correo, según lo acordado con el equipo: estrategia
+  "base primero, extras después" del proyecto).
+
+DECISIÓN DE DISEÑO:
+- Se optó por token de un solo uso simulado (NO verificado=true automático al
+  registrar), para que la lógica real ya exista y solo falte conectar
+  Nodemailer/SMTP más adelante si sobra tiempo.
+
+QUÉ SE PROBÓ MANUALMENTE (curl):
+- POST /auth/registro → 201, devuelve tokenVerificacion_DEV de 64 caracteres. OK.
+- GET /auth/verificar/:token con token válido → 200, verificado:true. OK.
+- Reutilizar el mismo token ya usado → 404 (Token de verificación inválido). OK.
+- Token con formato inválido (longitud distinta a 64) → 400. OK.
+- No se probó el caso de expiración real (requeriría esperar 24h o manipular
+  la fecha directamente en la base de datos); la lógica de comparación de
+  fechas está implementada pero queda como PENDIENTE de prueba explícita.
+
+ARCHIVOS TOCADOS:
+- backend/prisma/schema.prisma (modificado)
+- backend/prisma/migrations/20260927210046_add_verificacion_correo/ (nuevo)
+- backend/src/auth/registro.routes.ts (modificado)
+- backend/src/auth/registro.service.ts (modificado)
+- backend/package.json (TOCADO AUNQUE NO CORRESPONDÍA A ESTA TAREA: se agregó el
+  bloque "allowScripts" con @prisma/engines, argon2 y prisma en true. Esto viene
+  de un `npm approve-scripts` corrido localmente durante el setup del entorno,
+  necesario porque npm bloqueaba los scripts de instalación de esos paquetes.
+  Se incluyó en este commit porque ya estaba modificado localmente y es útil
+  para que el resto del equipo no vea la misma advertencia al instalar. No se
+  tocó ninguna versión de dependencias.)
+
+QUÉ FALTÓ / QUEDA PENDIENTE PARA OTRAS RAMAS:
+- Integración real de envío de correo (Nodemailer + proveedor SMTP) — pospuesto
+  a propósito, no es parte de la base funcional mínima.
+- El campo tokenVerificacion_DEV en la respuesta de POST /auth/registro debe
+  quitarse o protegerse detrás de una variable de entorno (ej. NODE_ENV) antes
+  de cualquier despliegue real. Actualmente siempre se devuelve.
+- No se probó el flujo de expiración de token (410) de forma manual.
+- Cualquiera que haga git pull después de este merge DEBE correr, dentro de
+  backend/: npx prisma generate y npx prisma migrate dev (hay migración nueva).
+
+PUNTOS DE ATENCIÓN PARA OTRAS RAMAS:
+- schema.prisma fue tocado (coordinar antes de editarlo en paralelo, según README).
+- No se tocó events/bus.ts ni events/types.ts — no hubo evento nuevo para esto,
+  no hay riesgo de choque ahí.
+- Hay un archivo .prettierrc nuevo, sin commitear, generado localmente por VS Code
+  (extensión de formateo) durante esta rama. NO se subió a propósito porque es
+  una decisión de equipo (formato de código global) que no corresponde decidir
+  unilateralmente en esta rama. Si el equipo quiere adoptar Prettier, debe
+  discutirse y subirse en una rama/PR aparte.
 
 ------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
