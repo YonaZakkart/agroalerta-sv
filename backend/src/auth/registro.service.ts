@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { createHmac, randomBytes } from "crypto";
+import { createHash, createHmac, randomBytes } from "crypto";
 import { prisma } from "../config/prisma";
 import { bus } from "../events/bus";
 import { EVENTOS, AgricultorRegistradoPayload } from "../events/types";
@@ -27,16 +27,20 @@ function hashDui(dui: string): string {
 
 const HORAS_EXPIRACION_TOKEN = 24;
 
-function generarTokenVerificacion(): { token: string; expira: Date } {
-    const token = randomBytes(32).toString("hex"); // 64 caracteres hex
+function hashToken(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
+}
+
+function generarTokenVerificacion(): { token: string; tokenHash: string; expira: Date } {
+    const token = randomBytes(32).toString("hex"); // 64 caracteres hex, es lo que viaja al usuario
     const expira = new Date(Date.now() + HORAS_EXPIRACION_TOKEN * 60 * 60 * 1000);
-    return { token, expira };
+    return { token, tokenHash: hashToken(token), expira };
 }
 
 export async function registrarUsuario(datos: DatosRegistro) {
     const contrasenaHash = await argon2.hash(datos.contrasena);
     const duiHash = hashDui(datos.dui);
-    const { token: tokenVerificacion, expira: tokenVerificacionExpira } = generarTokenVerificacion();
+    const { token, tokenHash, expira: tokenVerificacionExpira } = generarTokenVerificacion();
 
     let usuario;
     try {
@@ -48,15 +52,15 @@ export async function registrarUsuario(datos: DatosRegistro) {
                 contrasenaHash,
                 duiHash,
                 distrito: datos.distrito,
-                tokenVerificacion,
+                tokenVerificacion: tokenHash,
                 tokenVerificacionExpira,
             },
             select: {
                 id: true, nombres: true, apellidos: true,
-                correo: true, distrito: true, verificado: true, tokenVerificacion: true, fechaRegistro: true,   
+                correo: true, distrito: true, verificado: true, fechaRegistro: true,
             },
-            
         });
+
     } catch (e) {
         if ((e as { code?: string }).code === "P2002") {
             throw new RegistroError(409, "El correo o el DUI ya están registrados");
@@ -76,21 +80,39 @@ export async function registrarUsuario(datos: DatosRegistro) {
         console.error("Error en listener de AgricultorRegistrado:", err);
     }
 
-    return usuario;
+    // El hash queda en BD; al llamador se le devuelve el token crudo (para el correo o la simulación).
+    return { ...usuario, tokenVerificacion: token };
 }
 
 export async function verificarUsuario(token: string) {
-    const usuario = await prisma.usuario.findUnique({ where: { tokenVerificacion: token } });
+    const tokenHash = hashToken(token);
+    const usuario = await prisma.usuario.findUnique({ where: { tokenVerificacion: tokenHash } });
 
     if (!usuario) throw new RegistroError(404, "Token de verificación inválido");
-    if (usuario.verificado) throw new RegistroError(409, "El usuario ya está verificado");
     if (!usuario.tokenVerificacionExpira || usuario.tokenVerificacionExpira < new Date()) {
         throw new RegistroError(410, "El token de verificación expiró, solicita uno nuevo");
     }
 
-    return prisma.usuario.update({
-        where: { id: usuario.id },
+    // updateMany con el token en el where: si dos peticiones llegan a la vez, solo una obtiene count = 1.
+    const { count } = await prisma.usuario.updateMany({
+        where: { id: usuario.id, tokenVerificacion: tokenHash },
         data: { verificado: true, tokenVerificacion: null, tokenVerificacionExpira: null },
-        select: { id: true, correo: true, verificado: true },
     });
+    if (count === 0) throw new RegistroError(404, "Token de verificación inválido");
+
+    return { id: usuario.id, correo: usuario.correo, verificado: true };
+}
+
+// Devuelve el token crudo nuevo, o null si el correo no existe o ya está verificado.
+// El llamador debe responder igual en ambos casos para no revelar qué correos existen.
+export async function reenviarVerificacion(correo: string): Promise<string | null> {
+    const usuario = await prisma.usuario.findUnique({ where: { correo } });
+    if (!usuario || usuario.verificado) return null;
+
+    const { token, tokenHash, expira } = generarTokenVerificacion();
+    await prisma.usuario.update({
+        where: { id: usuario.id },
+        data: { tokenVerificacion: tokenHash, tokenVerificacionExpira: expira },
+    });
+    return token;
 }
