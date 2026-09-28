@@ -266,7 +266,16 @@ Puntos de atención para las siguientes ramas:
 - Quien clone o actualice debe copiar backend/.env.example a backend/.env y generar su DUI_PEPPER (ver pasos de clonado).
 
 ------------------------------------------------------------
-RAMA: feat/1-c-verificacion-correo
+
+RAMA 3 — docs/agregar documentacion del proyecto
+Responsable: Yona
+Se agregaron los archivos:
+Estado_del_Proyecto.txt
+Mapa_inicial.txt
+Propuesta_Inicial.txt
+
+------------------------------------------------------------
+RAMA 4: feat/1-c-verificacion-correo
 Responsable: Requeno
 Parte 1 — Punto C: Verificación de correo
 ------------------------------------------------------------
@@ -336,6 +345,74 @@ PUNTOS DE ATENCIÓN PARA OTRAS RAMAS:
   unilateralmente en esta rama. Si el equipo quiere adoptar Prettier, debe
   discutirse y subirse en una rama/PR aparte.
 
+------------------------------------------------------------
+
+RAMA 5 — fix/1-c-endurecer-verificacion (Parte 1, Punto C del Mapa_inicial.txt: complemento y corrección de RAMA 3)
+Responsable: Yona
+Fecha: 27 de septiembre de 2026
+
+Contexto: RAMA 3 (Requeno) dejó la verificación de correo funcionando en modalidad simulada. Al revisarla se encontraron huecos que se corrigen en esta rama. La sección de RAMA 3 no se modifica; donde difiera de lo descrito aquí, prevalece esta sección.
+
+Qué se hizo:
+- El token de verificación ya no se guarda en texto plano: en la columna tokenVerificacion (VarChar 64, única, ya existente) se guarda su SHA-256 en hexadecimal (64 caracteres). No requirió migración. El token crudo (randomBytes(32), 64 caracteres hex) solo existe en memoria y se entrega al llamador de registrarUsuario / reenviarVerificacion; nunca se persiste. Justificación: si se filtra la base, los tokens guardados no sirven para verificar cuentas. SHA-256 sin sal es adecuado aquí porque el token tiene 256 bits de entropía (no es una contraseña).
+- registro.service.ts: nueva función hashToken(); generarTokenVerificacion() ahora devuelve {token, tokenHash, expira}. registrarUsuario() guarda el hash, ya no incluye tokenVerificacion en el select (habría devuelto el hash) y retorna {...usuario, tokenVerificacion: token crudo}, de modo que registro.routes.ts conserva su desestructuración.
+- registro.service.ts: verificarUsuario() ahora busca por hash del token recibido, eliminó la rama 409 ("ya verificado"), que era inalcanzable porque al verificar se limpia el token y un usuario verificado nunca se encuentra por token, y consume el token con updateMany (where: id + tokenVerificacion) verificando count === 0 → 404, para que dos peticiones simultáneas con el mismo token no puedan consumirlo ambas. Retorna {id, correo, verificado: true}. Códigos: 404 token inexistente o ya usado, 410 token expirado.
+- registro.service.ts: nueva función reenviarVerificacion(correo): si el usuario existe y no está verificado, genera un token nuevo, reemplaza hash y expiración (invalida el anterior) y devuelve el token crudo; si no existe o ya está verificado, devuelve null.
+- registro.routes.ts: constante TOKEN_RE = /^[a-f0-9]{64}$/ para validar el formato en GET /auth/verificar/:token (400 si no cumple; antes solo se validaba la longitud).
+- registro.routes.ts: nuevo endpoint POST /auth/reenviar-verificacion (body: {correo}). Valida formato de correo (400) y responde siempre 200 con el mismo mensaje genérico, exista o no el correo o esté ya verificado, para no revelar qué correos están registrados. Cierra el callejón sin salida de RAMA 3: el 410 decía "solicita uno nuevo" pero no existía forma de hacerlo.
+- Campo tokenVerificacion_DEV: pasa de devolverse siempre a ser opt-in con la variable EXPONER_TOKEN_VERIFICACION=true en .env, tanto en POST /auth/registro como en POST /auth/reenviar-verificacion. Sin la variable (o con cualquier otro valor), POST /auth/registro vuelve al contrato de RAMA 2 (nunca expone tokens ni hashes). Se eligió opt-in y no NODE_ENV porque, si NODE_ENV no está definido, se expondría por defecto.
+- backend/.env.example: se agregó EXPONER_TOKEN_VERIFICACION=true.
+- Limpieza de formato: indentación de la validación de distrito en registro.routes.ts, espacios sobrantes al final de línea y línea en blanco dentro del select en registro.service.ts.
+
+Qué se modificó:
+- backend/src/auth/registro.service.ts (import de createHash, hashToken, generarTokenVerificacion, registrarUsuario, verificarUsuario, nueva reenviarVerificacion).
+- backend/src/auth/registro.routes.ts (import, TOKEN_RE, respuesta de POST /registro, validación de GET /verificar/:token, nueva ruta POST /reenviar-verificacion).
+- backend/.env.example (una línea nueva).
+Qué se eliminó:
+- Rama 409 de verificarUsuario (código muerto).
+- Campo tokenVerificacion del select de registrarUsuario.
+- Devolución incondicional de tokenVerificacion_DEV.
+- Validación del token solo por longitud.
+
+Cumplimiento del punto 1-C del Mapa ("verificación de correo o flujo simulado"):
+- Flujo simulado con token de un solo uso y expiración de 24 h: cumplido (RAMA 3), ahora con token almacenado como hash, reenvío y sin exposición por defecto.
+- Envío real de correo: NO cumplido, pospuesto a propósito (no es parte de la base funcional mínima).
+
+Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
+- Registro con flag activo: 201 con tokenVerificacion_DEV de 64 caracteres y sin campo tokenVerificacion; en la base, token_verificacion de 64 caracteres distinto al token devuelto (es el hash).
+- GET /auth/verificar con token de formato inválido (corto, y 64 caracteres no hex): 400. Con 64 ceros: 404.
+- Verificación con token válido: 200; en la base verificado = 1 y token/expiración en NULL. Reutilizar el token: 404.
+- POST /auth/reenviar-verificacion con usuario ya verificado y con correo inexistente: 200 con el mismo mensaje y sin token; con correo mal formado: 400.
+- Expiración (410) probada forzando token_verificacion_expira con UPDATE en MySQL: 410 al verificar; tras reenviar, el token anterior da 404 y el nuevo da 200. Esto cierra el pendiente de RAMA 3 (caso de expiración sin probar).
+- Registro repetido: 409; contraseña corta: 400.
+- Flag desactivado: POST /auth/registro sin ningún campo de token.
+- NO realizada: prueba de concurrencia (dos verificaciones simultáneas con el mismo token). No se escribieron pruebas automatizadas.
+
+Qué NO se hizo / qué falta:
+- Envío real de correo (Nodemailer + SMTP).
+- Rate limiting y cooldown en /auth/reenviar-verificacion y en el resto de /auth (el reenvío sin límite sería vector de spam cuando exista envío real).
+- Pruebas automatizadas de verificar y reenviar.
+- Migración de tokens en texto plano preexistentes: quedan inválidos (solo afecta bases de desarrollo; el reenvío emite uno nuevo).
+- Definir si un usuario no verificado puede iniciar sesión (corresponde a 1-B; hoy nada lo impide).
+- Decisión de equipo sobre Prettier (.prettierrc).
+
+Qué se agregó de más (no pedido originalmente):
+- Endpoint POST /auth/reenviar-verificacion (no está en el Mapa; necesario para que el 410 sea recuperable).
+- Flag EXPONER_TOKEN_VERIFICACION y hash del token (endurecimiento no previsto en el Mapa).
+
+Archivos tocados fuera de auth/ (puntos de contacto entre partes):
+- backend/.env.example. No se tocaron schema.prisma, prisma/migrations/, events/, package.json ni index.ts.
+
+Incidencias técnicas durante el desarrollo:
+- Error de TypeScript "tokenVerificacion no existe en el tipo UsuarioWhereUniqueInput" y "tokenVerificacionExpira no existe en el tipo ..." en registro.service.ts. Causa: el cliente Prisma generado (src/generated/, no versionado) estaba desactualizado respecto a la migración de RAMA 3. Solución: npx prisma generate, npx prisma migrate dev y reiniciar el servidor de TypeScript del editor. Es la misma regla de RAMA 2: regenerar el cliente tras cada pull que toque schema.prisma.
+- El aviso "Using a password on the command line interface can be insecure" de MySQL CLI es solo informativo (ver RAMA 1); se puede evitar con -e MYSQL_PWD=... en docker compose exec.
+
+Puntos de atención para las siguientes ramas:
+- Tras mergear esta rama, cada integrante debe agregar EXPONER_TOKEN_VERIFICACION=true a su backend/.env local; sin eso dejará de ver el token en las pruebas. En producción debe estar en false o ausente.
+- Envío real de correo: el token crudo solo existe en memoria dentro de registrarUsuario() y reenviarVerificacion(). Si el envío se implementa como listener de AgricultorRegistrado, el payload actual no lleva token y habría que ampliarlo (events/types.ts es archivo compartido: coordinar antes de tocarlo) sin persistir el token crudo; la alternativa es llamar al servicio de correo desde esas funciones. Al integrarlo, retirar el flag y el campo tokenVerificacion_DEV de ambos endpoints.
+- 1-B (login): decidir si verificado = false bloquea el inicio de sesión (recomendado bloquearlo o limitarlo) y crear auth/login.routes.ts propio con su app.use("/auth", ...) en index.ts.
+- El 404 de verificarUsuario es uniforme para token inexistente y ya usado (no distingue), y el reenvío responde igual en todos los casos: mantener ese comportamiento en futuros cambios.
+- backend/package.json tiene un bloque allowScripts atado a versiones exactas (prisma@7.10.0, argon2@0.45.1, @prisma/engines@7.10.0): al subir versión habrá que reaprobar, y conviene confirmar en la documentación de npm que la clave se soporta en la versión que usa todo el equipo.
 ------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
 ------------------------------------------------------------
@@ -421,11 +498,15 @@ Requerimiento adicional de lógica:
 - Pendiente adicional: definir cómo se obtiene y estructura la tabla de datos CENTA (zonas × granos viables) a partir de extracción manual, y quién del equipo la levanta, antes de que arranque la Parte 2.
 
 Pendientes acumulados y nuevos:
+- Parte 1-B (login y guards): NO implementada. Login con argon2.verify contra contrasenaHash, JWT/sesión y middleware; decidir si un usuario con verificado = false puede iniciar sesión (hoy nada lo impide). Crear auth/login.routes.ts propio. (Parte 1-A hecha en RAMA 2; Parte 1-C hecha en RAMA 3 y corregida en RAMA 4.)
+- Parte 1-D (perfil y endpoint "yo"): pendiente; depende de 1-B (necesita el guard de autenticación).
+- Parte 1-C, extensión pendiente: envío real de correo (Nodemailer + SMTP); al integrarlo, retirar EXPONER_TOKEN_VERIFICACION y tokenVerificacion_DEV de /auth/registro y /auth/reenviar-verificacion, y decidir si el envío va por listener de AgricultorRegistrado (coordinar events/types.ts) o desde el servicio.
+- Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue.
+- Pruebas automatizadas (Jest + supertest) para /auth: registro, verificar (200, 400, 404, 410) y reenviar-verificacion.
 - Parte 2: modelar el catálogo Municipio (2: Morazán Norte y Sur) y Distrito (26) con la relación entre ambos, y luego validar/relacionar el campo distrito de Usuario contra ese catálogo (deja de ser texto libre).
-- Reflejar el cambio municipio → distrito en Mapa_inicial.txt (Parte 1 Punto A y Parte 2) y en Propuesta_Inicial.txt (sección 4, registro) antes de subirlos a docs/.
-- Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge con esta rama por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2).
-- Definir credenciales de MySQL y un DUI_PEPPER único para entornos reales (staging/producción) en Parte 7; las actuales son solo de desarrollo local.
-- Implementar Partes 1-B (login y guards), 1-C (verificación de correo) y 1-D (perfil y endpoint "yo"); dependen del modelo Usuario de RAMA 2.
+- Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2, ampliado en RAMA 3).
+- Definir credenciales de MySQL y un DUI_PEPPER único para entornos reales (staging/producción) en Parte 7, junto con EXPONER_TOKEN_VERIFICACION=false; las actuales son solo de desarrollo local.
 - Configurar CORS en Express cuando el frontend se conecte a /auth (pendiente desde RAMA 0).
-
+- Decisión de equipo sobre Prettier (.prettierrc): si se adopta, subirlo en una rama aparte con formato acordado.
+- Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
