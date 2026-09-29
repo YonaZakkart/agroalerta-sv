@@ -1,6 +1,6 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán
-Última actualización: 23 de septiembre de 2026
+Última actualización: 27 de septiembre de 2026
 ============================================================
 
 1. RESUMEN DE LA IDEA
@@ -27,11 +27,11 @@ agroalerta-sv/
 │       └── grant-shadow.sql   (nuevo en RAMA 1)
 ├── docs/                      (al mismo nivel que backend/ y frontend/; se sube en la rama docs/agregar-documentacion, posterior a RAMA 2: Propuesta_Inicial.txt, Mapa_inicial.txt, Estado_del_Proyecto.txt)
 ├── backend/
-│   ├── package.json           (typescript fijado en ^5.9.0; prisma y @prisma/client fijados en ^7.10.0 — ver RAMA 1; argon2@0.45.1 agregado en RAMA 2)
+│   ├── package.json           (typescript fijado en ^5.9.0; prisma y @prisma/client fijados en ^7.10.0 — ver RAMA 1; argon2@0.45.1 agregado en RAMA 2; jsonwebtoken ^9.0.2 y @types/jsonwebtoken ^9 agregados en RAMA 6)
 │   ├── package-lock.json
 │   ├── tsconfig.json          (rootDir: "./src"; "include": ["src/**/*"] agregado en RAMA 1)
 │   ├── prisma7.config.ts      (nuevo en RAMA 1, autogenerado por Prisma — config del CLI, fuera de src/)
-│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER)
+│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER; desde RAMA 6 requiere JWT_SECRET)
 │   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env)
 │   ├── prisma/
 │   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2)
@@ -39,7 +39,10 @@ agroalerta-sv/
 │   └── src/
 │       ├── auth/
 │       │   ├── registro.service.ts   (nuevo en RAMA 2 — hashing, creación de usuario, emisión de evento)
-│       │   └── registro.routes.ts    (nuevo en RAMA 2 — POST /auth/registro y validación de entrada)
+│       │   ├── registro.routes.ts    (nuevo en RAMA 2 — POST /auth/registro y validación de entrada)
+│       │   ├── jwt.ts                (nuevo en RAMA 6 — firma y verificación de JWT, secreto compartido)
+│       │   ├── auth.middleware.ts    (nuevo en RAMA 6 — requireAuth, extiende Express.Request con "usuario")
+│       │   └── login.routes.ts       (nuevo en RAMA 6 — POST /auth/login)
 │       ├── viabilidad/         (vacío, para Parte 2)
 │       ├── clima/              (vacío, para Parte 3)
 │       ├── siembra/            (vacío, para Parte 4)
@@ -50,7 +53,7 @@ agroalerta-sv/
 │       ├── config/
 │       │   └── prisma.ts       (nuevo en RAMA 1 — cliente Prisma compartido, punto de contacto entre partes)
 │       ├── generated/          (nuevo en RAMA 1 — cliente Prisma generado, NO se sube al repo, ver .gitignore)
-│       └── index.ts            (servidor Express + GET /health + montaje de /auth desde RAMA 2)
+│       └── index.ts            (servidor Express + GET /health + montaje de /auth desde RAMA 2; montaje de loginRouter en /auth desde RAMA 6)
 └── frontend/                  (Angular, generado con Angular CLI, verificado con ng serve)
 
 NOTA IMPORTANTE: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt aún NO están subidos al repositorio; se suben en la rama docs/agregar-documentacion (carpeta docs/). Ver Pendientes.
@@ -66,6 +69,7 @@ NOTA IMPORTANTE: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del
 - Autenticación: correo + contraseña + DUI hasheado + verificación por correo
   - Contraseña: argon2id, paquete argon2@0.45.1 (decidido en RAMA 2)
   - DUI: HMAC-SHA256 con secreto de servidor (DUI_PEPPER en .env), NO bcrypt/argon2 (decidido en RAMA 2, ver justificación y desviación del Mapa en esa sección)
+  - Sesión: JWT stateless HS256 con jsonwebtoken (decidido en RAMA 6). Secreto JWT_SECRET (mín. 32 caracteres) y expiración JWT_EXPIRES_IN (por defecto 2h) en .env. Sin revocación: el middleware no consulta la BD.
 - Despliegue: Docker
 - Control de versiones: Git + GitHub (flujo por ramas + PR)
 - Entorno de desarrollo de base de datos: MySQL vía Docker (contenedor local por integrante, sin instancia compartida) — ver docker-compose.yml en la raíz
@@ -413,6 +417,89 @@ Puntos de atención para las siguientes ramas:
 - 1-B (login): decidir si verificado = false bloquea el inicio de sesión (recomendado bloquearlo o limitarlo) y crear auth/login.routes.ts propio con su app.use("/auth", ...) en index.ts.
 - El 404 de verificarUsuario es uniforme para token inexistente y ya usado (no distingue), y el reenvío responde igual en todos los casos: mantener ese comportamiento en futuros cambios.
 - backend/package.json tiene un bloque allowScripts atado a versiones exactas (prisma@7.10.0, argon2@0.45.1, @prisma/engines@7.10.0): al subir versión habrá que reaprobar, y conviene confirmar en la documentación de npm que la clave se soporta en la versión que usa todo el equipo.
+
+------------------------------------------------------------
+
+RAMA 6 — feat/1-b-login-auth-guards (Parte 1, Punto B del Mapa_inicial.txt: Login + middleware / guards de autenticación)
+Responsable: Smith
+Fecha: 27 de septiembre de 2026
+
+Contexto: RAMA 2 dejó el registro y RAMA 4/5 la verificación de correo. Esta rama agrega el inicio de sesión y el guard de autenticación. Resuelve el pendiente de RAMA 5 "definir si un usuario no verificado puede iniciar sesión": NO puede (403).
+
+Qué se hizo:
+- Dependencias nuevas, instaladas con --legacy-peer-deps: jsonwebtoken ^9.0.2 (dependencies) y @types/jsonwebtoken ^9 (devDependencies). [VERIFICAR versiones resueltas en package.json y que no cambiaron prisma, @prisma/client, typescript, argon2 ni el bloque allowScripts.]
+- backend/src/auth/jwt.ts (nuevo): interfaz UsuarioAutenticado {id, correo}; firmarToken() firma HS256 con claim "correo" y "sub" = id como string, expiración desde JWT_EXPIRES_IN (por defecto "2h"); verificarToken() verifica fijando algorithms: ["HS256"] y valida la forma del payload (sub numérico entero, correo string), lanzando JsonWebTokenError si no cumple. obtenerSecreto() lanza Error si JWT_SECRET falta o tiene menos de 32 caracteres (se evalúa en cada llamada, no al arrancar).
+- backend/src/auth/auth.middleware.ts (nuevo): requireAuth lee Authorization: Bearer <token> (regex, insensible a mayúsculas en "Bearer"), verifica el token y asigna req.usuario = {id, correo}. Respuestas: 401 sin encabezado o mal formado; 401 "Sesión expirada" (TokenExpiredError); 401 "Token inválido" (JsonWebTokenError); 500 para error de configuración (p. ej. JWT_SECRET ausente). La extensión de Express.Request (usuario?: UsuarioAutenticado) se declara con "declare global" dentro del mismo módulo, no en un .d.ts aparte, porque ts-node-dev no respeta "include" y no vería un .d.ts suelto.
+- backend/src/auth/login.routes.ts (nuevo): POST /auth/login con body {correo, contrasena}.
+  - Validación: ambos string; correo con formato válido y máx. 255; contrasena de 1 a 128 caracteres. 400 con {errores: [...]}.
+  - Busca con el cliente compartido (import { prisma } from "../config/prisma") por correo normalizado (trim + minúsculas), con select explícito (id, nombres, apellidos, correo, distrito, verificado, contrasenaHash).
+  - argon2.verify contra contrasenaHash (columna contrasena_hash). Si el usuario no existe se verifica contra un hash ficticio (creado una vez y cacheado) para igualar tiempos y evitar enumeración por timing.
+  - 401 "Credenciales inválidas", mismo mensaje para correo inexistente y contraseña errónea.
+  - 403 si verificado = false, evaluado DESPUÉS de validar la contraseña (no revela a un tercero que un correo existe y está sin verificar). El mensaje remite a POST /auth/reenviar-verificacion.
+  - 200 con {token, usuario: {id, nombres, apellidos, correo, distrito}}, sin hashes.
+  - 500 con mensaje genérico ante error no controlado (se registra en consola).
+- backend/src/index.ts: se agregó import { loginRouter } y app.use("/auth", loginRouter) adyacentes a los de registroRouter.
+- backend/.env.example: se agregaron JWT_SECRET (valor de ejemplo) y JWT_EXPIRES_IN=2h.
+
+Decisiones de diseño:
+- JWT stateless: el middleware no consulta la BD. Un usuario eliminado o desverificado conserva un token válido hasta su expiración. Se aceptó para la base mínima; por eso la expiración por defecto es 2h. Revocación inmediata exigiría consultar la BD en cada petición o mantener una lista de revocación.
+- Algoritmo fijado en firma y verificación (HS256) para evitar ataques de confusión de algoritmo.
+- Secreto y firma centralizados en jwt.ts para que 1-D y las Partes 4-6 no dupliquen lógica.
+- El nombre exportado requireAuth es contrato compartido: no renombrar sin avisar.
+
+Qué se modificó:
+- backend/src/index.ts (2 líneas).
+- backend/.env.example (2 líneas).
+- backend/package.json y package-lock.json (dependencias nuevas).
+Qué se eliminó: nada.
+
+Cumplimiento del punto 1-B del Mapa:
+- Login (POST /auth/login con argon2.verify y emisión de JWT): cumplido.
+- Middleware de autenticación en backend (requireAuth): cumplido.
+- Guards del lado del frontend (Angular route guard / interceptor HTTP): NO cumplido; el frontend aún no se conecta al backend (ver Pendientes).
+- Ninguna ruta de negocio está protegida todavía; el primer uso real será GET /auth/yo (1-D).
+
+Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
+- [VERIFICAR] Usuario no verificado con contraseña correcta: 403.
+- [VERIFICAR] Tras GET /auth/verificar/:token, login válido: 200 con token y usuario, sin hashes.
+- [VERIFICAR] Contraseña incorrecta y correo inexistente: 401 con el mismo mensaje.
+- [VERIFICAR] Body vacío o correo mal formado: 400.
+- [VERIFICAR] Ruta temporal con requireAuth (NO commiteada): sin encabezado 401; token basura 401; token válido 200 con {id, correo}.
+- [VERIFICAR] Expiración con JWT_EXPIRES_IN=5s: 401 "Sesión expirada".
+- [VERIFICAR] JWT_SECRET ausente o corto: login responde 500 y requireAuth responde 500.
+- NO realizada: comparación medida de tiempos de respuesta (correo existente vs. inexistente). No se escribieron pruebas automatizadas.
+
+Qué NO se hizo / qué falta:
+- Rate limiting / bloqueo por intentos fallidos en /auth/login (riesgo real de fuerza bruta).
+- Refresh tokens, logout y revocación de tokens.
+- Perfil y endpoint /auth/yo (Parte 1-D).
+- Integración del frontend (formulario de login, almacenamiento del token, interceptor y guard de Angular).
+- CORS (pendiente desde RAMA 0): sin él el navegador bloqueará las peticiones y el encabezado Authorization.
+- Pruebas automatizadas (Jest + supertest).
+- Validación de JWT_SECRET al arrancar el servidor (hoy falla en la primera petición, no al iniciar).
+
+Qué se agregó de más (no pedido originalmente):
+- jwt.ts como módulo separado del middleware.
+- Hash ficticio para mitigar enumeración por timing.
+- Límites de longitud en la entrada (correo 255, contrasena 128).
+- Distinción entre 401 por expiración y 401 por token inválido.
+
+Archivos tocados fuera de auth/ (puntos de contacto entre partes):
+- backend/src/index.ts, backend/package.json, backend/package-lock.json, backend/.env.example. No se tocaron schema.prisma, prisma/migrations/, events/ ni config/.
+
+Incidencias técnicas durante el desarrollo:
+- [COMPLETAR con las incidencias reales: errores de tipos de expiresIn, npm, etc. Si no hubo ninguna, escribir "Ninguna".]
+
+Puntos de atención para las siguientes ramas:
+- Después del merge, cada integrante debe agregar JWT_SECRET (propio, mín. 32 caracteres) y JWT_EXPIRES_IN a su backend/.env y correr npm install --legacy-peer-deps. Sin JWT_SECRET, POST /auth/login responde 500.
+- Producción (Parte 7): un JWT_SECRET único, guardado como secreto, nunca en el repo. Rotarlo invalida todas las sesiones activas.
+- 1-D y las Partes 4-6: importar requireAuth desde auth/auth.middleware.ts y leer req.usuario.id. La extensión de tipos de Request vive en ese módulo: cualquier archivo que use req.usuario debe importar (directa o indirectamente) auth.middleware.ts, o ts-node-dev puede no ver el tipo.
+- El payload solo lleva id y correo. Si otra parte necesita más datos del usuario, debe consultarlos en la BD con req.usuario.id, no ampliar el token sin coordinarlo.
+- Frontend: definir dónde se guarda el token (memoria, sessionStorage o localStorage; cada opción tiene compromisos frente a XSS) y configurar CORS con el encabezado Authorization permitido.
+- El 401 de login es uniforme y el 403 solo aparece con contraseña correcta: mantener ese orden en futuros cambios.
+- Numeración: los textos de RAMA 5 y de Pendientes se refieren a la verificación de correo como "RAMA 3" y "RAMA 4", pero en este documento la rama de Requeno es RAMA 4 y la corrección de Yona es RAMA 5. Las secciones ya escritas no se modifican; en Pendientes se corrigió la referencia.
+- package.json/lock: conflicto probable con cualquier otra rama que instale paquetes. Quien mergee segundo debe hacer git checkout main -- package-lock.json y reinstalar.
+
 ------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
 ------------------------------------------------------------
@@ -438,6 +525,13 @@ Desde la raíz del repositorio, en este orden:
    DB_USER=agroalerta
    DB_PASSWORD=agroalerta
    DB_NAME=agroalerta
+   Variables agregadas después de RAMA 2 (deben existir en .env):
+   EXPONER_TOKEN_VERIFICACION=true    (RAMA 5; solo desarrollo)
+   JWT_SECRET=<secreto propio, mín. 32 caracteres>    (RAMA 6)
+   JWT_EXPIRES_IN=2h    (RAMA 6)
+   Generar JWT_SECRET con:
+   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+   Tras un pull que modifique package.json: npm install --legacy-peer-deps dentro de backend/.
 
 4. Generar el cliente de Prisma (sigue en backend/):
    npx prisma generate
@@ -467,6 +561,8 @@ PROPUESTAS (opcionales)
 - Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
 - Agregar rate limiting a los endpoints de /auth (registro y login) antes del despliegue.
 - Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento.
+- Revocación de sesión (lista de tokens revocados o versión de token por usuario) y/o refresh tokens, si se necesita logout real o invalidar sesiones al desverificar o eliminar usuarios.
+- Bloqueo temporal por intentos fallidos de login por correo e IP, junto con el rate limiting.
 
 ------------------------------------------------------------
 PENDIENTES (obligatorio)
@@ -498,15 +594,17 @@ Requerimiento adicional de lógica:
 - Pendiente adicional: definir cómo se obtiene y estructura la tabla de datos CENTA (zonas × granos viables) a partir de extracción manual, y quién del equipo la levanta, antes de que arranque la Parte 2.
 
 Pendientes acumulados y nuevos:
-- Parte 1-B (login y guards): NO implementada. Login con argon2.verify contra contrasenaHash, JWT/sesión y middleware; decidir si un usuario con verificado = false puede iniciar sesión (hoy nada lo impide). Crear auth/login.routes.ts propio. (Parte 1-A hecha en RAMA 2; Parte 1-C hecha en RAMA 3 y corregida en RAMA 4.)
-- Parte 1-D (perfil y endpoint "yo"): pendiente; depende de 1-B (necesita el guard de autenticación).
+- Parte 1-B (login y guards): implementada en el backend en RAMA 6 (POST /auth/login, jwt.ts, requireAuth; verificado = false bloquea con 403). Pendiente: guards/interceptor del lado Angular, rate limiting, y decisión sobre refresh/revocación de tokens. (Parte 1-A en RAMA 2; Parte 1-C en RAMA 4 por Requeno, corregida en RAMA 5.)
+- Parte 1-D (perfil y endpoint "yo"): pendiente; ya puede empezar, requireAuth existe (RAMA 6). Debe crear GET /auth/yo protegido con requireAuth y consultar la BD con req.usuario.id.
 - Parte 1-C, extensión pendiente: envío real de correo (Nodemailer + SMTP); al integrarlo, retirar EXPONER_TOKEN_VERIFICACION y tokenVerificacion_DEV de /auth/registro y /auth/reenviar-verificacion, y decidir si el envío va por listener de AgricultorRegistrado (coordinar events/types.ts) o desde el servicio.
-- Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue.
+- Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue. Login es el más crítico (fuerza bruta).
 - Pruebas automatizadas (Jest + supertest) para /auth: registro, verificar (200, 400, 404, 410) y reenviar-verificacion.
 - Parte 2: modelar el catálogo Municipio (2: Morazán Norte y Sur) y Distrito (26) con la relación entre ambos, y luego validar/relacionar el campo distrito de Usuario contra ese catálogo (deja de ser texto libre).
-- Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2, ampliado en RAMA 3).
-- Definir credenciales de MySQL y un DUI_PEPPER único para entornos reales (staging/producción) en Parte 7, junto con EXPONER_TOKEN_VERIFICACION=false; las actuales son solo de desarrollo local.
-- Configurar CORS en Express cuando el frontend se conecte a /auth (pendiente desde RAMA 0).
+- Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2, ampliado en RAMA 4).
+- Definir credenciales de MySQL y un DUI_PEPPER único para entornos reales (staging/producción) en Parte 7, junto con EXPONER_TOKEN_VERIFICACION=false; las actuales son solo de desarrollo local; JWT_SECRET único y guardado como secreto (rotarlo invalida sesiones).
+- Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token, interceptor HTTP y route guard.
 - Decisión de equipo sobre Prettier (.prettierrc): si se adopta, subirlo en una rama aparte con formato acordado.
 - Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
+- Validar JWT_SECRET al arrancar el servidor (fallar rápido en index.ts) en lugar de hacerlo en la primera petición.
+- Actualizar la sección "Pruebas automatizadas" para incluir /auth/login (200, 400, 401, 403) y requireAuth (401 sin token, expirado, inválido; 200).
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
