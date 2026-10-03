@@ -22,7 +22,7 @@ router.post("/registro", async (req, res) => {
     // TODO Parte 2: validar contra el catálogo de los 26 distritos de Morazán
     if (!texto(distrito)) errores.push("distrito inválido");
 
-    if (errores.length > 0) return res.status(400).json({ errores });
+    if (errores.length > 0) return res.status(400).json({ error: "Datos inválidos", detalles: errores });
 
     try {
         const usuario = await registrarUsuario({
@@ -46,7 +46,7 @@ router.post("/registro", async (req, res) => {
     } catch (e) {
         if (e instanceof RegistroError) return res.status(e.status).json({ error: e.message });
         console.error(e);
-        return res.status(500).json({ error: "Error interno" });
+        return res.status(500).json({ error: "Error interno del servidor" });
     }
 });
 
@@ -64,14 +64,14 @@ router.get("/verificar/:token", async (req, res) => {
     } catch (e) {
         if (e instanceof RegistroError) return res.status(e.status).json({ error: e.message });
         console.error(e);
-        return res.status(500).json({ error: "Error interno" });
+        return res.status(500).json({ error: "Error interno del servidor" });
     }
 });
 
 router.post("/reenviar-verificacion", async (req, res) => {
     const { correo } = req.body ?? {};
     if (!texto(correo, 255) || !EMAIL_RE.test(correo.trim())) {
-        return res.status(400).json({ errores: ["correo inválido"] });
+        return res.status(400).json({ error: "Datos inválidos", detalles: ["correo inválido"] });
     }
 
     try {
@@ -85,7 +85,7 @@ router.post("/reenviar-verificacion", async (req, res) => {
         return res.status(200).json(respuesta);
     } catch (e) {
         console.error(e);
-        return res.status(500).json({ error: "Error interno" });
+        return res.status(500).json({ error: "Error interno del servidor" });
     }
 });
 

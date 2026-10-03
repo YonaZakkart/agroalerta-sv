@@ -23,7 +23,7 @@ loginRouter.post("/login", async (req, res) => {
     contrasena.length === 0 ||
     contrasena.length > 128
   ) {
-    res.status(400).json({ errores: ["correo y contrasena son obligatorios y deben tener formato válido"] });
+    res.status(400).json({ error: "Datos inválidos", detalles: ["correo y contrasena son obligatorios y deben tener formato válido"] });
     return;
   }
 
@@ -45,7 +45,7 @@ loginRouter.post("/login", async (req, res) => {
     const passwordOk = await argon2.verify(hash, contrasena);
 
     if (!usuario || !passwordOk) {
-      res.status(401).json({ mensaje: "Credenciales inválidas" });
+      res.status(401).json({ error: "Credenciales inválidas" });
       return;
     }
 
@@ -53,8 +53,9 @@ loginRouter.post("/login", async (req, res) => {
     // a un tercero si un correo existe y está sin verificar.
     if (!usuario.verificado) {
       res.status(403).json({
-        mensaje:
-          "Cuenta no verificada. Revisa tu correo para verificarla o solicita un nuevo enlace en POST /auth/reenviar-verificacion",
+        error: "Cuenta no verificada",
+        detalles:
+          "Revisa tu correo para verificarla o solicita un nuevo enlace en POST /auth/reenviar-verificacion",
       });
       return;
     }
@@ -73,6 +74,6 @@ loginRouter.post("/login", async (req, res) => {
     });
   } catch (error) {
     console.error("Error en POST /auth/login:", error);
-    res.status(500).json({ mensaje: "Error interno del servidor" });
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
