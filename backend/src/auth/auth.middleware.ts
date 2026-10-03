@@ -15,7 +15,7 @@ declare global {
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const match = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "");
   if (!match) {
-    res.status(401).json({ mensaje: "Falta el encabezado Authorization: Bearer <token>" });
+    res.status(401).json({ error: "No autorizado", detalles: "Falta el encabezado Authorization: Bearer <token>" });
     return;
   }
 
@@ -24,14 +24,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({ mensaje: "Sesión expirada, inicia sesión nuevamente" });
+      res.status(401).json({ error: "Sesión expirada", detalles: "Inicia sesión nuevamente" });
       return;
     }
     if (error instanceof jwt.JsonWebTokenError) {
-      res.status(401).json({ mensaje: "Token inválido" });
+      res.status(401).json({ error: "Token inválido" });
       return;
     }
     console.error("Error de configuración en requireAuth:", error);
-    res.status(500).json({ mensaje: "Error interno del servidor" });
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 }
