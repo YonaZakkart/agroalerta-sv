@@ -1,6 +1,6 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán
-Última actualización: 27 de septiembre de 2026
+Última actualización: 03 de Octubre de 2026
 ============================================================
 
 1. RESUMEN DE LA IDEA
@@ -42,7 +42,8 @@ agroalerta-sv/
 │       │   ├── registro.routes.ts    (nuevo en RAMA 2 — POST /auth/registro y validación de entrada)
 │       │   ├── jwt.ts                (nuevo en RAMA 6 — firma y verificación de JWT, secreto compartido)
 │       │   ├── auth.middleware.ts    (nuevo en RAMA 6 — requireAuth, extiende Express.Request con "usuario")
-│       │   └── login.routes.ts       (nuevo en RAMA 6 — POST /auth/login)
+│       │   ├── login.routes.ts       (nuevo en RAMA 6 — POST /auth/login)
+│       │   └── perfil.routes.ts      (nuevo en RAMA 8 — GET /auth/yo protegido con requireAuth)
 │       ├── viabilidad/         (vacío, para Parte 2)
 │       ├── clima/              (vacío, para Parte 3)
 │       ├── siembra/            (vacío, para Parte 4)
@@ -53,7 +54,7 @@ agroalerta-sv/
 │       ├── config/
 │       │   └── prisma.ts       (nuevo en RAMA 1 — cliente Prisma compartido, punto de contacto entre partes)
 │       ├── generated/          (nuevo en RAMA 1 — cliente Prisma generado, NO se sube al repo, ver .gitignore)
-│       └── index.ts            (servidor Express + GET /health + montaje de /auth desde RAMA 2; montaje de loginRouter en /auth desde RAMA 6)
+│       └── index.ts            (servidor Express + GET /health + montaje de /auth desde RAMA 2; montaje de loginRouter en /auth desde RAMA 6); perfilRouter en /auth (RAMA 8)
 └── frontend/                  (Angular, generado con Angular CLI, verificado con ng serve)
 
 NOTA IMPORTANTE: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt aún NO están subidos al repositorio; se suben en la rama docs/agregar-documentacion (carpeta docs/). Ver Pendientes.
@@ -282,7 +283,6 @@ Propuesta_Inicial.txt
 RAMA 4: feat/1-c-verificacion-correo
 Responsable: Requeno
 Parte 1 — Punto C: Verificación de correo
-------------------------------------------------------------
 
 QUÉ SE HIZO:
 - Se agregaron 2 campos nullable al modelo Usuario en schema.prisma:
@@ -355,7 +355,7 @@ RAMA 5 — fix/1-c-endurecer-verificacion (Parte 1, Punto C del Mapa_inicial.txt
 Responsable: Yona
 Fecha: 27 de septiembre de 2026
 
-Contexto: RAMA 3 (Requeno) dejó la verificación de correo funcionando en modalidad simulada. Al revisarla se encontraron huecos que se corrigen en esta rama. La sección de RAMA 3 no se modifica; donde difiera de lo descrito aquí, prevalece esta sección.
+Contexto: RAMA 4 (Requeno) dejó la verificación de correo funcionando en modalidad simulada. Al revisarla se encontraron huecos que se corrigen en esta rama. La sección de RAMA 3 no se modifica; donde difiera de lo descrito aquí, prevalece esta sección.
 
 Qué se hizo:
 - El token de verificación ya no se guarda en texto plano: en la columna tokenVerificacion (VarChar 64, única, ya existente) se guarda su SHA-256 en hexadecimal (64 caracteres). No requirió migración. El token crudo (randomBytes(32), 64 caracteres hex) solo existe en memoria y se entrega al llamador de registrarUsuario / reenviarVerificacion; nunca se persiste. Justificación: si se filtra la base, los tokens guardados no sirven para verificar cuentas. SHA-256 sin sal es adecuado aquí porque el token tiene 256 bits de entropía (no es una contraseña).
@@ -501,6 +501,71 @@ Puntos de atención para las siguientes ramas:
 - package.json/lock: conflicto probable con cualquier otra rama que instale paquetes. Quien mergee segundo debe hacer git checkout main -- package-lock.json y reinstalar.
 
 ------------------------------------------------------------
+
+RAMA 7 — docs/actualizar documentacion del proyecto
+Responsable: Smith (+Yona)
+Se modifico el archivo: Estado_del_Proyecto.txt
+Con la documentacio hasta la parte 1-C
+
+------------------------------------------------------------
+
+RAMA 8 — feature/parte-1d-perfil-usuario (Parte 1, Punto D del Mapa_inicial.txt: Perfil básico del agricultor + endpoint "yo")
+Responsable: Pocho
+Fecha: 3 de octubre de 2026
+Estado al cierre: código completo y revisado, SIN verificación funcional (ver Incidencias). Se mergeó en este estado; la verificación se hace después sobre main (ver Pendientes).
+
+Qué se hizo:
+- Archivo nuevo backend/src/auth/perfil.routes.ts: exporta perfilRouter (Router de Express) con una única ruta, GET /yo, protegida por requireAuth (auth.middleware.ts, de RAMA 6).
+- La ruta toma req.usuario?.id (tipado por el declare global de auth.middleware.ts) y consulta prisma.usuario.findUnique con select explícito: id, nombres, apellidos, correo, distrito, verificado, fechaRegistro. contrasenaHash y duiHash quedan excluidos.
+- Respuestas: 200 {success: true, usuario}; 401 {error, detalles} si el token no trae usuario (rama defensiva); 404 {error, detalles} si el usuario del token ya no existe en la base; 500 {error, detalles} con console.error.
+- backend/src/index.ts: import de perfilRouter y app.use("/auth", perfilRouter) después del montaje de loginRouter. Se consume como GET /auth/yo.
+- Commit con convención feat(auth); solo se agregaron al commit los dos archivos anteriores.
+
+Cumplimiento del punto 1-D:
+- Endpoint "yo" con datos del agricultor, protegido y sin hashes: cumplido a nivel de código.
+- Perfil básico: cubierto por el mismo endpoint (solo lectura). Edición de perfil no estaba en el Mapa.
+- Verificación funcional del endpoint: NO realizada.
+
+Qué se modificó: backend/src/index.ts (2 líneas). Qué se eliminó: nada. Dependencias nuevas: ninguna.
+Revisados sin cambios: auth.middleware.ts, jwt.ts, login.routes.ts, registro.routes.ts, registro.service.ts, config/prisma.ts.
+Archivos tocados fuera de auth/: backend/src/index.ts (punto de contacto entre partes).
+
+Qué NO se hizo / qué falta:
+- Ninguna prueba funcional (200, 404, 401 por token ausente o inválido) por la incidencia P2039.
+- Pruebas automatizadas.
+- Rate limiting sobre /auth/yo.
+- El perfil no incluye municipio derivado (depende del catálogo de Parte 2).
+- PATCH/DELETE de perfil: fuera del alcance del Mapa.
+
+Qué se agregó de más (no pedido originalmente): nada.
+
+Incidencias técnicas durante el desarrollo:
+- Error P2039 "pool timeout: failed to retrieve a connection from pool after 10009ms" (PrismaMariaDbAdapter.onError, pool active=0 idle=0, límite 10) en cualquier operación de base de datos, en el entorno local de quien desarrolló la rama. Causa NO determinada.
+- Verificado: MySQL responde dentro del contenedor (docker exec ... SELECT 1) y la tabla usuarios existe. Esa prueba no valida la conexión desde el host hacia el contenedor, que es la ruta que usa la aplicación.
+- Intentos que no resolvieron el error: cambiar DATABASE_URL de mysql:// a mysql2://; regenerar DUI_PEPPER y JWT_SECRET; borrar node_modules, reinstalar y correr npx prisma generate.
+- Efectos colaterales en el .env local (no versionado): DATABASE_URL quedó con mysql2:// (debe revertirse a mysql://); los dui_hash ya guardados en esa base dejan de coincidir con el nuevo DUI_PEPPER y los JWT emitidos antes dejan de ser válidos. Aceptable en desarrollo.
+- El uso de @prisma/adapter-mariadb con MySQL es lo definido en RAMA 1 y es obligatorio en Prisma 7; no hay evidencia de que sea la causa. Hipótesis a descartar: otro MySQL ocupando el puerto 3306 del host, resolución de localhost a IPv6 (probar 127.0.0.1) y autenticación caching_sha2_password de MySQL 8.4 contra el conector.
+- Criterio: si el error se reproduce en main limpio en otra máquina, es un fallo de config/prisma.ts y requiere rama fix; si no, es de entorno local.
+
+Observaciones de la revisión previa al merge:
+- Verificación funcional pendiente (Crítico solo si el P2039 se reproduce en otra máquina, ver criterio arriba). Prueba mínima: registro, login, GET /auth/yo con token (200), sin token (401), con token alterado (401) y con token firmado de un id inexistente (404).
+- Importante: el catch del 500 devuelve error.message al cliente; debe loguearse en servidor y responder un mensaje genérico. Revisar si login y demás routers hacen lo mismo.
+- Importante: contrato de respuesta inconsistente entre routers de /auth (yo: {success, usuario} y {error, detalles}; registro: objeto directo y {errores: [...]}). Unificar antes de la Parte 6; toca archivos de otras ramas, coordinar con sus responsables.
+- Menos: indentación de perfil.routes.ts; evaluar 401 en lugar de 404 cuando el usuario del token ya no existe; nombre de rama fuera del patrón feat/ y chore/ usado hasta ahora; incluir municipio derivado en /yo cuando exista el catálogo (2-A).
+
+Puntos de atención para las siguientes ramas:
+- Parte 2-A: también edita index.ts (montaje de su router); conflicto trivial junto a las líneas de /auth. No hay cambios en schema.prisma, no hace falta regenerar Prisma tras este pull.
+- Parte 6: el consumo de /auth/yo debe manejar 401 (token ausente, inválido o expirado) y 404 (usuario eliminado).
+- Parte 7: CORS (pendiente desde RAMA 0) y rate limiting deben cubrir /auth/yo.
+
+------------------------------------------------------------
+
+RAMA 9 — docs/actualizar documentacion del proyecto
+Responsable: Pocho (+Yona)
+Se modifico el archivo: Estado_del_Proyecto.txt
+Con la documentacio hasta la parte 1-D
+
+------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
 ------------------------------------------------------------
 (Válido desde RAMA 2 en adelante.)
@@ -559,8 +624,8 @@ PROPUESTAS (opcionales)
 - Automatizar en el futuro (si el tiempo lo permite) la extracción de datos de viabilidad CENTA mediante un script de scraping, en vez de mantenerlos únicamente a mano. No es requisito de la base funcional.
 - Definir un script de seed (datos de prueba: usuario, zona, siembra de ejemplo) una vez existan los modelos de Parte 2 y Parte 4.
 - Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
-- Agregar rate limiting a los endpoints de /auth (registro y login) antes del despliegue.
-- Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento.
+- Agregar rate limiting a los endpoints de /auth (registro, login y perfil) antes del despliegue.
+- Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento. y GET /auth/yo (200, 401, 404).
 - Revocación de sesión (lista de tokens revocados o versión de token por usuario) y/o refresh tokens, si se necesita logout real o invalidar sesiones al desverificar o eliminar usuarios.
 - Bloqueo temporal por intentos fallidos de login por correo e IP, junto con el rate limiting.
 
@@ -608,3 +673,4 @@ Pendientes acumulados y nuevos:
 - Validar JWT_SECRET al arrancar el servidor (fallar rápido en index.ts) en lugar de hacerlo en la primera petición.
 - Actualizar la sección "Pruebas automatizadas" para incluir /auth/login (200, 400, 401, 403) y requireAuth (401 sin token, expirado, inválido; 200).
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
+- verificación funcional de GET /auth/yo y resolución del P2039; no exponer error.message en los 500 de /auth; unificar el contrato de respuesta de /auth/* antes de la Parte 6; y los detalles Menos listados arriba, con el del municipio derivado atado a 2-A.
