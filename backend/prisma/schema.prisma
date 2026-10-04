@@ -30,3 +30,66 @@ model Usuario {
 
   @@map("usuarios")
 }
+
+// Parte 2 — Viabilidad (datos de referencia CENTA)
+enum TipoCapa {
+  POTENCIAL // valor mayor = mejor
+  RIESGO    // valor mayor = peor
+}
+
+model Municipio {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique @db.VarChar(100)
+  distritos Distrito[]
+
+  @@map("municipios")
+}
+
+model Distrito {
+  // Código CENTA (Id_Muni de los exports, 1301 a 1326). Llave natural, sin autoincrement.
+  id                Int         @id
+  nombre            String      @db.VarChar(100)
+  nombreNormalizado String      @unique @map("nombre_normalizado") @db.VarChar(100)
+  municipioId       Int         @map("municipio_id")
+  municipio         Municipio   @relation(fields: [municipioId], references: [id])
+  areas             AreaClase[]
+
+  @@map("distritos")
+}
+
+model Capa {
+  id      Int         @id @default(autoincrement())
+  codigo  String      @unique @db.VarChar(50)
+  nombre  String      @db.VarChar(100)
+  tipo    TipoCapa
+  cultivo String?     @db.VarChar(50)
+  clases  ClaseCapa[]
+
+  @@map("capas")
+}
+
+model ClaseCapa {
+  id     Int         @id @default(autoincrement())
+  capaId Int         @map("capa_id")
+  valor  Int
+  nombre String      @db.VarChar(50)
+  capa   Capa        @relation(fields: [capaId], references: [id])
+  areas  AreaClase[]
+
+  @@unique([capaId, valor])
+  @@map("clases_capa")
+}
+
+model AreaClase {
+  id              Int       @id @default(autoincrement())
+  distritoId      Int       @map("distrito_id")
+  claseId         Int       @map("clase_id")
+  areaHa          Decimal   @map("area_ha") @db.Decimal(12, 3)
+  fuente          String    @db.VarChar(50)
+  fechaExtraccion DateTime  @map("fecha_extraccion") @db.Date
+  distrito        Distrito  @relation(fields: [distritoId], references: [id])
+  clase           ClaseCapa @relation(fields: [claseId], references: [id])
+
+  @@unique([distritoId, claseId])
+  @@map("areas_clase")
+}
