@@ -1,12 +1,12 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán
-Última actualización: 03 de Octubre de 2026
+Última actualización: 04 de Octubre de 2026.
 ============================================================
 
 1. RESUMEN DE LA IDEA
 Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador.
 Integra:
-- Viabilidad de cultivo por zona (referencia CENTA)
+- Viabilidad de cultivo por distrito (referencia CENTA: potencial de maíz, frijol y maicillo y riesgo de sequía, como área por clase)
 - Monitoreo climático (Open-Meteo)
 - Estimación de cosecha e ingresos basada en reglas
 - Recomendaciones automáticas ante cambios climáticos o nuevos registros de siembra
@@ -14,6 +14,7 @@ Integra:
 El sistema reacciona automáticamente a eventos (registro de siembra, actualización meteorológica, cambio de condición climática) sin que el usuario tenga que solicitar el recálculo manualmente.
 
 Nota geográfica (desde RAMA 2): tras la reorganización territorial, el departamento de Morazán tiene solo 2 municipios (Morazán Norte y Morazán Sur). Los 26 antiguos municipios (Chilanga, etc.) son ahora DISTRITOS. El sistema trabaja a nivel de distrito, porque es la unidad que importa para zonas de viabilidad y estaciones climáticas. El campo del usuario se llama "distrito" (ya no "municipio"). Ver detalle en RAMA 2.
+Desde RAMA 12 el catálogo Municipio (2) / Distrito (26) existe como modelos en la base (el código CENTA 1301 a 1326 es la llave del distrito), aún sin datos hasta el 2-B. El campo distrito de Usuario sigue siendo texto libre hasta decidir su validación o relación con el catálogo (ver Pendientes).
 
 2. ESTRUCTURA INICIAL DE ARCHIVOS
 Repositorio: agroalerta-sv (GitHub, privado). Owner: Yona. Colaboradores: Smith, Requeno, Pocho.
@@ -25,7 +26,7 @@ agroalerta-sv/
 ├── docker/
 │   └── mysql-init/
 │       └── grant-shadow.sql   (nuevo en RAMA 1)
-├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde RAMA 3; se actualiza en ramas docs/: RAMA 7, 9 y 11)
+├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde RAMA 3 y Parte2_Datos_CENTA_2A_2B.md desde RAMA 13; se actualiza en ramas docs/: RAMA 7, 9, 11 y 13)
 ├── backend/
 │   ├── package.json           jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10 agregados en RAMA 6
 │   ├── package-lock.json
@@ -34,8 +35,8 @@ agroalerta-sv/
 │   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER; desde RAMA 6 requiere JWT_SECRET); desde RAMA 10 el servidor no arranca sin ellos
 │   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env; desde RAMA 10, DUI_PEPPER y JWT_SECRET vienen vacíos y son obligatorios)
 │   ├── prisma/
-│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2)
-│   │   └── migrations/        (nuevo en RAMA 2 — migración add_usuarios; se versiona)
+│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2, ampliado en RAMA 4 + modelos de la Parte 2: Municipio, Distrito, Capa, ClaseCapa, AreaClase y enum TipoCapa, RAMA 12)
+│   │   └── migrations/        (nuevo en RAMA 2 — migraciones add_usuarios (RAMA 2), add_verificacion_correo (RAMA 4) y add_viabilidad (RAMA 12); se versionan)
 │   └── src/
 │       ├── auth/
 │       │   ├── registro.service.ts   (nuevo en RAMA 2 — hashing, creación de usuario, emisión de evento)
@@ -82,8 +83,7 @@ Nota sobre versión de Prisma: al día de esta actualización, instalar el paque
 
 Nota sobre el generator de Prisma (desde RAMA 2): el generator prisma-client está configurado con moduleFormat = "cjs" e importFileExtension = "" (imports sin extensión). Sin esta última opción, el cliente generado hace require("./internal/class.js") y ts-node-dev falla, porque el archivo generado es .ts. No quitar esa línea de schema.prisma.
 
-Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión: los datos de zonas/granos viables se extraen a mano y se cargan como tabla estática precargada en MySQL (Parte 2, Puntos A y B del Mapa_inicial.txt). Queda abierta la posibilidad de automatizar esa extracción más adelante (ver Propuestas), sin que eso afecte el stack ya definido.
-
+Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión (definida antes de RAMA 12): los datos se obtienen de la herramienta de consulta del mapa de CENTA, exportando un CSV por capa (potencial de maíz, frijol y sorgo/maicillo, y riesgo de sequía; todo Morazán, todas las clases) más la tabla de división territorial. Un script versionado limpia los exports y genera CSV limpios, y un script de carga (seed) los inserta en MySQL de forma idempotente (Parte 2-B, RAMA 14). Nivel geográfico: distrito. Se guarda el área en hectáreas por distrito × capa × clase; porcentajes y manzanas (mz = ha / 0.7) se calculan al consultar. Contrato completo y reglas de interpretación en docs/Parte2_Datos_CENTA_2A_2B.md. Queda abierta la posibilidad de automatizar la extracción más adelante (ver Propuestas), sin que eso afecte el stack ya definido.
 Nota sobre la conexión a MySQL 8.4 (desde RAMA 10): MySQL 8.4 crea los usuarios con caching_sha2_password y, sin TLS, el conector MariaDB solo completa la autenticación si se activa allowPublicKeyRetrieval; sin esa opción las conexiones fallan en silencio y Prisma lo reporta como P2039 (pool timeout). La opción se pasa en config/prisma.ts y no como parámetro de DATABASE_URL (esa variable también la lee prisma7.config.ts y el .env no se versiona). No volver a pasar la cadena DATABASE_URL directamente al constructor de PrismaMariaDb sin conservar la opción. Detalle y diagnóstico en RAMA 10.
 
 Estas tecnologías ya no están sujetas a cambio salvo justificación documentada aquí.
@@ -653,6 +653,85 @@ Se modifico el archivo: Estado_del_Proyecto.txt
 Con la documentacion hasta la RAMA 10 (cierre de la Parte 1)
 
 ------------------------------------------------------------
+RAMA 12 — feat/2-a-modelos-viabilidad (Parte 2, Punto A del Mapa_inicial.txt: Tabla / modelo de zonas + granos viables, referencia CENTA)
+Responsable: Yona
+Fecha: 4 de octubre de 2026
+
+Contexto: la Parte 1 quedó cerrada en RAMA 10. Antes de implementar se cerró la definición de los datos de viabilidad (análisis de los exports de CENTA; detalle en docs/Parte2_Datos_CENTA_2A_2B.md, agregado a docs/ en RAMA 13). Esta rama implementa SOLO el modelo de datos y su migración: no carga datos (2-B), ni servicio de consulta (2-C), ni endpoint (2-D). Yona asume también el 2-B (antes asignado a otro integrante). Numeración acordada: RAMA 12 = 2-A, RAMA 13 = docs, RAMA 14 = 2-B.
+
+Qué se hizo:
+- backend/prisma/schema.prisma: se agregó al final, bajo el comentario "Parte 2 — Viabilidad (datos de referencia CENTA)", un enum y cinco modelos. No se tocó Usuario ni el generator.
+  - enum TipoCapa { POTENCIAL, RIESGO }: define el sentido de la capa (potencial: valor mayor = mejor; riesgo: valor mayor = peor).
+  - Municipio (tabla municipios): id autoincrement, nombre único (VarChar 100). Contendrá "Morazán Norte" y "Morazán Sur".
+  - Distrito (distritos): id Int llave primaria SIN autoincrement (código CENTA, 1301 a 1326), nombre (VarChar 100), nombreNormalizado único (nombre_normalizado, VarChar 100: mayúsculas, sin tildes, espacios colapsados), municipioId (municipio_id, FK a Municipio).
+  - Capa (capas): id autoincrement, codigo único (VarChar 50: potencial_maiz, potencial_frijol, potencial_maicillo, riesgo_sequia), nombre (VarChar 100), tipo (TipoCapa), cultivo opcional (VarChar 50).
+  - ClaseCapa (clases_capa): id, capaId (capa_id, FK a Capa), valor Int, nombre (VarChar 50). Único por (capaId, valor).
+  - AreaClase (areas_clase): id, distritoId (distrito_id, FK), claseId (clase_id, FK), areaHa (area_ha, Decimal(12,3)), fuente (VarChar 50), fechaExtraccion (fecha_extraccion, Date). Único por (distritoId, claseId).
+  - Las relaciones no declaran onDelete/onUpdate: se aplica el comportamiento por defecto de Prisma para relaciones obligatorias (la base rechaza borrar un distrito, clase o capa con datos dependientes).
+- Migración add_viabilidad generada y aplicada con npx prisma migrate dev [COMPLETAR: nombre exacto de la carpeta, AAAAMMDDHHMMSS_add_viabilidad]. Contiene solo CREATE TABLE de las 5 tablas nuevas (con el ENUM de tipo, claves foráneas e índices únicos); no altera usuarios ni migraciones previas.
+
+Datos fuente analizados (previo al código, relevantes para el 2-B):
+- Exports de la herramienta de consulta del mapa de CENTA: maíz 78 filas, frijol 76, sorgo (maicillo) 74, sequía 46, más la tabla de división territorial (26 distritos: Morazán Norte 11, Morazán Sur 15). Los 26 distritos aparecen en las 4 capas y el área total clasificada de cada distrito coincide entre capas (diferencias de hasta 0.01 km² por redondeo). Se descarta Potencial_maíz__Resultado_de_la_consulta_2.csv (versión vieja, solo Chilanga).
+- Formato de los exports: UTF-8 con BOM, separador ";", saltos CRLF, números con coma de miles y punto decimal, encabezado "ha" duplicado en maíz (la segunda es mz), texto de clase con espacios sobrantes, nombre de distrito inconsistente (PERQUÍN con tilde, SAN SIMON sin ella; por eso la llave es el código). No abrirlos ni guardarlos en Excel.
+- Verificación manual del export de maíz: 78 filas; Chilanga suma 5,998.537 ha (19.9 % Alto, 46.3 % Medio, 33.7 % Bajo) y mz = ha / 0.7.
+
+Decisiones de diseño:
+- Nivel geográfico: distrito. Los "granos viables" se modelan como capas (3 de potencial: maíz, frijol, maicillo; 1 de riesgo: sequía), cada una con sus clases y el área de cada clase por distrito.
+- Capas y clases son datos, no código: agregar una capa futura es insertar filas, sin migración. Límite: una capa expresada como valor numérico continuo (elevación, temperatura) podría requerir otra tabla.
+- Se guarda el área por clase en hectáreas (distrito × capa × clase), no una sola clase por distrito: con los datos reales la clase dominante discrimina poco (maíz es Bajo en 15 distritos, Medio en 8, Alto en 3; frijol Medio en 19; sorgo Bajo en 20; sequía Moderada en 24). No se guardan km² ni manzanas (mz = ha / 0.7 se calcula, constante en un único lugar). Los porcentajes se calculan al consultar, sobre la suma de áreas clasificadas del distrito en esa capa. Clase ausente = 0 ha (se completa en el 2-B).
+- Distrito.id es el código CENTA, sin autoincrement: el seed debe insertar el id explícito.
+- nombreNormalizado quedó obligatoria y única (en el documento de datos figuraba como opcional): agregarla después exigiría otra migración sobre un archivo compartido y se necesitará al validar Usuario.distrito.
+- tipo es un enum de Prisma/MySQL y no texto libre, para que la base rechace valores inválidos.
+- fuente y fechaExtraccion se guardan en cada fila de AreaClase: el mismo valor se repite en las 312 filas (desnormalizado), aceptado a cambio de poder mezclar fuentes o fechas sin otra tabla.
+- Temporadas (primera/postrera) diferidas hasta la API meteorológica (Parte 3). Mostrar el mapa de CENTA en la página queda solo como sugerencia (ver Propuestas).
+
+Cambios respecto al Mapa_inicial.txt (documentados según reglas del proyecto):
+- 2-A: no existe una "tabla de zonas" ni una tabla de "granos" literales; la unidad es el distrito y los granos viables son capas con clases (ver arriba).
+- Se agrega la capa de riesgo de sequía (no estaba en el Mapa).
+- 2-B: lo asume Yona (antes otra persona); incluye script de limpieza, CSV limpios y seed.
+- 2-C: la consulta será por distrito + capa, no "zona + grano + temporada"; la temporada queda diferida.
+- Se concreta el catálogo Municipio (2) / Distrito (26) anunciado desde RAMA 2.
+
+Qué se modificó: backend/prisma/schema.prisma (solo adición al final) y backend/prisma/migrations/ (carpeta nueva).
+Qué se eliminó: nada. Dependencias nuevas: ninguna.
+Archivos tocados fuera de viabilidad/ (puntos de contacto entre partes): schema.prisma y migrations/. No se tocaron Usuario, el generator, index.ts, events/, config/ ni package.json. backend/src/viabilidad/ sigue vacía.
+
+Cumplimiento del punto 2-A ("Tabla / modelo de zonas + granos viables (referencia CENTA)"):
+- Modelo de datos y migración: cumplido, con la interpretación zona = distrito y granos = capas.
+- Catálogo Municipio / Distrito: modelado; vacío hasta el 2-B.
+- Relación de Usuario.distrito con el catálogo: NO cumplido (sigue como texto libre; ver Pendientes).
+
+Pruebas realizadas (manuales, MySQL en Docker):
+- npx prisma validate: sin errores.
+- npx prisma migrate dev --name add_viabilidad: migración generada y aplicada; SQL revisado (solo CREATE TABLE).
+- SHOW TABLES vía docker compose exec: municipios, distritos, capas, clases_capa y areas_clase, junto a usuarios y _prisma_migrations.
+- Segunda corrida de migrate dev: "Already in sync".
+- NO realizadas: inserción y lectura de datos (no hay datos hasta el 2-B), pruebas de las restricciones únicas y claves foráneas con inserciones de prueba, pruebas automatizadas.
+
+Qué NO se hizo / qué falta:
+- Carga de datos, script de limpieza y CSV limpios (2-B, RAMA 14); servicio de consulta (2-C); endpoint y pruebas (2-D).
+- Validar o relacionar Usuario.distrito con el catálogo.
+- Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B): no están en el mapa de CENTA; no se modelan.
+- No se corrió npx prisma format, a propósito: reordenaría la alineación de Usuario y del generator y el diff dejaría de ser aditivo en un archivo compartido. Esas desalineaciones y el comentario de plantilla de Prisma siguen ahí.
+
+Qué se agregó de más (no pedido originalmente): nada fuera del alcance del 2-A. Las únicas decisiones por encima de lo escrito en el documento de datos son nombreNormalizado obligatoria y tipo como enum.
+
+Incidencias técnicas durante el desarrollo: [COMPLETAR: "Ninguna" si no hubo].
+
+Puntos de atención para las siguientes ramas:
+- Tras el merge, cada integrante corre npx prisma generate y npx prisma migrate dev. Aún no hay código que use los modelos, pero el cliente regenerado ya los incluye.
+- Las partes 4-A y 5 también agregan modelos al final de schema.prisma: el conflicto se resuelve conservando ambos bloques. Quien mergee segundo regenera su migración sobre main actualizado.
+- RAMA 14 (2-B) depende de esta migración aplicada. El seed inserta Distrito.id explícito, genera Capa y ClaseCapa desde capas.config.ts, carga 312 filas de AreaClase, pasa las áreas a Decimal como texto y usa el cliente compartido (import { prisma } desde config/prisma).
+- nombre_normalizado: la función de normalización (mayúsculas, sin tildes, espacios colapsados) debe ser una sola, compartida entre el seed y la futura validación del registro.
+- El contrato de datos para 2-C y 2-D está en docs/Parte2_Datos_CENTA_2A_2B.md (sección 9): distribución completa por clase, clase dominante solo como resumen, manzanas solo para mostrar, errores con { error, detalles }.
+
+------------------------------------------------------------
+RAMA 13 — docs/actualizar-estado-rama-12
+Responsable: Yona
+Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Propuestas y Pendientes, más las secciones nuevas de RAMA 12 y 13). Se agregó a docs/: Parte2_Datos_CENTA_2A_2B.md.
+Con la documentación hasta la RAMA 12 (Parte 2-A: modelos de viabilidad)
+
+------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
 ------------------------------------------------------------
 (Válido desde RAMA 2 en adelante; los pasos 2, 3 y 6 se actualizaron en RAMA 10.)
@@ -719,6 +798,9 @@ PROPUESTAS (opcionales)
 - Hacer que GET /health verifique también la conexión a la base (consulta trivial tipo SELECT 1) y responda 503 si falla, para detectar problemas como el P2039 sin esperar a la primera operación de negocio. Hoy /health solo confirma que Express levantó.
 - Unificar también la forma de las respuestas exitosas de /auth (hoy: {token, usuario}, {mensaje, usuario}, {success, usuario} y objeto directo) cuando el frontend empiece a consumirlas (Parte 6).
 - Validar longitud mínima de DUI_PEPPER al arrancar (hoy solo se valida que exista).
+- Mostrar el mapa de CENTA en la vista Clima Zonal (Parte 6-D), por ejemplo con Leaflet y un GeoJSON propio. No es parte de la base mínima.
+- Capas futuras (caña, vainilla, banano, elevación, temperatura, humedad): evaluar cuando se vean sus datos; el modelo de la RAMA 12 permite agregar capas por clases insertando filas.
+- Pruebas automatizadas del script de limpieza (conversión de números, validaciones) y del servicio y endpoint de viabilidad (2-C / 2-D).
 
 ------------------------------------------------------------
 PENDIENTES (obligatorio)
@@ -753,9 +835,9 @@ Pendientes acumulados y nuevos:
 - Parte 1 (autenticación, backend): completa. 1-A en RAMA 2, 1-C en RAMA 4 y 5, 1-B en RAMA 6, 1-D en RAMA 8; verificación funcional y correcciones en RAMA 10. Falta lo del lado del frontend y lo listado abajo (envío real de correo, rate limiting, pruebas automatizadas).
 - Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue. Login es el más crítico (fuerza bruta).
 - Pruebas automatizadas (Jest + supertest) para /auth: registro, verificar (200, 400, 404, 410) y reenviar-verificacion.
-- Parte 2: modelar el catálogo Municipio (2: Morazán Norte y Sur) y Distrito (26) con la relación entre ambos, y luego validar/relacionar el campo distrito de Usuario contra ese catálogo (deja de ser texto libre).
-- Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2, ampliado en RAMA 4).
- Definir también TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de RAMA 10.
+- Parte 2: el catálogo Municipio (2) / Distrito (26) ya está modelado (RAMA 12), vacío hasta el 2-B. Falta validar o relacionar el campo distrito de Usuario contra ese catálogo (hoy texto libre): definir quién y cuándo; toca registro.routes.ts y el modelo Usuario, y exige una migración que convierta los distritos ya guardados. La normalización (mayúsculas, sin tildes, espacios colapsados) debe ser la misma que use el seed para nombre_normalizado: una sola función compartida.
+- Modelos de la Parte 2-A: ya definidos en RAMA 12. Quedan las partes 4-A y 5 por agregar los suyos en schema.prisma: mismo riesgo de conflicto al final del archivo y en migrations/ (quien mergee segundo regenera su migración sobre main).
+- Definir también TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de RAMA 10.
 - Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token, interceptor HTTP y route guard.
 - Decisión de equipo sobre Prettier (.prettierrc): si se adopta, subirlo en una rama aparte con formato acordado.
 - Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
@@ -763,4 +845,8 @@ Pendientes acumulados y nuevos:
 - GET /auth/yo: evaluar incluir el municipio derivado cuando exista el catálogo de Parte 2 (decide 2-A).
 - Frontend (Parte 6): el contrato de error de /auth es { error, detalles } (detalles: string o lista de strings); GET /auth/yo no devuelve 404 (usuario inexistente es 401).
 - EXPONER_TOKEN_VERIFICACION=true en .env.example es solo para desarrollo: con el flag activo, POST /auth/reenviar-verificacion revela qué correos existen y están pendientes. Debe ser false o no existir en cualquier entorno real (ya incluido arriba en la definición de credenciales de Parte 7).
+- Parte 2-B (RAMA 14): script de limpieza, CSV limpios (backend/data/centa/clean/), exports crudos versionados (backend/data/centa/raw/) y seed idempotente; scripts npm datos:limpiar y datos:cargar. Verificar que .gitignore no excluya backend/data/ y confirmar en la documentación de Prisma 7 dónde se declara el comando de seed (prisma7.config.ts) o dejar solo el script de package.json. Tras el merge, cada integrante corre npx prisma generate, npx prisma migrate dev y npm run datos:cargar.
+- Partes 2-C y 2-D: servicio y endpoint de viabilidad según el contrato de docs/Parte2_Datos_CENTA_2A_2B.md (distribución completa por clase, clase dominante como resumen, errores { error, detalles }). Responsables por confirmar. Definir si el endpoint exige requireAuth (se sugiere que sí). Temporadas diferidas hasta la Parte 3. Las recomendaciones deben redactarse como referencia distrital citando a CENTA, no como veredicto sobre la parcela.
+- Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B y 5-B): no están en el mapa de CENTA; hay que conseguirlos de otra fuente.
+- Opcional: confrontar la división territorial (hoy coincide con publicaciones secundarias) con el texto de la Ley Especial de Reestructuración Municipal.
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
