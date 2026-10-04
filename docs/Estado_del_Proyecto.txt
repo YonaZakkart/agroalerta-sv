@@ -25,14 +25,14 @@ agroalerta-sv/
 ├── docker/
 │   └── mysql-init/
 │       └── grant-shadow.sql   (nuevo en RAMA 1)
-├── docs/                      (al mismo nivel que backend/ y frontend/; se sube en la rama docs/agregar-documentacion, posterior a RAMA 2: Propuesta_Inicial.txt, Mapa_inicial.txt, Estado_del_Proyecto.txt)
+├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde RAMA 3; se actualiza en ramas docs/: RAMA 7, 9 y 11)
 ├── backend/
-│   ├── package.json           (typescript fijado en ^5.9.0; prisma y @prisma/client fijados en ^7.10.0 — ver RAMA 1; argon2@0.45.1 agregado en RAMA 2; jsonwebtoken ^9.0.2 y @types/jsonwebtoken ^9 agregados en RAMA 6)
+│   ├── package.json           jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10 agregados en RAMA 6
 │   ├── package-lock.json
 │   ├── tsconfig.json          (rootDir: "./src"; "include": ["src/**/*"] agregado en RAMA 1)
 │   ├── prisma7.config.ts      (nuevo en RAMA 1, autogenerado por Prisma — config del CLI, fuera de src/)
-│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER; desde RAMA 6 requiere JWT_SECRET)
-│   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env)
+│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER; desde RAMA 6 requiere JWT_SECRET); desde RAMA 10 el servidor no arranca sin ellos
+│   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env; desde RAMA 10, DUI_PEPPER y JWT_SECRET vienen vacíos y son obligatorios)
 │   ├── prisma/
 │   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2)
 │   │   └── migrations/        (nuevo en RAMA 2 — migración add_usuarios; se versiona)
@@ -52,12 +52,12 @@ agroalerta-sv/
 │       │   ├── bus.ts          (nuevo en RAMA 2 — instancia única de EventEmitter)
 │       │   └── types.ts        (nuevo en RAMA 2 — nombres de eventos y tipos de payload)
 │       ├── config/
-│       │   └── prisma.ts       (nuevo en RAMA 1 — cliente Prisma compartido, punto de contacto entre partes)
+│       │   └── prisma.ts       (nuevo en RAMA 1 — cliente Prisma compartido, punto de contacto entre partes; desde RAMA 10 el adapter se construye parseando DATABASE_URL, con allowPublicKeyRetrieval fuera de producción)
 │       ├── generated/          (nuevo en RAMA 1 — cliente Prisma generado, NO se sube al repo, ver .gitignore)
-│       └── index.ts            (servidor Express + GET /health + montaje de /auth desde RAMA 2; montaje de loginRouter en /auth desde RAMA 6); perfilRouter en /auth (RAMA 8)
+│       └── index.ts            (servidor Express + GET /health; montaje en /auth de registroRouter (RAMA 2), loginRouter (RAMA 6) y perfilRouter (RAMA 8); desde RAMA 10 valida JWT_SECRET y DUI_PEPPER al arrancar y aborta si no puede abrir el puerto)
 └── frontend/                  (Angular, generado con Angular CLI, verificado con ng serve)
 
-NOTA IMPORTANTE: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt aún NO están subidos al repositorio; se suben en la rama docs/agregar-documentacion (carpeta docs/). Ver Pendientes.
+NOTA: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt están en docs/ desde RAMA 3 (subidos en la rama docs/agregar-documentacion) y se actualizan en ramas docs/ aparte.
 
 3. HERRAMIENTAS Y TECNOLOGÍAS (DEFINITIVAS)
 - Lenguaje principal: TypeScript
@@ -67,6 +67,7 @@ NOTA IMPORTANTE: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del
 - Base de datos: MySQL
 - ORM: Prisma, fijado en la versión 7.10.0 (prisma y @prisma/client) — ver nota de versión más abajo y detalle en RAMA 1
 - Driver adapter de base de datos: @prisma/adapter-mariadb (obligatorio en Prisma 7 para proveedores SQL, usado tanto para MySQL como MariaDB)
+- Conexión (desde RAMA 10): el adapter se construye en config/prisma.ts parseando DATABASE_URL, con allowPublicKeyRetrieval activo salvo NODE_ENV=production. Producción: definir TLS hacia la base (Parte 7).
 - Autenticación: correo + contraseña + DUI hasheado + verificación por correo
   - Contraseña: argon2id, paquete argon2@0.45.1 (decidido en RAMA 2)
   - DUI: HMAC-SHA256 con secreto de servidor (DUI_PEPPER en .env), NO bcrypt/argon2 (decidido en RAMA 2, ver justificación y desviación del Mapa en esa sección)
@@ -82,6 +83,8 @@ Nota sobre versión de Prisma: al día de esta actualización, instalar el paque
 Nota sobre el generator de Prisma (desde RAMA 2): el generator prisma-client está configurado con moduleFormat = "cjs" e importFileExtension = "" (imports sin extensión). Sin esta última opción, el cliente generado hace require("./internal/class.js") y ts-node-dev falla, porque el archivo generado es .ts. No quitar esa línea de schema.prisma.
 
 Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión: los datos de zonas/granos viables se extraen a mano y se cargan como tabla estática precargada en MySQL (Parte 2, Puntos A y B del Mapa_inicial.txt). Queda abierta la posibilidad de automatizar esa extracción más adelante (ver Propuestas), sin que eso afecte el stack ya definido.
+
+Nota sobre la conexión a MySQL 8.4 (desde RAMA 10): MySQL 8.4 crea los usuarios con caching_sha2_password y, sin TLS, el conector MariaDB solo completa la autenticación si se activa allowPublicKeyRetrieval; sin esa opción las conexiones fallan en silencio y Prisma lo reporta como P2039 (pool timeout). La opción se pasa en config/prisma.ts y no como parámetro de DATABASE_URL (esa variable también la lee prisma7.config.ts y el .env no se versiona). No volver a pasar la cadena DATABASE_URL directamente al constructor de PrismaMariaDb sin conservar la opción. Detalle y diagnóstico en RAMA 10.
 
 Estas tecnologías ya no están sujetas a cambio salvo justificación documentada aquí.
 
@@ -566,9 +569,93 @@ Se modifico el archivo: Estado_del_Proyecto.txt
 Con la documentacio hasta la parte 1-D
 
 ------------------------------------------------------------
+
+RAMA 10 — fix/prisma-mariadb-rsa-key (cierre de la Parte 1: verificación funcional sobre main y correcciones)
+Responsable: Yona
+Fecha: 3 de octubre de 2026
+
+Contexto: RAMA 8 se mergeó sin verificación funcional por el error P2039 (ver RAMA 8, Incidencias). Esta rama ejecuta esa verificación sobre main (registro, verificación, login, GET /auth/yo), encuentra la causa real del P2039 y corrige lo detectado. Las secciones de RAMA 6 y RAMA 8 no se modifican; donde difieran de lo descrito aquí (causa del P2039, formato de errores, código de GET /auth/yo para usuario inexistente), prevalece esta sección. El nombre de la rama refleja solo la causa inicial; el alcance final es mayor.
+
+Causa del P2039 (resuelta):
+- Síntoma: cualquier operación de base de datos fallaba con PrismaClientKnownRequestError P2039 "pool timeout: failed to retrieve a connection from pool after 10000ms (active=0 idle=0 limit=10)". Prisma oculta la causa en "cause: [Object]".
+- Diagnóstico: conectar con el paquete mariadb directamente (sin Prisma) desde backend/ mostró el error real: ER_CANNOT_RETRIEVE_RSA_KEY (45044), "RSA public key is not available client side".
+- Causa: MySQL 8.4 crea los usuarios con caching_sha2_password. Cuando el servidor no tiene la cuenta en su caché de autenticación (volumen o contenedor nuevo, reinicio de MySQL), exige autenticación completa y, sin TLS, el cliente necesita la clave pública RSA del servidor. El conector MariaDB solo la pide si se activa allowPublicKeyRetrieval. Sin esa opción rechaza la conexión y el pool reintenta en silencio hasta el timeout.
+- Por qué no apareció en RAMA 2 a 6: hipótesis, no comprobada. Con la cuenta ya en la caché del servidor (por ejemplo tras autenticarse el CLI de Prisma con migrate) la autenticación rápida no requiere la clave. Lo comprobado es que el fallo es reproducible y afecta a cualquiera que levante el contenedor desde cero.
+- El diagnóstico de RAMA 8 ("incompatibilidad del adapter MariaDB con MySQL 8.4") queda descartado: @prisma/adapter-mariadb es el adapter correcto y obligatorio (RAMA 1). Los intentos de RAMA 8 (mysql2://, regenerar secretos, reinstalar) no tenían relación con la causa.
+
+Resultado de la verificación funcional pendiente de RAMA 8 (sobre main, antes de los cambios de esta rama, con el P2039 ya resuelto en local):
+- GET /auth/yo con token válido: 200 con {success: true, usuario} (verificado true, sin hashes). Sin encabezado Authorization: 401. Token alterado: 401. Token válido firmado con un id inexistente: 404 (comportamiento de RAMA 8; cambia en esta rama, ver abajo).
+- El sub del JWT viaja como texto ("9"); verificarToken() lo convierte a número y GET /auth/yo funcionó sin cambios, así que ese punto queda confirmado.
+- Se confirmaron además varios ítems marcados [VERIFICAR] en RAMA 6: login sin verificar con contraseña correcta, 403; tras verificar, login 200 con token y usuario sin hashes (payload {correo, iat, exp, sub}, expiración de 2h); contraseña incorrecta, 401 genérico; correo inexistente, 401; JWT_SECRET inválido, login 500; requireAuth probado a través de GET /auth/yo (sin encabezado 401, token alterado 401, token válido 200). Versiones resueltas de las dependencias de RAMA 6: jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10. No se probaron aquí: body vacío o correo mal formado en login, expiración con JWT_EXPIRES_IN corto, JWT_SECRET ausente en requireAuth. El campo "Incidencias" de RAMA 6 sigue sin completar en esa sección.
+
+Qué se hizo:
+- backend/src/config/prisma.ts: el adapter ya no recibe la cadena DATABASE_URL tal cual; se parsea con new URL() y se construye PrismaMariaDb con host, port (3306 por defecto), user, password (decodeURIComponent), database y allowPublicKeyRetrieval = (NODE_ENV !== "production"). DATABASE_URL sigue siendo la única fuente de configuración.
+- backend/src/index.ts: (1) al arrancar se valida que existan JWT_SECRET y DUI_PEPPER y que JWT_SECRET tenga al menos 32 caracteres; si no, mensaje claro y process.exit(1). (2) app.listen ahora recibe el error en el callback: si no puede abrir el puerto, imprime "No se pudo iniciar el backend en el puerto ..." y sale con código 1. En Express 5 el callback de listen se ejecuta también cuando el servidor emite error (por ejemplo EADDRINUSE) en lugar de lanzarlo; antes se imprimía "Backend corriendo en puerto 3000" aunque otro proceso tuviera el puerto.
+- Contrato de error unificado en /auth: { error: string, detalles?: string | string[] }. Validaciones (400): error "Datos inválidos" y detalles con la lista (registro, login y reenviar-verificacion; antes { errores: [...] }). requireAuth (401): "No autorizado" con detalles (sin encabezado), "Sesión expirada" con detalles, "Token inválido"; antes { mensaje }. Login: 401 { error: "Credenciales inválidas" }; 403 { error: "Cuenta no verificada", detalles: ... }; 500 { error: "Error interno del servidor" }. Registro, verificar y reenviar: 500 pasa de "Error interno" a "Error interno del servidor". Las respuestas exitosas no cambian.
+- backend/src/auth/perfil.routes.ts: reescrito completo (la indentación estaba rota en todo el archivo). Cambios de comportamiento: el 500 ya no devuelve error.message al cliente (solo { error } y console.error en servidor); un token válido de un usuario que ya no existe responde 401 { error: "No autorizado", detalles } en vez de 404, porque es un token que ya no corresponde a una cuenta.
+- backend/.env.example: DUI_PEPPER y JWT_SECRET pasan a venir vacíos, con comentarios que indican cómo generarlos. Antes JWT_SECRET traía un placeholder de 48 caracteres que pasaba la validación de largo, de modo que quien copiara la plantilla sin editarla firmaría tokens con un secreto público, sin ningún error. EXPONER_TOKEN_VERIFICACION se mantiene en true con un comentario que lo limita a desarrollo.
+
+Decisiones de diseño:
+- allowPublicKeyRetrieval va en el código y no como parámetro de DATABASE_URL: el .env no se versiona (el resto del equipo no recibiría el cambio) y esa variable también la lee prisma7.config.ts (CLI de Prisma), que usa otro camino de conexión.
+- allowPublicKeyRetrieval se desactiva en producción: la opción es aceptable en una red local de desarrollo, pero en producción corresponde usar TLS hacia la base (Parte 7).
+- Se eligió { error, detalles } (formato ya usado por GET /auth/yo en RAMA 8) como contrato único, aplicado a los errores y no a las respuestas exitosas, que se unifican cuando el frontend las consuma.
+- Plantilla con secretos vacíos y validación al arrancar: es preferible que falte un secreto y el servidor no inicie a que inicie con uno público o inválido.
+
+Qué se modificó:
+- backend/src/config/prisma.ts, backend/src/index.ts, backend/.env.example.
+- backend/src/auth/auth.middleware.ts, login.routes.ts y registro.routes.ts (solo cuerpos de error).
+- backend/src/auth/perfil.routes.ts (reescrito).
+Qué se eliminó: las claves "mensaje" y "errores" en los cuerpos de error de /auth; el 404 de GET /auth/yo; el valor de ejemplo de JWT_SECRET y DUI_PEPPER en .env.example. Dependencias nuevas: ninguna. No se tocaron schema.prisma, migrations/, events/ ni package.json.
+
+Cumplimiento:
+- Parte 1 completa en el backend: 1-A (RAMA 2), 1-C (RAMA 4 y 5), 1-B (RAMA 6), 1-D (RAMA 8). Esta rama deja verificado el flujo registro, verificación, login y perfil.
+- Revisión previa al merge de RAMA 8: Crítico (verificación funcional y P2039), cerrado. Importante (error.message en 500 y contrato inconsistente), cerrado; login y registro ya devolvían mensajes genéricos y solo GET /auth/yo filtraba el detalle. Menos (indentación, 404 a 401), cerrado; "municipio derivado en /yo" sigue atado a 2-A; el nombre de rama no se puede corregir.
+
+Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
+- Antes de los cambios, sobre main: reproducción del P2039; script con el paquete mariadb: sin la opción falla con ER_CANNOT_RETRIEVE_RSA_KEY y con allowPublicKeyRetrieval conecta; registro 201; en la base contrasena_hash con prefijo $argon2id$ y dui_hash de 64 caracteres; las pruebas de login y GET /auth/yo descritas arriba.
+- Regresión de registro y verificación: registro repetido 409; datos inválidos 400 con lista; GET /auth/verificar con token inválido sin 500; POST /auth/reenviar-verificacion con correo inexistente y con correo ya verificado: 200 con el mismo mensaje.
+- Tras aplicar los cambios: se repitieron las pruebas de error de /auth con el nuevo contrato y se hizo una prueba de clon limpio: docker compose down -v y up -d db (base recreada), backend/.env armado desde .env.example con DUI_PEPPER y JWT_SECRET propios, npx prisma migrate dev, y flujo completo registro, verificación, login y GET /auth/yo: sin P2039 ni errores.
+- NO realizadas: concurrencia en verificar, expiración de JWT, medición de tiempos de login, pruebas automatizadas.
+
+Qué NO se hizo / qué falta:
+- TLS hacia MySQL en producción (con NODE_ENV=production el adapter no activa allowPublicKeyRetrieval; sin TLS la autenticación fallaría igual que el P2039).
+- Validar longitud mínima de DUI_PEPPER (solo se valida que exista).
+- Unificar las respuestas exitosas de /auth.
+- Rate limiting, CORS, envío real de correo, pruebas automatizadas, guards del lado Angular.
+- Municipio derivado en GET /auth/yo (depende de 2-A).
+
+Qué se agregó de más (no pedido originalmente):
+- Validación de entorno y manejo del error de listen en index.ts.
+- Cambio de 404 a 401 en GET /auth/yo y reescritura de formato de perfil.routes.ts.
+- Cambio de formato de error en archivos de RAMA 2, 4, 5 y 6 (necesario para unificar el contrato).
+
+Archivos tocados fuera de auth/ (puntos de contacto entre partes): backend/src/config/prisma.ts, backend/src/index.ts y backend/.env.example.
+
+Incidencias técnicas durante el desarrollo:
+- Puerto 3000 ocupado por un contenedor de Docker de otro proyecto (docker-proxy): curl a /health devolvía "Cannot GET /health" de un Express ajeno, y el backend mostraba "Backend corriendo en puerto 3000" sin estar escuchando. Diagnóstico: docker ps y sudo ss -ltnp | grep :3000 (sin sudo no se ve el proceso de docker-proxy). Se resolvió deteniendo ese contenedor (docker stop y docker update --restart=no); sin borrar nada. Con el cambio de index.ts un puerto ocupado ya no se disfraza de arranque exitoso.
+- "Cannot find module 'jsonwebtoken'": el node_modules local no tenía las dependencias de RAMA 6 aunque package.json y package-lock.json las declaraban. Solución: npm ci --legacy-peer-deps (instala exactamente el lock, sin modificar package.json ni el lock) y repetir npx prisma generate. No era un fallo del repositorio.
+- Login 500 por "JWT_SECRET no está definido o tiene menos de 32 caracteres": el .env local no tenía un valor válido. Antes de esta rama el servidor arrancaba igual y solo fallaba en el primer login; ahora aborta al iniciar.
+- Prueba de GET /auth/yo con un token firmado a mano: dotenv imprime "injected env (N) from .env" por stdout, lo que contamina variables de shell al capturar la salida de node; filtrar con tail -n 1.
+
+Puntos de atención para las siguientes ramas:
+- Tras el merge, cada integrante debe actualizar su backend/.env: JWT_SECRET (mín. 32 caracteres) y DUI_PEPPER propios. Sin ellos el servidor ya no arranca, a propósito. Quien tenga el placeholder viejo de la plantilla debe reemplazarlo.
+- El contrato de error de /auth es { error, detalles } (detalles: string o lista de strings). El frontend (Parte 6) debe leer esos campos. GET /auth/yo ya no devuelve 404: un usuario inexistente es 401, igual que un token inválido o expirado.
+- Cualquier router nuevo (2-A y siguientes) debe seguir el mismo contrato de error y no devolver error.message en los 500.
+- Si en el futuro aparece un P2039 o un "pool timeout", probar primero la conexión con el paquete mariadb directamente: Prisma esconde el error real.
+- index.ts: la 2-A agrega su app.use(...) en este archivo; el conflicto con esta rama ya no aplica (esta rama está mergeada), pero el validador de entorno queda arriba del archivo: nuevas variables críticas se agregan a esa lista.
+- EXPONER_TOKEN_VERIFICACION=true en la plantilla es solo para desarrollo: con el flag activo, POST /auth/reenviar-verificacion devuelve token únicamente si el correo existe y está pendiente, lo que permite saber qué correos existen. En cualquier entorno real debe ser false o no existir.
+
+------------------------------------------------------------
+
+RAMA 11 — docs/actualizar documentacion del proyecto
+Responsable: Yona
+Se modifico el archivo: Estado_del_Proyecto.txt
+Con la documentacion hasta la RAMA 10 (cierre de la Parte 1)
+
+------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
 ------------------------------------------------------------
-(Válido desde RAMA 2 en adelante.)
+(Válido desde RAMA 2 en adelante; los pasos 2, 3 y 6 se actualizaron en RAMA 10.)
 
 Desde la raíz del repositorio, en este orden:
 
@@ -579,9 +666,11 @@ Desde la raíz del repositorio, en este orden:
    cd backend
    npm install
 
+  Si npm run dev falla con "Cannot find module 'jsonwebtoken'" (u otro paquete declarado en package.json), el node_modules local quedó incompleto: correr npm ci --legacy-peer-deps (instala exactamente lo que dice package-lock.json, sin modificarlo) y luego npx prisma generate.
+
 3. Crear backend/.env a partir de la plantilla:
    cp .env.example .env
-   Generar un DUI_PEPPER propio y reemplazar el valor de ejemplo en .env:
+  Completar los dos secretos obligatorios, que la plantilla trae vacíos: DUI_PEPPER y JWT_SECRET (mín. 32 caracteres). Desde RAMA 10 el servidor NO arranca si faltan. Generar cada uno con (correr el comando dos veces):
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    Valores esperados del resto de variables (desarrollo local):
    DATABASE_URL="mysql://agroalerta:agroalerta@localhost:3306/agroalerta"
@@ -594,8 +683,6 @@ Desde la raíz del repositorio, en este orden:
    EXPONER_TOKEN_VERIFICACION=true    (RAMA 5; solo desarrollo)
    JWT_SECRET=<secreto propio, mín. 32 caracteres>    (RAMA 6)
    JWT_EXPIRES_IN=2h    (RAMA 6)
-   Generar JWT_SECRET con:
-   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
    Tras un pull que modifique package.json: npm install --legacy-peer-deps dentro de backend/.
 
 4. Generar el cliente de Prisma (sigue en backend/):
@@ -607,6 +694,7 @@ Desde la raíz del repositorio, en este orden:
 6. Verificar el backend:
    npm run dev
    (debe responder en localhost:3000/health; el registro responde en POST localhost:3000/auth/registro)
+    Debe imprimir "Backend corriendo en puerto 3000" y /health debe devolver {"status":"ok"}. Si el puerto está ocupado, el backend aborta con "No se pudo iniciar el backend en el puerto ..." (ver con docker ps y sudo ss -ltnp | grep :3000). Si un registro falla con P2039, ver RAMA 10.
 
 7. Frontend, en otra terminal, desde la raíz del repo:
    cd frontend
@@ -625,9 +713,12 @@ PROPUESTAS (opcionales)
 - Definir un script de seed (datos de prueba: usuario, zona, siembra de ejemplo) una vez existan los modelos de Parte 2 y Parte 4.
 - Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
 - Agregar rate limiting a los endpoints de /auth (registro, login y perfil) antes del despliegue.
-- Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento. y GET /auth/yo (200, 401, 404).
+- Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento, y para GET /auth/yo (200; 401 sin token, con token inválido o expirado y con usuario inexistente).
 - Revocación de sesión (lista de tokens revocados o versión de token por usuario) y/o refresh tokens, si se necesita logout real o invalidar sesiones al desverificar o eliminar usuarios.
 - Bloqueo temporal por intentos fallidos de login por correo e IP, junto con el rate limiting.
+- Hacer que GET /health verifique también la conexión a la base (consulta trivial tipo SELECT 1) y responda 503 si falla, para detectar problemas como el P2039 sin esperar a la primera operación de negocio. Hoy /health solo confirma que Express levantó.
+- Unificar también la forma de las respuestas exitosas de /auth (hoy: {token, usuario}, {mensaje, usuario}, {success, usuario} y objeto directo) cuando el frontend empiece a consumirlas (Parte 6).
+- Validar longitud mínima de DUI_PEPPER al arrancar (hoy solo se valida que exista).
 
 ------------------------------------------------------------
 PENDIENTES (obligatorio)
@@ -659,18 +750,17 @@ Requerimiento adicional de lógica:
 - Pendiente adicional: definir cómo se obtiene y estructura la tabla de datos CENTA (zonas × granos viables) a partir de extracción manual, y quién del equipo la levanta, antes de que arranque la Parte 2.
 
 Pendientes acumulados y nuevos:
-- Parte 1-B (login y guards): implementada en el backend en RAMA 6 (POST /auth/login, jwt.ts, requireAuth; verificado = false bloquea con 403). Pendiente: guards/interceptor del lado Angular, rate limiting, y decisión sobre refresh/revocación de tokens. (Parte 1-A en RAMA 2; Parte 1-C en RAMA 4 por Requeno, corregida en RAMA 5.)
-- Parte 1-D (perfil y endpoint "yo"): pendiente; ya puede empezar, requireAuth existe (RAMA 6). Debe crear GET /auth/yo protegido con requireAuth y consultar la BD con req.usuario.id.
-- Parte 1-C, extensión pendiente: envío real de correo (Nodemailer + SMTP); al integrarlo, retirar EXPONER_TOKEN_VERIFICACION y tokenVerificacion_DEV de /auth/registro y /auth/reenviar-verificacion, y decidir si el envío va por listener de AgricultorRegistrado (coordinar events/types.ts) o desde el servicio.
+- Parte 1 (autenticación, backend): completa. 1-A en RAMA 2, 1-C en RAMA 4 y 5, 1-B en RAMA 6, 1-D en RAMA 8; verificación funcional y correcciones en RAMA 10. Falta lo del lado del frontend y lo listado abajo (envío real de correo, rate limiting, pruebas automatizadas).
 - Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue. Login es el más crítico (fuerza bruta).
 - Pruebas automatizadas (Jest + supertest) para /auth: registro, verificar (200, 400, 404, 410) y reenviar-verificacion.
 - Parte 2: modelar el catálogo Municipio (2: Morazán Norte y Sur) y Distrito (26) con la relación entre ambos, y luego validar/relacionar el campo distrito de Usuario contra ese catálogo (deja de ser texto libre).
 - Definir en schema.prisma los modelos de Zona/Grano (Parte 2-A), coordinando el orden de merge por posibles conflictos en schema.prisma y migrations/. El modelo Usuario ya existe (RAMA 2, ampliado en RAMA 4).
-- Definir credenciales de MySQL y un DUI_PEPPER único para entornos reales (staging/producción) en Parte 7, junto con EXPONER_TOKEN_VERIFICACION=false; las actuales son solo de desarrollo local; JWT_SECRET único y guardado como secreto (rotarlo invalida sesiones).
+ Definir también TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de RAMA 10.
 - Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token, interceptor HTTP y route guard.
 - Decisión de equipo sobre Prettier (.prettierrc): si se adopta, subirlo en una rama aparte con formato acordado.
 - Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
-- Validar JWT_SECRET al arrancar el servidor (fallar rápido en index.ts) en lugar de hacerlo en la primera petición.
-- Actualizar la sección "Pruebas automatizadas" para incluir /auth/login (200, 400, 401, 403) y requireAuth (401 sin token, expirado, inválido; 200).
+- Pruebas automatizadas de /auth/login (200, 400, 401, 403), requireAuth (401 sin token, expirado e inválido; 200) y GET /auth/yo (200, 401).
+- GET /auth/yo: evaluar incluir el municipio derivado cuando exista el catálogo de Parte 2 (decide 2-A).
+- Frontend (Parte 6): el contrato de error de /auth es { error, detalles } (detalles: string o lista de strings); GET /auth/yo no devuelve 404 (usuario inexistente es 401).
+- EXPONER_TOKEN_VERIFICACION=true en .env.example es solo para desarrollo: con el flag activo, POST /auth/reenviar-verificacion revela qué correos existen y están pendientes. Debe ser false o no existir en cualquier entorno real (ya incluido arriba en la definición de credenciales de Parte 7).
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
-- verificación funcional de GET /auth/yo y resolución del P2039; no exponer error.message en los 500 de /auth; unificar el contrato de respuesta de /auth/* antes de la Parte 6; y los detalles Menos listados arriba, con el del municipio derivado atado a 2-A.
