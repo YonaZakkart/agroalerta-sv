@@ -1,7 +1,7 @@
 # AgroAlerta Morazán — Parte 2-A y 2-B: datos de viabilidad (CENTA)
 
-Estado (actualizado en RAMA 13): 2-A implementado y mergeado en RAMA 12; 2-B pendiente (RAMA 14); 2-C y 2-D pendientes. Las secciones 7 a 9 siguen siendo propuesta hasta implementarse.
-Fecha de este documento: 4 de octubre de 2026. Responsable: Yona (RAMA 12, Parte 2-A; también asume el 2-B).
+Estado (actualizado en RAMA 15): 2-A implementado en RAMA 12 y 2-B implementado en RAMA 14; 2-C y 2-D pendientes. La sección 9 sigue siendo propuesta hasta implementarse.
+Fecha de este documento: 6 de octubre de 2026. Responsable: Yona (RAMA 12, Parte 2-A; también RAMA 14, Parte 2-B).
 
 ---
 
@@ -167,6 +167,16 @@ Si CENTA actualiza el mapa, repetir desde el paso 1. Los exports crudos de versi
 - Usa el cliente compartido `import { prisma } from "../../config/prisma"` (ajustar la ruta relativa), nunca instanciar `PrismaClient` aparte. Pasar las áreas a Decimal como texto.
 - Opcional: conectarlo con `prisma db seed`. Confirmar en la documentación de Prisma 7 dónde se declara el comando (la configuración vive en `prisma7.config.ts`); si no es necesario, basta el script de `package.json`.
 - Después del merge, cada integrante hace: `npx prisma generate`, `npx prisma migrate dev`, `npm run datos:cargar`.
+
+### Nota de implementación (RAMA 14)
+
+Implementado en backend/src/viabilidad/datos/: capas.config.ts, utilidades.ts (archivo adicional, compartido), limpiar-centa.ts y cargar-centa.ts. Scripts: npm run datos:limpiar y npm run datos:cargar (ts-node-dev --transpile-only), siempre desde backend/. Donde las secciones 7 y 8 difieren de lo siguiente, prevalece esta nota.
+
+- Crudos en backend/data/centa/raw/ con los nombres reales: Potencial_maiz.csv, Potencial_frijol.csv, Potencial_sorgo.csv (maicillo), Riesgo_sequia.csv, division_territorial_morazan.csv y fuente.json ({"fuente": "CENTA", "fechaExtraccion": "AAAA-MM-DD"}).
+- Salidas en backend/data/centa/clean/: distritos.csv (id_distrito, distrito, municipio; 26 filas) y areas_clase.csv (capa, id_distrito, valor, clase, area_ha; 312 filas; 3 decimales). UTF-8 sin BOM, separador ",", saltos LF.
+- Tolerancias: |km2 x 100 - ha| <= 1 ha por fila; diferencia del área total de un distrito entre capas <= 5 ha (observada: 1.100 ha). Más de 3 decimales en un área se rechaza. Sin ningún error de validación no se escribe nada.
+- Carga: upsert dentro de una transacción; si las tablas quedan con una cantidad de filas distinta de ESPERADO (2 municipios, 26 distritos, 4 capas, 12 clases, 312 áreas), se revierte. No se conectó prisma db seed.
+- Controles verificados con los datos reales: 78, 76, 74 y 46 filas leídas; 38 clases completadas con 0 ha (frijol 2, maicillo 4, sequía 32); Chilanga en maíz suma 5998.537 ha; fecha_extraccion guardada sin desfase de zona horaria.
 
 ## 9. Contrato para el 2-C (cómo se usarán los datos)
 

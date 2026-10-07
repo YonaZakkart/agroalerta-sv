@@ -1,6 +1,6 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán
-Última actualización: 04 de Octubre de 2026.
+Última actualización: 06 de Octubre de 2026.
 ============================================================
 
 1. RESUMEN DE LA IDEA
@@ -14,7 +14,7 @@ Integra:
 El sistema reacciona automáticamente a eventos (registro de siembra, actualización meteorológica, cambio de condición climática) sin que el usuario tenga que solicitar el recálculo manualmente.
 
 Nota geográfica (desde RAMA 2): tras la reorganización territorial, el departamento de Morazán tiene solo 2 municipios (Morazán Norte y Morazán Sur). Los 26 antiguos municipios (Chilanga, etc.) son ahora DISTRITOS. El sistema trabaja a nivel de distrito, porque es la unidad que importa para zonas de viabilidad y estaciones climáticas. El campo del usuario se llama "distrito" (ya no "municipio"). Ver detalle en RAMA 2.
-Desde RAMA 12 el catálogo Municipio (2) / Distrito (26) existe como modelos en la base (el código CENTA 1301 a 1326 es la llave del distrito), aún sin datos hasta el 2-B. El campo distrito de Usuario sigue siendo texto libre hasta decidir su validación o relación con el catálogo (ver Pendientes).
+Desde RAMA 12 el catálogo Municipio (2) / Distrito (26) existe como modelos en la base (el código CENTA 1301 a 1326 es la llave del distrito), y, desde RAMA 14, cargado con los datos de CENTA (26 distritos: 11 en Morazán Norte y 15 en Morazán Sur)
 
 2. ESTRUCTURA INICIAL DE ARCHIVOS
 Repositorio: agroalerta-sv (GitHub, privado). Owner: Yona. Colaboradores: Smith, Requeno, Pocho.
@@ -26,14 +26,18 @@ agroalerta-sv/
 ├── docker/
 │   └── mysql-init/
 │       └── grant-shadow.sql   (nuevo en RAMA 1)
-├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde RAMA 3 y Parte2_Datos_CENTA_2A_2B.md desde RAMA 13; se actualiza en ramas docs/: RAMA 7, 9, 11 y 13)
+├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde RAMA 3 e Info_Datos_CENTA.md desde RAMA 13; se actualiza en ramas docs/: RAMA 7, 9, 11, 13 y 15)
 ├── backend/
-│   ├── package.json           jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10 agregados en RAMA 6
+│   ├── package.json           jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10 agregados en RAMA 6; scripts datos:limpiar y datos:cargar agregados en RAMA 14 (sin dependencias nuevas)
 │   ├── package-lock.json
 │   ├── tsconfig.json          (rootDir: "./src"; "include": ["src/**/*"] agregado en RAMA 1)
 │   ├── prisma7.config.ts      (nuevo en RAMA 1, autogenerado por Prisma — config del CLI, fuera de src/)
 │   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER; desde RAMA 6 requiere JWT_SECRET); desde RAMA 10 el servidor no arranca sin ellos
 │   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env; desde RAMA 10, DUI_PEPPER y JWT_SECRET vienen vacíos y son obligatorios)
+│   ├── data/
+│   │   └── centa/             (nuevo en RAMA 14 — datos de viabilidad; se versiona)
+│   │       ├── raw/           exports crudos de CENTA (Potencial_maiz.csv, Potencial_frijol.csv, Potencial_sorgo.csv, Riesgo_sequia.csv), division_territorial_morazan.csv y fuente.json; no abrirlos ni guardarlos en Excel
+│   │       └── clean/         distritos.csv (26 filas) y areas_clase.csv (312 filas), generados por npm run datos:limpiar; no se editan a mano
 │   ├── prisma/
 │   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2, ampliado en RAMA 4 + modelos de la Parte 2: Municipio, Distrito, Capa, ClaseCapa, AreaClase y enum TipoCapa, RAMA 12)
 │   │   └── migrations/        (nuevo en RAMA 2 — migraciones add_usuarios (RAMA 2), add_verificacion_correo (RAMA 4) y add_viabilidad (RAMA 12); se versionan)
@@ -45,7 +49,12 @@ agroalerta-sv/
 │       │   ├── auth.middleware.ts    (nuevo en RAMA 6 — requireAuth, extiende Express.Request con "usuario")
 │       │   ├── login.routes.ts       (nuevo en RAMA 6 — POST /auth/login)
 │       │   └── perfil.routes.ts      (nuevo en RAMA 8 — GET /auth/yo protegido con requireAuth)
-│       ├── viabilidad/         (vacío, para Parte 2)
+│       ├── viabilidad/         (desde RAMA 14, subcarpeta datos/; servicio y endpoint de viabilidad pendientes: 2-C y 2-D)
+│       │   └── datos/          (nuevo en RAMA 14)
+│       │       ├── capas.config.ts     configuración de las 4 capas (lo único que cambia al agregar una capa)
+│       │       ├── utilidades.ts       lector de CSV, números, normalizarNombre y acumulador de errores
+│       │       ├── limpiar-centa.ts    npm run datos:limpiar
+│       │       └── cargar-centa.ts     npm run datos:cargar
 │       ├── clima/              (vacío, para Parte 3)
 │       ├── siembra/            (vacío, para Parte 4)
 │       ├── estimacion/         (vacío, para Parte 5)
@@ -76,6 +85,7 @@ NOTA: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.t
 - Despliegue: Docker
 - Control de versiones: Git + GitHub (flujo por ramas + PR)
 - Entorno de desarrollo de base de datos: MySQL vía Docker (contenedor local por integrante, sin instancia compartida) — ver docker-compose.yml en la raíz
+- Datos de viabilidad (desde RAMA 14): scripts npm datos:limpiar (valida los exports de CENTA y genera CSV limpios) y datos:cargar (carga en MySQL con upsert y transacción). Sin dependencias nuevas.
 
 Nota sobre TypeScript: en backend/package.json la versión de "typescript" quedó fijada en ^5.9.0. TypeScript 7.0.2 (el nuevo compilador nativo) es incompatible con ts-node-dev a la fecha de este documento. No actualizar typescript en backend/ sin antes confirmar compatibilidad con la herramienta de desarrollo en uso.
 
@@ -83,7 +93,7 @@ Nota sobre versión de Prisma: al día de esta actualización, instalar el paque
 
 Nota sobre el generator de Prisma (desde RAMA 2): el generator prisma-client está configurado con moduleFormat = "cjs" e importFileExtension = "" (imports sin extensión). Sin esta última opción, el cliente generado hace require("./internal/class.js") y ts-node-dev falla, porque el archivo generado es .ts. No quitar esa línea de schema.prisma.
 
-Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión (definida antes de RAMA 12): los datos se obtienen de la herramienta de consulta del mapa de CENTA, exportando un CSV por capa (potencial de maíz, frijol y sorgo/maicillo, y riesgo de sequía; todo Morazán, todas las clases) más la tabla de división territorial. Un script versionado limpia los exports y genera CSV limpios, y un script de carga (seed) los inserta en MySQL de forma idempotente (Parte 2-B, RAMA 14). Nivel geográfico: distrito. Se guarda el área en hectáreas por distrito × capa × clase; porcentajes y manzanas (mz = ha / 0.7) se calculan al consultar. Contrato completo y reglas de interpretación en docs/Parte2_Datos_CENTA_2A_2B.md. Queda abierta la posibilidad de automatizar la extracción más adelante (ver Propuestas), sin que eso afecte el stack ya definido.
+Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión (definida antes de RAMA 12): los datos se obtienen de la herramienta de consulta del mapa de CENTA, exportando un CSV por capa (potencial de maíz, frijol y sorgo/maicillo, y riesgo de sequía; todo Morazán, todas las clases) más la tabla de división territorial. Implementado en RAMA 14: npm run datos:limpiar valida los exports y genera CSV limpios en backend/data/centa/clean/, y npm run datos:cargar los inserta en MySQL de forma idempotente y dentro de una transacción.
 Nota sobre la conexión a MySQL 8.4 (desde RAMA 10): MySQL 8.4 crea los usuarios con caching_sha2_password y, sin TLS, el conector MariaDB solo completa la autenticación si se activa allowPublicKeyRetrieval; sin esa opción las conexiones fallan en silencio y Prisma lo reporta como P2039 (pool timeout). La opción se pasa en config/prisma.ts y no como parámetro de DATABASE_URL (esa variable también la lee prisma7.config.ts y el .env no se versiona). No volver a pasar la cadena DATABASE_URL directamente al constructor de PrismaMariaDb sin conservar la opción. Detalle y diagnóstico en RAMA 10.
 
 Estas tecnologías ya no están sujetas a cambio salvo justificación documentada aquí.
@@ -732,6 +742,103 @@ Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Propu
 Con la documentación hasta la RAMA 12 (Parte 2-A: modelos de viabilidad)
 
 ------------------------------------------------------------
+RAMA 14 — feat/2-b-datos-centa (Parte 2, Punto B del Mapa_inicial.txt: Carga inicial de datos de Morazán)
+Responsable: Yona
+Fecha: 6 de octubre de 2026
+
+Contexto: RAMA 12 dejó los modelos de viabilidad (Municipio, Distrito, Capa, ClaseCapa, AreaClase) y RAMA 13 su documentación. Esta rama obtiene, valida y carga en esos modelos los datos de viabilidad de CENTA. Son dos programas independientes: datos:limpiar (valida los exports crudos y genera CSV limpios) y datos:cargar (lee solo los CSV limpios y los guarda en MySQL). Numeración acordada: RAMA 12 = 2-A, RAMA 13 = docs, RAMA 14 = 2-B, RAMA 15 = docs. Contrato de datos y reglas de interpretación: docs/Info_Datos_CENTA.md. Las secciones de RAMA 12 y RAMA 13 no se modifican: donde mencionan el documento de datos con su nombre anterior (Parte2_Datos_CENTA_2A_2B.md), se refieren a Info_Datos_CENTA.md.
+
+Qué se hizo:
+- Datos crudos versionados en backend/data/centa/raw/, con nombres fijos y sin tildes: Potencial_maiz.csv, Potencial_frijol.csv, Potencial_sorgo.csv (es el maicillo; CENTA lo llama sorgo), Riesgo_sequia.csv, division_territorial_morazan.csv y fuente.json ({"fuente": "CENTA", "fechaExtraccion": "2026-10-04"}). Son los exports de la herramienta de consulta del mapa de CENTA (todo Morazán, todas las clases) sin modificar: no se abren ni se guardan en Excel.
+- backend/src/viabilidad/datos/capas.config.ts (nuevo): interfaz CapaConfig y arreglo CAPAS con las 4 capas: potencial_maiz, potencial_frijol, potencial_maicillo (tipo POTENCIAL; clases 1 Bajo, 2 Medio, 3 Alto; columnas gridcode y Clase) y riesgo_sequia (tipo RIESGO; clases 1 Leve, 2 Moderada, 3 Severa; columnas Valor y Riesgo Sequía). Es la única parte que cambia al agregar una capa y la usan el limpiador y el seed. El tipo TipoCapa se declara aquí como unión de cadenas (no se importa del cliente generado) para que el limpiador funcione sin base de datos ni prisma generate. Los nombres para mostrar ("Potencial de maíz", etc.) son etiquetas definidas en esta rama.
+- backend/src/viabilidad/datos/utilidades.ts (nuevo, no estaba en el plan): acumulador de errores (Reporte), lector de CSV propio (quita BOM; acepta CRLF y LF; campos entre comillas; exige que cada fila tenga tantos campos como el encabezado; detecta bytes no UTF-8, comillas sin cerrar y texto después de comillas), parsearNumero (formato de CENTA "2,917.071"; rechaza más de 3 decimales; devuelve texto con 3 decimales), colapsarEspacios y normalizarNombre (mayúsculas, sin tildes, espacios colapsados). Archivo compartido por el limpiador y el seed.
+- backend/src/viabilidad/datos/limpiar-centa.ts (nuevo; script npm run datos:limpiar). Valida y, solo si no hay ningún error, escribe:
+  - fuente.json: JSON válido, fuente de hasta 50 caracteres, fecha real AAAA-MM-DD y no futura.
+  - Cada export: columnas requeridas; Id_Departa = 13; Departamento = MORAZÁN; Id_Muni entre 1301 y 1326; código de clase válido para la capa y texto de clase coherente con el código (se colapsan espacios y se quita el prefijo "Potencial "); ha numérica y mayor que 0; km² numérico y |km² x 100 - ha| <= 1 ha; sin filas duplicadas por distrito y clase.
+  - Tabla de división (formato ancho: Morazan_Norte, Morazan_Sur): 26 distritos únicos, cada uno en un solo municipio.
+  - Emparejado por nombre normalizado: cada código aparece con un solo nombre en todas las capas, cada código tiene distrito en la división y viceversa, y salen exactamente 26.
+  - Completado: las clases ausentes del export se completan con 0 ha, de modo que cada capa queda con 26 x 3 = 78 filas (38 completadas: frijol 2, maicillo 4, sequía 32).
+  - Totales: el área total clasificada de cada distrito debe coincidir entre capas (tolerancia 5 ha) y ningún distrito puede faltar por completo en una capa.
+  - Si hay cualquier error, los lista TODOS, no escribe ningún archivo y termina con código de salida 1.
+  - Salida determinista (una segunda corrida produce archivos idénticos byte a byte): data/centa/clean/distritos.csv (id_distrito, distrito, municipio; 26 filas) y data/centa/clean/areas_clase.csv (capa, id_distrito, valor, clase, area_ha; 312 filas; área con 3 decimales). UTF-8 sin BOM, separador ",", saltos LF. Imprime un resumen con los controles numéricos.
+- backend/src/viabilidad/datos/cargar-centa.ts (nuevo; script npm run datos:cargar). Lee los CSV limpios (no los crudos) y fuente.json, y valida antes de escribir: 26 distritos, 2 municipios, 4 capas, 12 clases, 312 áreas (constante ESPERADO), sin áreas negativas, clases coherentes con capas.config.ts, sin duplicados, ids de distrito existentes y nombres normalizados únicos. Si hay errores, no toca la base y sale con código 1. Si no, carga con upsert en UNA transacción, en este orden: Municipio, Distrito (id explícito = código CENTA, con nombreNormalizado), Capa y ClaseCapa (desde capas.config.ts), AreaClase (áreas pasadas como texto a Decimal; fecha de extracción en UTC). Antes de confirmar cuenta las filas de las cinco tablas y, si no coinciden con ESPERADO, revierte todo. Usa el cliente compartido (import { prisma } desde config/prisma). Idempotente. Mensajes con pista para P2021/P2022 (tablas ausentes: npx prisma generate y migrate dev) y P2039 (ver RAMA 10). Cierra la conexión al terminar.
+- backend/package.json: se agregaron los scripts datos:limpiar y datos:cargar (ambos con ts-node-dev --transpile-only). No se agregaron dependencias ni se tocó package-lock.json.
+- Los dos archivos de punto de entrada solo se ejecutan si se corren directamente (require.main === module), de modo que el seed importa constantes del limpiador sin dispararlo.
+
+Resultado con los datos reales (controles numéricos, coinciden con docs/Info_Datos_CENTA.md):
+- Filas leídas por capa: maíz 78, frijol 76, maicillo 74, sequía 46; 26 distritos en cada capa; 0 errores.
+- Distribución de clases: maíz 26 Alto, 26 Medio, 26 Bajo; frijol 26 Alto, 26 Medio, 24 Bajo (faltan Bajo en Arambala y Perquín); maicillo 26 Medio, 22 Alto, 26 Bajo (faltan Alto en El Divisadero, El Rosario, Jocoro y San Carlos); sequía 26 Moderada, 10 Leve, 10 Severa.
+- Catálogo: 26 distritos (Morazán Norte 11, Morazán Sur 15), con tildes en los nombres.
+- areas_clase.csv: 312 filas, 38 con 0.000. Diferencia máxima del área total de un distrito entre capas: 1.100 ha (tolerancia 5 ha).
+- Control independiente: Chilanga en maíz, 2024.138 (Bajo) + 2779.240 (Medio) + 1195.159 (Alto) = 5998.537 ha, igual que el export y que el documento.
+
+Decisiones de diseño:
+- Dos programas separados: datos:limpiar puede correrse sin base de datos y su resultado (CSV limpios) se revisa con git diff; datos:cargar no depende del formato de CENTA.
+- Los CSV crudos y los limpios se suben al repo juntos, para que cada integrante cargue sus datos sin necesidad de reejecutar la limpieza.
+- fuente y fechaExtraccion se leen de raw/fuente.json, no de los CSV limpios: si cambia fuente.json, basta volver a correr datos:cargar (el upsert actualiza las 312 filas).
+- Mensajes de error con archivo y línea, y todos juntos: se prefiere corregir de una vez que fallo por fallo.
+- Las cantidades de ESPERADO (2, 26, 4, 12, 312) están escritas a propósito en cargar-centa.ts: al agregar una capa o cambiar la división territorial hay que actualizarlas junto con capas.config.ts.
+- La verificación de conteos dentro de la transacción revierte si hay filas ajenas a la carga (por ejemplo, una capa insertada a mano): evita que queden áreas viejas que contaminarían los porcentajes del 2-C. El upsert no borra filas que ya no estén en los CSV.
+- No se conectó con prisma db seed (era opcional en el documento): basta el script de package.json.
+- Nombres de archivo solo ASCII, porque un nombre con tilde puede quedar guardado en forma distinta (NFC o NFD) según el sistema y no encontrarse.
+
+Cambios respecto al Mapa_inicial.txt y al documento de datos (documentados según reglas del proyecto):
+- 2-B: se carga distrito x capa x clase (área por clase) y no "datos de Chilanga y otras" como valores sueltos; incluye la capa de riesgo de sequía. El 2-B lo hizo Yona.
+- Se agregó utilidades.ts (no estaba en el plan) para que limpiador y seed compartan lector de CSV y normalizarNombre.
+- Los nombres de archivo reales de los exports (arriba) difieren de los que usa la sección 7 del documento de datos; prevalecen los de esta sección.
+- La diferencia observada entre capas (1.100 ha) es algo mayor que el 1 ha (0.01 km2) que mencionaba el documento: se acumula el redondeo de tres clases por distrito. La tolerancia implementada es 5 ha.
+
+Qué se modificó: backend/package.json (dos scripts). Qué se eliminó: nada. Dependencias nuevas: ninguna.
+Archivos tocados fuera de viabilidad/ (puntos de contacto entre partes): backend/package.json y backend/data/ (carpeta nueva). No se tocaron schema.prisma, migrations/, index.ts, events/, config/ ni Usuario.
+
+Cumplimiento del punto 2-B ("Carga inicial de datos de Morazán"):
+- Datos de viabilidad cargados y verificados en MySQL: cumplido (26 distritos x 4 capas, 312 áreas).
+- Catálogo Municipio / Distrito cargado: cumplido; la relación de Usuario.distrito con el catálogo sigue pendiente (no era de este punto).
+- Cierra parcialmente el pendiente de RAMA 12 "inserción y lectura de datos": la carga y la lectura por SQL funcionan; no se probaron a propósito las restricciones únicas y claves foráneas con inserciones inválidas.
+
+Pruebas realizadas (en el entorno del proyecto, MySQL 8.4 en Docker; manuales):
+- datos:limpiar con datos reales: salida con 0 errores y controles numéricos de arriba; archivos limpios con 313 y 27 líneas (con encabezado), sin BOM; Chilanga en maíz; suma independiente con awk; 78 filas por capa; 38 filas con 0.000.
+- Segunda corrida de datos:limpiar: archivos idénticos (md5sum).
+- datos:limpiar con fecha de extracción futura: error reportado, código de salida 1, los CSV limpios no se tocaron (md5sum igual).
+- datos:cargar dos veces seguidas: misma salida y sin duplicados (municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312).
+- Consultas SQL de verificación: conteos por tabla, las tres filas de Chilanga en maíz, total 5998.537, 38 filas en cero, nombres con tildes (Delicias de Concepción, Perquín, San Simón, Yoloaiquín), y fecha_extraccion = 2026-10-04 (sin desfase de zona horaria).
+- Pruebas adicionales en un entorno aislado (MySQL 8.0, Prisma 7.10.0, tablas creadas a mano con el SQL equivalente a la migración): actualización de un área en el CSV limpio y recarga (actualiza sin duplicar), reversión de la transacción con una capa ajena en la base (no queda nada a medias), CSV limpio corrupto (área negativa y clase mal escrita: dos errores, base intacta) y tablas inexistentes (mensaje con pista). NO repetidas en el Docker del proyecto.
+- NO realizadas: pruebas automatizadas del limpiador y del seed; concurrencia (dos cargas simultáneas); carga contra una base no vacía con datos distintos a los de CENTA en estas tablas.
+
+Qué NO se hizo / qué falta:
+- Servicio y endpoint de viabilidad (2-C y 2-D) y su consumo desde el frontend.
+- Pruebas automatizadas de limpiar-centa.ts, utilidades.ts y cargar-centa.ts.
+- Validar o relacionar Usuario.distrito con el catálogo (ahora posible con distritos.nombre_normalizado y normalizarNombre).
+- Rendimientos de referencia (qq/mz) y rango de precipitación: no están en el mapa de CENTA.
+- Temporadas (primera y postrera): se difieren a la Parte 3.
+- Comando prisma db seed (no necesario).
+- Los CSV limpios no incluyen fuente ni fecha: dependen de raw/fuente.json al momento de cargar.
+- El limpiador rechaza números con más de 3 decimales en lugar de redondearlos (si CENTA cambia el formato, falla a propósito).
+
+Qué se agregó de más (no pedido originalmente): utilidades.ts como archivo compartido; validaciones adicionales a las del documento (coherencia km2 vs ha, totales entre capas, fecha no futura, bytes no UTF-8, comillas mal cerradas, verificación de conteos dentro de la transacción); resumen de controles al correr la limpieza; mensajes con pista de diagnóstico en el seed.
+
+Incidencias técnicas durante el desarrollo:
+- Un nombre de archivo con tilde (Riesgo_sequía.csv) no se pudo renombrar con mv escribiendo la tilde a mano (probablemente estaba en forma descompuesta, NFD). Se resolvió con un comodín: mv data/centa/raw/Riesgo_sequ*.csv data/centa/raw/Riesgo_sequia.csv. Regla: nombres de archivo solo ASCII.
+- Ruido informativo normal al correr los scripts: "npm notice run ...", "[INFO] ts-node-dev ..." y "injected env (10) from .env" (dotenv). No indican errores.
+- [COMPLETAR: otras incidencias reales, o "Ninguna más".]
+
+Puntos de atención para las siguientes ramas:
+- Tras el merge, cada integrante corre: git pull, npx prisma generate, npx prisma migrate dev y npm run datos:cargar. Los CSV limpios ya vienen en el repo: no hace falta correr datos:limpiar. Cada base debe quedar con municipios 2, distritos 26, capas 4, clases_capa 12 y areas_clase 312.
+- Ejecutar los scripts desde backend/ (npm run ya lo hace): dotenv lee el .env del directorio actual.
+- 2-C y 2-D: leer estos datos desde la base con el cliente compartido; seguir el contrato de docs/Info_Datos_CENTA.md (sección 9): distribución completa por clase, clase dominante solo como resumen, porcentajes calculados al consultar sobre la suma de áreas del distrito en esa capa, manzanas (ha / 0.7) solo para mostrar, errores { error, detalles }.
+- Si CENTA actualiza el mapa: repetir la extracción, reemplazar los crudos de raw/ y actualizar fuente.json, correr npm run datos:limpiar, revisar con git diff los CSV limpios contra los controles, correr npm run datos:cargar y subir crudos y limpios juntos.
+- Para agregar una capa: nueva entrada en capas.config.ts, su export en raw/, y actualizar ESPERADO en cargar-centa.ts (capas, clases y áreas).
+- normalizarNombre (utilidades.ts) es la función única de normalización: la validación del registro de Usuario.distrito debe reutilizarla (o moverse a un módulo común si otra parte la necesita).
+- Si datos:cargar falla con "la tabla de ... quedó con N filas y se esperaban M", hay filas ajenas a la carga en esa tabla (por ejemplo, insertadas a mano); la transacción ya se revirtió.
+- package.json es punto de contacto: conflicto probable con cualquier rama que agregue scripts o dependencias; quien mergee segundo conserva ambas líneas.
+
+------------------------------------------------------------
+RAMA 15 — docs/actualizar-estado-rama-14
+Responsable: Yona
+Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Pasos para clonar, Propuestas y Pendientes, más las secciones nuevas de RAMA 14 y 15) y docs/Info_Datos_CENTA.md (estado y nota de implementación de la RAMA 14).
+Con la documentación hasta la RAMA 14 (Parte 2-B: limpieza y carga de datos CENTA)
+
+------------------------------------------------------------
 IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
 ------------------------------------------------------------
 (Válido desde RAMA 2 en adelante; los pasos 2, 3 y 6 se actualizaron en RAMA 10.)
@@ -770,6 +877,10 @@ Desde la raíz del repositorio, en este orden:
 5. Sincronizar el esquema con la base de datos:
    npx prisma migrate dev
 
+   5b. Cargar los datos de viabilidad (desde RAMA 14; requiere el paso 5 hecho), dentro de backend/:
+   npm run datos:cargar
+   Carga en MySQL los CSV de backend/data/centa/clean/, que ya vienen en el repo. Es idempotente (se puede repetir). No hace falta correr datos:limpiar salvo que se actualicen los exports de CENTA. Debe terminar con: municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312.
+
 6. Verificar el backend:
    npm run dev
    (debe responder en localhost:3000/health; el registro responde en POST localhost:3000/auth/registro)
@@ -781,7 +892,7 @@ Desde la raíz del repositorio, en este orden:
    ng serve
    (debe responder en localhost:4200)
 
-Nota: todos los comandos docker compose se corren desde la raíz del repo (ahí vive docker-compose.yml), nunca desde backend/. Tras cada pull que modifique schema.prisma, repetir los pasos 4 y 5.
+Nota: todos los comandos docker compose se corren desde la raíz del repo (ahí vive docker-compose.yml), nunca desde backend/. Tras cada pull que modifique schema.prisma, repetir los pasos 4 y 5. Tras cada pull que modifique backend/data/centa/clean/, repetir el 5b.
 
 ------------------------------------------------------------
 PROPUESTAS (opcionales)
@@ -801,6 +912,7 @@ PROPUESTAS (opcionales)
 - Mostrar el mapa de CENTA en la vista Clima Zonal (Parte 6-D), por ejemplo con Leaflet y un GeoJSON propio. No es parte de la base mínima.
 - Capas futuras (caña, vainilla, banano, elevación, temperatura, humedad): evaluar cuando se vean sus datos; el modelo de la RAMA 12 permite agregar capas por clases insertando filas.
 - Pruebas automatizadas del script de limpieza (conversión de números, validaciones) y del servicio y endpoint de viabilidad (2-C / 2-D).
+- Pruebas automatizadas del seed (cargar-centa.ts) contra una base de prueba: carga, segunda corrida sin duplicados, reversión ante filas ajenas y rechazo de CSV inválidos.
 
 ------------------------------------------------------------
 PENDIENTES (obligatorio)
@@ -835,7 +947,7 @@ Pendientes acumulados y nuevos:
 - Parte 1 (autenticación, backend): completa. 1-A en RAMA 2, 1-C en RAMA 4 y 5, 1-B en RAMA 6, 1-D en RAMA 8; verificación funcional y correcciones en RAMA 10. Falta lo del lado del frontend y lo listado abajo (envío real de correo, rate limiting, pruebas automatizadas).
 - Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue. Login es el más crítico (fuerza bruta).
 - Pruebas automatizadas (Jest + supertest) para /auth: registro, verificar (200, 400, 404, 410) y reenviar-verificacion.
-- Parte 2: el catálogo Municipio (2) / Distrito (26) ya está modelado (RAMA 12), vacío hasta el 2-B. Falta validar o relacionar el campo distrito de Usuario contra ese catálogo (hoy texto libre): definir quién y cuándo; toca registro.routes.ts y el modelo Usuario, y exige una migración que convierta los distritos ya guardados. La normalización (mayúsculas, sin tildes, espacios colapsados) debe ser la misma que use el seed para nombre_normalizado: una sola función compartida.
+- Parte 2: el catálogo Municipio (2) / Distrito (26) ya está modelado (RAMA 12), cargado desde RAMA 14 (26 distritos. Falta validar o relacionar el campo distrito de Usuario contra ese catálogo (hoy texto libre): definir quién y cuándo; toca registro.routes.ts y el modelo Usuario, y exige una migración que convierta los distritos ya guardados. La normalización (mayúsculas, sin tildes, espacios colapsados) debe ser la misma que use el seed para nombre_normalizado: la función normalizarNombre de src/viabilidad/datos/utilidades.ts, la misma que usó el seed.
 - Modelos de la Parte 2-A: ya definidos en RAMA 12. Quedan las partes 4-A y 5 por agregar los suyos en schema.prisma: mismo riesgo de conflicto al final del archivo y en migrations/ (quien mergee segundo regenera su migración sobre main).
 - Definir también TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de RAMA 10.
 - Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token, interceptor HTTP y route guard.
@@ -845,8 +957,9 @@ Pendientes acumulados y nuevos:
 - GET /auth/yo: evaluar incluir el municipio derivado cuando exista el catálogo de Parte 2 (decide 2-A).
 - Frontend (Parte 6): el contrato de error de /auth es { error, detalles } (detalles: string o lista de strings); GET /auth/yo no devuelve 404 (usuario inexistente es 401).
 - EXPONER_TOKEN_VERIFICACION=true en .env.example es solo para desarrollo: con el flag activo, POST /auth/reenviar-verificacion revela qué correos existen y están pendientes. Debe ser false o no existir en cualquier entorno real (ya incluido arriba en la definición de credenciales de Parte 7).
-- Parte 2-B (RAMA 14): script de limpieza, CSV limpios (backend/data/centa/clean/), exports crudos versionados (backend/data/centa/raw/) y seed idempotente; scripts npm datos:limpiar y datos:cargar. Verificar que .gitignore no excluya backend/data/ y confirmar en la documentación de Prisma 7 dónde se declara el comando de seed (prisma7.config.ts) o dejar solo el script de package.json. Tras el merge, cada integrante corre npx prisma generate, npx prisma migrate dev y npm run datos:cargar.
-- Partes 2-C y 2-D: servicio y endpoint de viabilidad según el contrato de docs/Parte2_Datos_CENTA_2A_2B.md (distribución completa por clase, clase dominante como resumen, errores { error, detalles }). Responsables por confirmar. Definir si el endpoint exige requireAuth (se sugiere que sí). Temporadas diferidas hasta la Parte 3. Las recomendaciones deben redactarse como referencia distrital citando a CENTA, no como veredicto sobre la parcela.
+- Parte 2-B: completada en RAMA 14 (limpieza, CSV limpios y carga verificada en MySQL). Queda escribir pruebas automatizadas de limpiar-centa.ts y cargar-centa.ts (no se conectó prisma db seed: no es necesario). Verificar que Smith, Requeno y Pocho hayan corrido tras el merge git pull, npx prisma generate, npx prisma migrate dev y npm run datos:cargar, y que sus bases queden con 312 filas en areas_clase.
+- Mantener ESPERADO (cargar-centa.ts) y capas.config.ts en sincronía al agregar una capa o cambiar la división territorial.
+- Partes 2-C y 2-D: Los datos ya están cargados (RAMA 14). servicio y endpoint de viabilidad según el contrato de docs/Parte2_Datos_CENTA_2A_2B.md (distribución completa por clase, clase dominante como resumen, errores { error, detalles }). Responsables por confirmar. Definir si el endpoint exige requireAuth (se sugiere que sí). Temporadas diferidas hasta la Parte 3. Las recomendaciones deben redactarse como referencia distrital citando a CENTA, no como veredicto sobre la parcela.
 - Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B y 5-B): no están en el mapa de CENTA; hay que conseguirlos de otra fuente.
 - Opcional: confrontar la división territorial (hoy coincide con publicaciones secundarias) con el texto de la Ley Especial de Reestructuración Municipal.
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
