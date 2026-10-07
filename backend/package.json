@@ -10,7 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "datos:limpiar": "ts-node-dev --transpile-only src/viabilidad/datos/limpiar-centa.ts",
+    "datos:cargar": "ts-node-dev --transpile-only src/viabilidad/datos/cargar-centa.ts"
   },
   "keywords": [],
   "author": "",
