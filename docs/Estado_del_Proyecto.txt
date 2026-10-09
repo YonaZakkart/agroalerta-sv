@@ -963,3 +963,93 @@ Pendientes acumulados y nuevos:
 - Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B y 5-B): no están en el mapa de CENTA; hay que conseguirlos de otra fuente.
 - Opcional: confrontar la división territorial (hoy coincide con publicaciones secundarias) con el texto de la Ley Especial de Reestructuración Municipal.
 Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
+
+------------------------------------------------------------
+RAMA 16 — feat/2-c-servicio-viabilidad (Parte 2, Punto C del Mapa_inicial.txt: Servicio de consulta de viabilidad)
+Responsable: Requeno
+Fecha: 8 de octubre de 2026
+Commit: cf0539a — PR: #16
+
+Contexto: la Parte 2-A (modelo, RAMA 12) y 2-B (datos, RAMA 14) están en main; la base queda con 2 municipios, 26 distritos, 4 capas, 12 clases y 312 áreas. Esta rama implementa SOLO el servicio de consulta (2-C). No expone endpoint (2-D, RAMA 18), no cubre temporadas y no incluye pruebas automatizadas.
+
+Qué se hizo (dos archivos nuevos, ambos en backend/src/viabilidad/):
+- constantes.ts: exporta HA_POR_MANZANA = 0.7. Es el único lugar donde existe la conversión ha → manzanas (mz = ha / 0.7), tal como se definió en RAMA 12. Solo se usa para mostrar.
+- service.ts: exporta
+  - class ViabilidadError extends Error, con propiedad status (mismo patrón que RegistroError de auth).
+  - interfaces OpcionesConsulta, ClaseViabilidad, CapaViabilidad y ResultadoViabilidad.
+  - async function consultarViabilidad(idDistrito: number, opciones: OpcionesConsulta = {}): Promise<ResultadoViabilidad>.
+  Funcionamiento:
+  1. Si vienen capa y cultivo a la vez, lanza ViabilidadError 400 ("Indique capa o cultivo, no ambos").
+  2. Busca el distrito con su municipio (prisma.distrito.findUnique, include municipio) usando el cliente compartido (import { prisma } desde ../config/prisma). Si no existe: ViabilidadError 404 ("Distrito no encontrado").
+  3. Lee todas las capas con sus clases (orden por id y por valor) y, por clase, solo las áreas de ese distrito (include areas con where distritoId). Son 2 consultas a la base en total.
+  4. Filtra en memoria: capa = coincide con capas.codigo exacto (p. ej. "potencial_maiz"); cultivo = coincide con capas.cultivo comparando con normalizarNombre (sin tildes ni mayúsculas, así "maiz" encuentra "Maíz"). Capa o cultivo inexistente: ViabilidadError 404.
+  5. Por cada capa arma la distribución completa: por clase, valor, nombre, areaHa, areaMz y porcentaje; más totalHa, totalMz y claseDominante { valor, nombre, porcentaje }.
+  6. Devuelve distrito { id, nombre }, municipio { id, nombre }, fuente, fechaExtraccion (texto YYYY-MM-DD) y capas.
+- Forma de la respuesta (ejemplo recortado, Chilanga 1304, cultivo "maiz"):
+  { distrito: { id: 1304, nombre: "Chilanga" }, municipio: { id: 2, nombre: "Morazán Sur" },
+    fuente: "CENTA", fechaExtraccion: "2026-10-04",
+    capas: [ { codigo: "potencial_maiz", nombre: "Potencial de maíz", tipo: "POTENCIAL", cultivo: "Maíz",
+               totalHa: 5998.537, totalMz: 8569.34,
+               claseDominante: { valor: 2, nombre: "Medio", porcentaje: 46.3 },
+               clases: [ { valor: 1, nombre: "Bajo",  areaHa: 2024.138, areaMz: 2891.63, porcentaje: 33.7 },
+                         { valor: 2, nombre: "Medio", areaHa: 2779.24,  areaMz: 3970.34, porcentaje: 46.3 },
+                         { valor: 3, nombre: "Alto",  areaHa: 1195.159, areaMz: 1707.37, porcentaje: 19.9 } ] },
+             { codigo: "riesgo_sequia", ... } ] }
+
+Decisiones de diseño:
+- areaHa es Decimal(12,3) en la base. Se convierte con .mul(1000).toNumber() a milésimas de hectárea (enteros) y todas las sumas y porcentajes se calculan sobre enteros: sin error de coma flotante. Se devuelve como número con 3 decimales.
+- El porcentaje se calcula en cada consulta, sobre la suma de áreas del distrito en esa capa (no se guarda). Se redondea a 1 decimal solo en la salida; la clase dominante se decide con las áreas exactas, no con el porcentaje redondeado. En empate gana la de menor valor. Los porcentajes redondeados pueden no sumar exactamente 100 (Chilanga maíz: 33.7 + 46.3 + 19.9 = 99.9).
+- Manzanas (areaMz, totalMz) = ha / HA_POR_MANZANA, redondeadas a 2 decimales, solo para mostrar. Los cálculos internos son siempre en hectáreas.
+- Una clase sin fila de área para el distrito cuenta como 0 ha y se lista igual (coherente con "Clase ausente = 0 ha" de RAMA 12). Si el total de una capa es 0, los porcentajes son 0 y claseDominante es null.
+- fuente = la de la primera fila de área leída; fechaExtraccion = la más reciente entre las filas leídas. Hoy las 312 filas tienen CENTA y 2026-10-04.
+- Al filtrar por cultivo se incluyen también las capas sin cultivo (riesgo_sequia), porque la sequía aplica a todos los cultivos. Esta decisión se agregó al criterio original y queda para confirmar (ver Pendientes).
+- Capa y cultivo juntos se rechazan con 400 en vez de combinarse, para no inventar una semántica de intersección. También se agregó al criterio original.
+- El servicio lanza ViabilidadError con status y mensaje; no formatea respuestas HTTP. Convertirlo a { error, detalles } es trabajo del router (RAMA 18).
+- No cubre temporadas (diferidas a la Parte 3, como se acordó en RAMA 12).
+
+Cambios respecto al Mapa_inicial.txt y al documento de datos: ninguno. Se cumple la interpretación fijada en RAMA 12 (consulta por distrito + capa, sin temporada).
+
+Qué se modificó: nada. Qué se eliminó: nada. Dependencias nuevas: ninguna.
+Archivos tocados fuera de lo que correspondía: ninguno. No se tocaron schema.prisma, migrations/, index.ts, config/, auth/, events/, package.json ni los archivos de viabilidad/datos/. El único archivo de otra carpeta que el servicio usa es viabilidad/datos/utilidades.ts (importa normalizarNombre), solo lectura.
+.prettierrc (sin seguimiento en la raíz) no se subió: el commit incluyó los dos archivos por nombre, sin "git add .".
+
+Cumplimiento del punto 2-C ("Servicio de consulta de viabilidad por zona + grano + temporada"):
+- Consulta por distrito (zona), con capa o cultivo (grano) opcionales: cumplido.
+- Distribución completa por clase (clase, valor, área en ha, porcentaje), clase dominante como resumen, distrito, municipio, fuente y fecha de extracción: cumplido.
+- Porcentaje calculado al consultar y redondeado a 1 decimal solo para mostrar; manzanas solo para mostrar con la constante en un único lugar; manejo de Decimal: cumplido.
+- Temporada: no cubierta, a propósito (diferida).
+
+Pruebas realizadas (manuales):
+- npx tsc --noEmit desde backend/: sin errores (tras corregir un archivo constantes.ts que se había guardado sin el export).
+- Script temporal (borrado antes del commit) que llamó a consultarViabilidad(1304, { cultivo: "maiz" }) contra el MySQL de Docker con los 312 registros cargados. Resultado: Chilanga en maíz = 2024.138 / 2779.240 / 1195.159 ha, total 5998.537 (coincide con el control del documento de datos), porcentajes 33.7 / 46.3 / 19.9, dominante Medio; fuente CENTA y fecha 2026-10-04; la capa riesgo_sequia vino incluida: 2104.254 / 3092.186 / 802.098 ha, dominante Moderada (51.5 %).
+- Los errores (distrito inexistente 404, capa inexistente 404, cultivo inexistente 404, capa + cultivo 400) se verificaron solo contra un cliente de Prisma simulado con los datos reales de Chilanga, no contra MySQL real.
+- Observación sobre los datos fuente: la sequía de Chilanga suma 5998.538 ha y el maíz 5998.537 (0.001 ha de diferencia, redondeo de CENTA). No es un defecto del servicio.
+- NO realizadas: pruebas automatizadas del servicio, errores contra MySQL real, otros distritos aparte de Chilanga, otras capas filtradas por separado, y la integración con un endpoint (no existe aún).
+
+Qué NO se hizo / qué falta:
+- Router, montaje en index.ts, validación del id, mapeo de ViabilidadError a respuestas HTTP y decisión de requireAuth (2-D, RAMA 18).
+- Pruebas automatizadas del servicio y del endpoint (2-D) y revisión general (RAMA 20).
+- Validar Usuario.distrito contra el catálogo (sigue pendiente, ver Pendientes).
+
+Qué se agregó de más (no pedido originalmente):
+- areaMz y totalMz en la respuesta (el documento pedía manzanas solo para mostrar; se entregan ya calculadas) y totalHa por capa.
+- La respuesta incluye el id del distrito y del municipio además de los nombres.
+- Rechazo 400 si se envían capa y cultivo a la vez.
+- Inclusión de capas sin cultivo al filtrar por cultivo.
+- Archivo constantes.ts separado para una sola constante (se hizo así para tener "un único lugar" importable también desde la 2-D y la Parte 6).
+
+Incidencias técnicas durante el desarrollo (de entorno, no del código):
+- Prisma Migrate falló con "Unknown authentication plugin sha256_password": había dos servicios de MySQL de Windows (MySQL80 y MySQL96) ocupando el puerto 3306, así que Prisma hablaba con ellos y no con Docker. Además el contenedor local tenía 13 días y no publicaba el puerto. Solución: detener MySQL80 (consola de administrador), recrear el contenedor con docker compose down -v y up -d db. MySQL96 solo ocupaba el 33060 y no estorba. Al reiniciar Windows, MySQL80 vuelve a arrancar: conviene pasarlo a inicio manual (sc config MySQL80 start= demand) o detenerlo antes de levantar Docker.
+- Se ejecutó "npx prisma migrate dev" en la raíz del repo, lo que descargó una versión suelta de prisma (8.0.0-rc.22) sin el comando migrate. Los comandos npm/npx se corren desde backend/.
+- El nombre de la rama se creó con un typo (feat/2-c-servicio-viabilida) y se renombró con git branch -m antes del primer push.
+- Un git add con la ruta backend/... estando dentro de backend/ falló por duplicar el prefijo.
+- Estos tres últimos puntos confirman la advertencia de RAMA 14: docker compose desde la raíz, npm/npx desde backend/, git add con rutas relativas al directorio actual.
+
+Puntos de atención para las siguientes ramas:
+- RAMA 18 (2-D): importar { consultarViabilidad, ViabilidadError } desde viabilidad/service. Convertir ViabilidadError a { error, detalles } con su status; cualquier otro error es 500 sin devolver error.message. Validar que el id sea un entero positivo ANTES de llamar al servicio (400 con error: "Datos inválidos"): el servicio asume un número válido. Los parámetros capa y cultivo llegan como texto; con exactOptionalPropertyTypes activo, OpcionesConsulta acepta undefined explícito, pero conviene no mandar ambos a la vez.
+- RAMA 18: el servicio ya devuelve 404 para distrito, capa o cultivo inexistente; decidir si el endpoint lo conserva y si exige requireAuth (se sugiere que sí).
+- RAMA 18: el JSON ya sale con números normales (no Decimal), listo para serializar.
+- Acoplamiento: service.ts importa normalizarNombre de viabilidad/datos/utilidades.ts (que también importa módulos de archivos para el limpiador). Si esa función se mueve, hay que actualizar el import. Es la misma normalización del seed y de la futura validación de Usuario.distrito.
+- Frontend (Parte 6): la respuesta trae porcentaje y manzanas ya redondeados para mostrar; no recalcular en el cliente.
+- RAMA 20: comparar contra la respuesta real los ejemplos de Chilanga (maíz y sequía), que en esta rama ya coinciden; verificar los 312 registros en las bases de los otros integrantes.
+- Conflictos de merge: la rama solo agrega archivos nuevos; ninguna otra rama de la Parte 2 los toca. El riesgo está en Estado_del_Proyecto.txt si dos personas lo editan en paralelo: lo edita solo quien haga la rama 17.
