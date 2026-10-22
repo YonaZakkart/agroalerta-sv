@@ -33,4 +33,10 @@ app.use("/auth", perfilRouter);
 app.use("/viabilidad", viabilidadRouter); 
 
 const PORT = process.env.PORT ?? 3000;
-app.listen(PORT, () => console.log(`Backend corriendo en puerto ${PORT}`));
+app.listen(PORT, (error) => {
+  if (error) {
+    console.error(`No se pudo iniciar el backend en el puerto ${PORT}:`, error);
+    process.exit(1);
+  }
+  console.log(`Backend corriendo en puerto ${PORT}`);
+});

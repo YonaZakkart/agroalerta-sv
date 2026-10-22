@@ -20,8 +20,9 @@ function mensajePorEstado(status: number): string {
 
 viabilidadRouter.get("/distritos/:id", requireAuth, async (req, res) => {
   const idTexto = String(req.params.id ?? "");
+  const id = Number(idTexto);
 
-  if (!SOLO_DIGITOS.test(idTexto) || Number(idTexto) <= 0) {
+  if (!SOLO_DIGITOS.test(idTexto) || !Number.isSafeInteger(id) || id <= 0) {
     res.status(400).json({
       error: "Datos inválidos",
       detalles: "El id del distrito debe ser un entero positivo",
@@ -41,10 +42,7 @@ viabilidadRouter.get("/distritos/:id", requireAuth, async (req, res) => {
   const cultivo = textoOpcional(req.query.cultivo);
 
   try {
-    const resultado = await consultarViabilidad(Number(idTexto), {
-      capa,
-      cultivo,
-    });
+    const resultado = await consultarViabilidad(id, { capa, cultivo });
     res.status(200).json(resultado);
   } catch (error) {
     if (error instanceof ViabilidadError) {
