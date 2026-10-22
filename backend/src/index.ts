@@ -3,6 +3,7 @@ import express from "express";
 import registroRouter from "./auth/registro.routes";
 import { loginRouter } from "./auth/login.routes";
 import { perfilRouter } from "./auth/perfil.routes";
+import { viabilidadRouter } from "./viabilidad/viabilidad.routes";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
 for (const nombre of ["JWT_SECRET", "DUI_PEPPER"] as const) {
@@ -29,5 +30,13 @@ app.use("/auth", loginRouter);
 
 app.use("/auth", perfilRouter);
 
+app.use("/viabilidad", viabilidadRouter); 
+
 const PORT = process.env.PORT ?? 3000;
-app.listen(PORT, () => console.log(`Backend corriendo en puerto ${PORT}`));
+app.listen(PORT, (error) => {
+  if (error) {
+    console.error(`No se pudo iniciar el backend en el puerto ${PORT}:`, error);
+    process.exit(1);
+  }
+  console.log(`Backend corriendo en puerto ${PORT}`);
+});
