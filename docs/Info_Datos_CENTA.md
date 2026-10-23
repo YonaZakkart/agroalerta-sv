@@ -1,7 +1,7 @@
-# AgroAlerta Morazán — Parte 2-A y 2-B: datos de viabilidad (CENTA)
+# AgroAlerta Morazán — Parte 2: datos de viabilidad (CENTA)
 
-Estado (actualizado en RAMA 15): 2-A implementado en RAMA 12 y 2-B implementado en RAMA 14; 2-C y 2-D pendientes. La sección 9 sigue siendo propuesta hasta implementarse.
-Fecha de este documento: 6 de octubre de 2026. Responsable: Yona (RAMA 12, Parte 2-A; también RAMA 14, Parte 2-B).
+Estado (actualizado el 22 de octubre de 2026): 2-A implementado en feat/2-a-modelos-viabilidad, 2-B en feat/2-b-datos-centa, 2-C en feat/2-c-servicio-viabilidad y 2-D en feat/2-d-endpoint-viabilidad (rechazada) y su fix posterior; todos en main. Falta el cierre de la Parte 2 (2-END). La sección 9 describe la forma real de la respuesta, pendiente de confirmar como definitiva.
+Fecha del documento original: 6 de octubre de 2026. Responsable: Yona (2-A y 2-B). 2-C fue implementado por Requeno; el detalle está en Estado_del_Proyecto.txt (historial por Partes y Puntos).
 
 ---
 
@@ -9,8 +9,8 @@ Fecha de este documento: 6 de octubre de 2026. Responsable: Yona (RAMA 12, Parte
 
 - 2-A (Yona): modelo de datos en `schema.prisma` y su migración.
 - 2-B (Yona, antes asignado a otra persona): datos de Morazán. Script de limpieza de los exports de CENTA, CSV limpios y script de carga (seed).
-- 2-C (otra persona): servicio de consulta de viabilidad.
-- 2-D (otra persona): endpoint y pruebas.
+- 2-C (Requeno): servicio de consulta de viabilidad.
+- 2-D (Pocho): endpoint y pruebas.
 
 Lo que este documento fija entre 2-B y 2-C es el contrato de datos (secciones 6 y 9): quien haga el 2-C puede confiar en esas tablas y en esas reglas de interpretación.
 
@@ -33,11 +33,11 @@ Lo que este documento fija entre 2-B y 2-C es el contrato de datos (secciones 6 
 
 Por qué la distribución completa y no solo la clase dominante: con los datos reales, la clase dominante casi no discrimina entre distritos. Maíz es Bajo en 15 distritos, Medio en 8 y Alto en 3. Frijol es Medio en 19, Bajo en 6 y Alto en 1. Sorgo es Bajo en 20 y Medio en 6 (ninguno Alto). Sequía es Moderada en 24 distritos y Severa en 2. Ejemplo, Chilanga: maíz 19.9 % Alto / 46.3 % Medio / 33.7 % Bajo; sequía 35.1 % Leve / 51.5 % Moderada / 13.4 % Severa.
 
-## 3. Cambios respecto al Mapa_inicial.txt (documentar en Estado_del_Proyecto.txt al cerrar la rama)
+## 3. Cambios respecto al Mapa_inicial.txt (documentar en Estado_del_Proyecto.txt al cerrar el punto)
 
 - 2-C: la consulta es por distrito + capa, no "zona + grano + temporada". La temporada queda diferida.
 - 2-B: lo asume Yona, junto con el 2-A.
-- 2-A/2-B: el catálogo Municipio (2) / Distrito (26) ya estaba anunciado desde RAMA 2; ahora se concreta aquí.
+- 2-A/2-B: el catálogo Municipio (2) / Distrito (26) ya estaba anunciado desde feat/auth-registro-usuario (1-A); ahora se concreta aquí.
 - Se agrega la capa de riesgo de sequía (no estaba en el Mapa).
 - No hay "tabla de zonas" propiamente dicha; la unidad es el distrito.
 
@@ -104,7 +104,7 @@ Capas y clases son datos, no código: agregar una capa futura es insertar filas.
 
 Migración sugerida: `add_viabilidad`. Después de mergear: cada integrante corre `npx prisma generate` y `npx prisma migrate dev`.
 
-Implementado en RAMA 12 (migración add_viabilidad). Diferencias respecto a esta propuesta: nombreNormalizado quedó obligatoria y única (no opcional) y tipo es el enum TipoCapa.
+Implementado en feat/2-a-modelos-viabilidad (2-A, migración add_viabilidad). Diferencias respecto a esta propuesta: nombreNormalizado quedó obligatoria y única (no opcional) y tipo es el enum TipoCapa.
 
 El campo `distrito` de Usuario sigue siendo texto libre. Validarlo contra este catálogo (o pasarlo a FK) queda pendiente de decisión (sección 11).
 
@@ -168,7 +168,7 @@ Si CENTA actualiza el mapa, repetir desde el paso 1. Los exports crudos de versi
 - Opcional: conectarlo con `prisma db seed`. Confirmar en la documentación de Prisma 7 dónde se declara el comando (la configuración vive en `prisma7.config.ts`); si no es necesario, basta el script de `package.json`.
 - Después del merge, cada integrante hace: `npx prisma generate`, `npx prisma migrate dev`, `npm run datos:cargar`.
 
-### Nota de implementación (RAMA 14)
+### Nota de implementación (feat/2-b-datos-centa, 2-B)
 
 Implementado en backend/src/viabilidad/datos/: capas.config.ts, utilidades.ts (archivo adicional, compartido), limpiar-centa.ts y cargar-centa.ts. Scripts: npm run datos:limpiar y npm run datos:cargar (ts-node-dev --transpile-only), siempre desde backend/. Donde las secciones 7 y 8 difieren de lo siguiente, prevalece esta nota.
 
@@ -178,57 +178,83 @@ Implementado en backend/src/viabilidad/datos/: capas.config.ts, utilidades.ts (a
 - Carga: upsert dentro de una transacción; si las tablas quedan con una cantidad de filas distinta de ESPERADO (2 municipios, 26 distritos, 4 capas, 12 clases, 312 áreas), se revierte. No se conectó prisma db seed.
 - Controles verificados con los datos reales: 78, 76, 74 y 46 filas leídas; 38 clases completadas con 0 ha (frijol 2, maicillo 4, sequía 32); Chilanga en maíz suma 5998.537 ha; fecha_extraccion guardada sin desfase de zona horaria.
 
-## 9. Contrato para el 2-C (cómo se usarán los datos)
+## 9. Contrato de la consulta de viabilidad (2-C servicio, 2-D endpoint)
 
-- Entrada: id de distrito (y opcionalmente capa o cultivo).
-- Para cada capa devuelve la distribución COMPLETA: clase, valor, área en ha y porcentaje. Los porcentajes se calculan sobre la suma de las áreas de ese distrito en esa capa; el redondeo (un decimal) es solo de presentación, por lo que la suma visible puede dar 99.9 o 100.1.
-- Incluye la clase dominante (la de mayor área) como dato resumido, sin reemplazar la distribución.
-- Incluye el distrito, su municipio, la fuente y la fecha de extracción.
+Estado: implementado. La forma de la respuesta de esta sección es la que devuelve hoy el servicio (feat/2-c-servicio-viabilidad, 2-C) y la que expone el endpoint (2-D). Sustituye a la propuesta original, que usaba `distribucion` y `clase`; sigue pendiente de confirmar como definitiva (ver sección 11).
+
+### Endpoint
+
+- `GET /viabilidad/distritos/:id`, protegido con `requireAuth` (encabezado `Authorization: Bearer <token>`).
+- Parámetros opcionales (no se pueden usar juntos): `capa` (código exacto, por ejemplo `potencial_maiz`) o `cultivo` (se compara sin tildes ni mayúsculas, así `maiz` encuentra "Maíz"). Una cadena vacía se trata como ausente. Si se repiten (`?capa=a&capa=b`) responde 400.
+- Al filtrar por cultivo se incluye también `riesgo_sequia`, que aplica a todos los cultivos.
+- El alias `sorgo` no se acepta: responde 404 "Cultivo no encontrado" (el cultivo se llama Maicillo). Si el equipo lo acepta, el alias va en `viabilidad.routes.ts`, no en el servicio.
+- El id debe ser un entero positivo dentro del rango seguro. `1304` y `01304` dan 200.
+
+### Reglas de interpretación
+
+- Para cada capa devuelve la distribución COMPLETA por clase: valor, nombre, área en ha, área en manzanas y porcentaje. Los porcentajes se calculan en cada consulta sobre la suma de las áreas de ese distrito en esa capa (no se guardan); se redondean a 1 decimal solo en la salida, por lo que la suma visible puede dar 99.9 o 100.1.
+- Incluye `claseDominante` (la de mayor área, decidida con las áreas exactas; en empate gana la de menor valor) como dato resumido, sin reemplazar la distribución. Si el total de la capa es 0, los porcentajes son 0 y `claseDominante` es `null`.
+- Una clase sin fila de área para el distrito cuenta como 0 ha y se lista igual.
+- Incluye el distrito, su municipio, la fuente y la fecha de extracción (la más reciente entre las filas leídas).
 - La unidad es el distrito, no la parcela. La recomendación debe redactarse como referencia distrital ("el 34 % del distrito tiene potencial bajo para maíz"), no como veredicto sobre el terreno del agricultor. Citar a CENTA como fuente en la interfaz.
-- Manzanas solo para mostrar: `mz = ha / 0.7`, con la constante definida en un único lugar.
-- Errores con el contrato de /auth ya unificado: `{ error, detalles }`. Un id inválido es 400 con `error: "Datos inválidos"`. Los 500 no devuelven `error.message`.
+- Manzanas solo para mostrar: `mz = ha / 0.7` (`HA_POR_MANZANA` en `backend/src/viabilidad/constantes.ts`, único lugar de la conversión), redondeadas a 2 decimales. Los cálculos internos son siempre en hectáreas (milésimas de hectárea enteras, sin error de coma flotante).
+- El frontend no debe recalcular porcentajes ni manzanas: ya vienen redondeados.
 
-Ejemplo de respuesta (Chilanga, maíz; valores reales de los datos):
+### Errores (contrato de /auth ya unificado: `{ error, detalles }`)
+
+- 400 `{ error: "Datos inválidos", detalles }`: id no entero positivo o fuera de rango, `capa` y `cultivo` juntos, o parámetros repetidos.
+- 401: sin token, token inválido o expirado (lo responde `requireAuth`).
+- 404 `{ error: "No encontrado", detalles }`: distrito, capa o cultivo inexistente.
+- 500 `{ error: "Error interno del servidor" }`: nunca devuelve `error.message`.
+
+### Ejemplo de respuesta (Chilanga, maíz; valores reales de los datos)
 
 ```json
 {
-  "distrito": { "id": 1304, "nombre": "Chilanga", "municipio": "Morazán Sur" },
+  "distrito": { "id": 1304, "nombre": "Chilanga" },
+  "municipio": { "id": 2, "nombre": "Morazán Sur" },
   "fuente": "CENTA",
+  "fechaExtraccion": "2026-10-04",
   "capas": [
     {
       "codigo": "potencial_maiz",
+      "nombre": "Potencial de maíz",
       "tipo": "POTENCIAL",
-      "dominante": "Medio",
-      "distribucion": [
-        { "clase": "Bajo",  "valor": 1, "areaHa": 2024.138, "porcentaje": 33.7 },
-        { "clase": "Medio", "valor": 2, "areaHa": 2779.240, "porcentaje": 46.3 },
-        { "clase": "Alto",  "valor": 3, "areaHa": 1195.159, "porcentaje": 19.9 }
+      "cultivo": "Maíz",
+      "totalHa": 5998.537,
+      "totalMz": 8569.34,
+      "claseDominante": { "valor": 2, "nombre": "Medio", "porcentaje": 46.3 },
+      "clases": [
+        { "valor": 1, "nombre": "Bajo",  "areaHa": 2024.138, "areaMz": 2891.63, "porcentaje": 33.7 },
+        { "valor": 2, "nombre": "Medio", "areaHa": 2779.24,  "areaMz": 3970.34, "porcentaje": 46.3 },
+        { "valor": 3, "nombre": "Alto",  "areaHa": 1195.159, "areaMz": 1707.37, "porcentaje": 19.9 }
       ]
-    }
+    },
+    { "codigo": "riesgo_sequia", "...": "(se incluye al filtrar por cultivo; sin cultivo)" }
   ]
 }
 ```
 
 Riesgo de sequía de Chilanga: Leve 2104.254 ha (35.1 %), Moderada 3092.186 ha (51.5 %), Severa 802.098 ha (13.4 %).
 
-Ver también el Mapa: el 2-C no cubre temporadas por ahora (decisión 11).
+Temporadas: el servicio y el endpoint no las cubren por ahora (decisión 11).
 
 ## 10. Riesgos de merge y archivos compartidos
 
 - `backend/prisma/schema.prisma` y `prisma/migrations/`: archivos compartidos. Agregar los modelos al final, en su propia sección. Si hay conflicto de orden de migraciones, quien mergee segundo regenera su migración sobre la versión actualizada de `main`.
 - `backend/package.json`: solo se agregan los dos scripts de `package.json`. Sin dependencias nuevas no se toca el lock.
-- `backend/src/index.ts`: lo toca el 2-D al montar el router, no el 2-A ni el 2-B.
+- `backend/src/index.ts`: lo tocó el 2-D al montar el router de viabilidad (también corrigió ahí el manejo del error de `app.listen`); no lo tocaron el 2-A ni el 2-B.
 - `events/types.ts`: no se toca en el 2-A ni el 2-B.
 - Comprobar que `.gitignore` no excluya `backend/data/`.
 - Después de cada pull que cambie `schema.prisma`: `npx prisma generate` y `npx prisma migrate dev`.
 
 ## 11. Pendientes y decisiones abiertas
 
-- Validar o relacionar `Usuario.distrito` (hoy texto libre) con el catálogo. Quién lo hace y cuándo: por definir; toca archivos de la Parte 1 (`registro.routes.ts` y el modelo).
-- Si el endpoint de viabilidad exige `requireAuth`: por definir (se sugiere que sí).
+- Confirmar como definitivas las decisiones de 2-D: ruta `/viabilidad/distritos/:id`, `requireAuth`, no aceptar el alias `sorgo`, incluir `riesgo_sequia` al filtrar por cultivo, 400 con `capa` y `cultivo` juntos, y la forma de la respuesta de la sección 9 (`nombre` en cada clase y `clases` por capa). Se resuelve en el cierre de la Parte 2 (2-END).
+- Validar o relacionar `Usuario.distrito` (hoy texto libre) con el catálogo. Quién lo hace y cuándo: por definir; toca archivos de la Parte 1 (`registro.routes.ts` y el modelo) y exige una migración para los distritos ya guardados. Debe reutilizar `normalizarNombre`.
 - Fuente oficial de la división territorial: hoy coincide con publicaciones secundarias; opcionalmente confrontarla con el texto de la Ley Especial de Reestructuración Municipal.
 - Capas futuras (caña, vainilla, banano, elevación, temperatura, humedad): evaluar cuando se vean sus datos.
-- Pruebas automatizadas del limpiador (conversión de números, validaciones) y del 2-C/2-D: sin definir; las validaciones del script hacen de control mientras tanto.
-- Temporadas: diferidas hasta la API meteorológica.
+- Pruebas automatizadas del limpiador (conversión de números, validaciones), del seed, del servicio y del endpoint: pendientes de aprobación de dependencias; las validaciones del script y las pruebas manuales hacen de control mientras tanto.
+- Temporadas: diferidas hasta la API meteorológica (Parte 3).
 - Rendimientos de referencia (qq/mz) y rango de precipitación (para la Parte 3-B): no están en este mapa; hay que conseguirlos de otra fuente.
-- Documentar al cerrar la rama, en Estado_del_Proyecto.txt, los cambios de la sección 3.
+- Documentar en Estado_del_Proyecto.txt, al cerrar cada punto, los cambios de la sección 3.

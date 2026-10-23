@@ -1,6 +1,6 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán
-Última actualización: 06 de Octubre de 2026.
+Última actualización: 22 de Octubre de 2026.
 ============================================================
 
 1. RESUMEN DE LA IDEA
@@ -13,44 +13,51 @@ Integra:
 
 El sistema reacciona automáticamente a eventos (registro de siembra, actualización meteorológica, cambio de condición climática) sin que el usuario tenga que solicitar el recálculo manualmente.
 
-Nota geográfica (desde RAMA 2): tras la reorganización territorial, el departamento de Morazán tiene solo 2 municipios (Morazán Norte y Morazán Sur). Los 26 antiguos municipios (Chilanga, etc.) son ahora DISTRITOS. El sistema trabaja a nivel de distrito, porque es la unidad que importa para zonas de viabilidad y estaciones climáticas. El campo del usuario se llama "distrito" (ya no "municipio"). Ver detalle en RAMA 2.
-Desde RAMA 12 el catálogo Municipio (2) / Distrito (26) existe como modelos en la base (el código CENTA 1301 a 1326 es la llave del distrito), y, desde RAMA 14, cargado con los datos de CENTA (26 distritos: 11 en Morazán Norte y 15 en Morazán Sur)
+Nota geográfica (desde 1-A): tras la reorganización territorial, el departamento de Morazán tiene solo 2 municipios (Morazán Norte y Morazán Sur). Los 26 antiguos municipios (Chilanga, etc.) son ahora DISTRITOS. El sistema trabaja a nivel de distrito, porque es la unidad que importa para zonas de viabilidad y estaciones climáticas. El campo del usuario se llama "distrito" (ya no "municipio"). Ver detalle en 1-A (feat/auth-registro-usuario).
+Desde 2-A el catálogo Municipio (2) / Distrito (26) existe como modelos en la base (el código CENTA 1301 a 1326 es la llave del distrito) y, desde 2-B, está cargado con los datos de CENTA (26 distritos: 11 en Morazán Norte y 15 en Morazán Sur). Desde 2-C el backend tiene el servicio de consulta de viabilidad y desde 2-D lo expone como GET /viabilidad/distritos/:id (protegido con requireAuth).
+
+Estado de avance (22 de octubre de 2026): Parte 0 completa. Parte 1 (autenticación) completa en el backend (1-A a 1-END). Parte 2 (viabilidad) con 2-A, 2-B, 2-C y 2-D en main; falta su cierre (2-END, ver Pendientes). Partes 3 a 7 sin iniciar. El frontend Angular todavía no se conecta al backend.
+
+
 
 2. ESTRUCTURA INICIAL DE ARCHIVOS
 Repositorio: agroalerta-sv (GitHub, privado). Owner: Yona. Colaboradores: Smith, Requeno, Pocho.
 
 agroalerta-sv/
 ├── README.md
-├── .gitignore                 (incluye node_modules/, dist/, .angular/, .env, logs, editor/SO; se amplió en RAMA 1 — ver esa sección)
-├── docker-compose.yml         (nuevo en RAMA 1 — servicio "db" de MySQL para desarrollo)
+├── .gitignore                 (incluye node_modules/, dist/, .angular/, .env, logs, editor/SO; se amplió en Parte 0 (chore/db-setup) — ver esa sección)
+├── docker-compose.yml         (nuevo en Parte 0 (chore/db-setup) — servicio "db" de MySQL para desarrollo)
 ├── docker/
 │   └── mysql-init/
-│       └── grant-shadow.sql   (nuevo en RAMA 1)
-├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde RAMA 3 e Info_Datos_CENTA.md desde RAMA 13; se actualiza en ramas docs/: RAMA 7, 9, 11, 13 y 15)
+│       └── grant-shadow.sql   (nuevo en Parte 0, chore/db-setup)
+├── docs/                      (al mismo nivel que backend/ y frontend/; contiene Propuesta_Inicial.txt, Mapa_inicial.txt y Estado_del_Proyecto.txt desde Parte 0 (docs/agregar-documentacion) e Info_Datos_CENTA.md desde 2-A; se actualiza en ramas docs/, una por punto)
 ├── backend/
-│   ├── package.json           jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10 agregados en RAMA 6; scripts datos:limpiar y datos:cargar agregados en RAMA 14 (sin dependencias nuevas)
+│   ├── package.json           jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10 agregados en 1-B; scripts datos:limpiar y datos:cargar agregados en 2-B (sin dependencias nuevas)
 │   ├── package-lock.json
-│   ├── tsconfig.json          (rootDir: "./src"; "include": ["src/**/*"] agregado en RAMA 1)
-│   ├── prisma7.config.ts      (nuevo en RAMA 1, autogenerado por Prisma — config del CLI, fuera de src/)
-│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde RAMA 2 requiere DUI_PEPPER; desde RAMA 6 requiere JWT_SECRET); desde RAMA 10 el servidor no arranca sin ellos
-│   ├── .env.example           (nuevo en RAMA 2, SÍ versionado — plantilla de .env; desde RAMA 10, DUI_PEPPER y JWT_SECRET vienen vacíos y son obligatorios)
+│   ├── tsconfig.json          (rootDir: "./src"; "include": ["src/**/*"] agregado en Parte 0, chore/db-setup)
+│   ├── prisma7.config.ts      (nuevo en Parte 0 (chore/db-setup), autogenerado por Prisma — config del CLI, fuera de src/)
+│   ├── .env                   (NO se sube al repo, ya cubierto por .gitignore; desde 1-A requiere DUI_PEPPER; desde 1-B requiere JWT_SECRET); desde 1-END el servidor no arranca sin ellos
+│   ├── .env.example           (nuevo en 1-A, SÍ versionado — plantilla de .env; desde 1-END, DUI_PEPPER y JWT_SECRET vienen vacíos y son obligatorios)
 │   ├── data/
-│   │   └── centa/             (nuevo en RAMA 14 — datos de viabilidad; se versiona)
+│   │   └── centa/             (nuevo en 2-B — datos de viabilidad; se versiona)
 │   │       ├── raw/           exports crudos de CENTA (Potencial_maiz.csv, Potencial_frijol.csv, Potencial_sorgo.csv, Riesgo_sequia.csv), division_territorial_morazan.csv y fuente.json; no abrirlos ni guardarlos en Excel
 │   │       └── clean/         distritos.csv (26 filas) y areas_clase.csv (312 filas), generados por npm run datos:limpiar; no se editan a mano
 │   ├── prisma/
-│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde RAMA 2 + modelo Usuario, RAMA 2, ampliado en RAMA 4 + modelos de la Parte 2: Municipio, Distrito, Capa, ClaseCapa, AreaClase y enum TipoCapa, RAMA 12)
-│   │   └── migrations/        (nuevo en RAMA 2 — migraciones add_usuarios (RAMA 2), add_verificacion_correo (RAMA 4) y add_viabilidad (RAMA 12); se versionan)
+│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde 1-A + modelo Usuario, 1-A, ampliado en 1-C + modelos de la Parte 2: Municipio, Distrito, Capa, ClaseCapa, AreaClase y enum TipoCapa, 2-A)
+│   │   └── migrations/        (nuevo en 1-A — migraciones add_usuarios (1-A), add_verificacion_correo (1-C) y add_viabilidad (2-A); se versionan)
 │   └── src/
 │       ├── auth/
-│       │   ├── registro.service.ts   (nuevo en RAMA 2 — hashing, creación de usuario, emisión de evento)
-│       │   ├── registro.routes.ts    (nuevo en RAMA 2 — POST /auth/registro y validación de entrada)
-│       │   ├── jwt.ts                (nuevo en RAMA 6 — firma y verificación de JWT, secreto compartido)
-│       │   ├── auth.middleware.ts    (nuevo en RAMA 6 — requireAuth, extiende Express.Request con "usuario")
-│       │   ├── login.routes.ts       (nuevo en RAMA 6 — POST /auth/login)
-│       │   └── perfil.routes.ts      (nuevo en RAMA 8 — GET /auth/yo protegido con requireAuth)
-│       ├── viabilidad/         (desde RAMA 14, subcarpeta datos/; servicio y endpoint de viabilidad pendientes: 2-C y 2-D)
-│       │   └── datos/          (nuevo en RAMA 14)
+│       │   ├── registro.service.ts   (nuevo en 1-A — hashing, creación de usuario, emisión de evento)
+│       │   ├── registro.routes.ts    (nuevo en 1-A — POST /auth/registro y validación de entrada)
+│       │   ├── jwt.ts                (nuevo en 1-B — firma y verificación de JWT, secreto compartido)
+│       │   ├── auth.middleware.ts    (nuevo en 1-B — requireAuth, extiende Express.Request con "usuario")
+│       │   ├── login.routes.ts       (nuevo en 1-B — POST /auth/login)
+│       │   └── perfil.routes.ts      (nuevo en 1-D — GET /auth/yo protegido con requireAuth)
+│       ├── viabilidad/         (Parte 2: datos/ desde 2-B; servicio desde 2-C; endpoint desde 2-D)
+│       │   ├── constantes.ts       (nuevo en 2-C — HA_POR_MANZANA = 0.7, único lugar de la conversión ha → manzanas)
+│       │   ├── service.ts          (nuevo en 2-C — consultarViabilidad() y ViabilidadError)
+│       │   ├── viabilidad.routes.ts (nuevo en 2-D — GET /viabilidad/distritos/:id protegido con requireAuth)
+│       │   └── datos/              (nuevo en 2-B)
 │       │       ├── capas.config.ts     configuración de las 4 capas (lo único que cambia al agregar una capa)
 │       │       ├── utilidades.ts       lector de CSV, números, normalizarNombre y acumulador de errores
 │       │       ├── limpiar-centa.ts    npm run datos:limpiar
@@ -59,15 +66,17 @@ agroalerta-sv/
 │       ├── siembra/            (vacío, para Parte 4)
 │       ├── estimacion/         (vacío, para Parte 5)
 │       ├── events/             (bus de eventos compartido; punto de contacto entre partes)
-│       │   ├── bus.ts          (nuevo en RAMA 2 — instancia única de EventEmitter)
-│       │   └── types.ts        (nuevo en RAMA 2 — nombres de eventos y tipos de payload)
+│       │   ├── bus.ts          (nuevo en 1-A — instancia única de EventEmitter)
+│       │   └── types.ts        (nuevo en 1-A — nombres de eventos y tipos de payload)
 │       ├── config/
-│       │   └── prisma.ts       (nuevo en RAMA 1 — cliente Prisma compartido, punto de contacto entre partes; desde RAMA 10 el adapter se construye parseando DATABASE_URL, con allowPublicKeyRetrieval fuera de producción)
-│       ├── generated/          (nuevo en RAMA 1 — cliente Prisma generado, NO se sube al repo, ver .gitignore)
-│       └── index.ts            (servidor Express + GET /health; montaje en /auth de registroRouter (RAMA 2), loginRouter (RAMA 6) y perfilRouter (RAMA 8); desde RAMA 10 valida JWT_SECRET y DUI_PEPPER al arrancar y aborta si no puede abrir el puerto)
+│       │   └── prisma.ts       (nuevo en Parte 0 (chore/db-setup) — cliente Prisma compartido, punto de contacto entre partes; desde 1-END el adapter se construye parseando DATABASE_URL, con allowPublicKeyRetrieval fuera de producción)
+│       ├── generated/          (nuevo en Parte 0 (chore/db-setup) — cliente Prisma generado, NO se sube al repo, ver .gitignore)
+│       └── index.ts            (servidor Express + GET /health; montaje de registroRouter (1-A), loginRouter (1-B) y perfilRouter (1-D) en /auth y de viabilidadRouter (2-D) en /viabilidad; desde 1-END valida JWT_SECRET y DUI_PEPPER al arrancar; el manejo del error de app.listen (puerto ocupado: mensaje y salida con código 1) quedó efectivo en main recién con el fix de 2-D, aunque 1-END lo documenta — ver Pendientes)
 └── frontend/                  (Angular, generado con Angular CLI, verificado con ng serve)
 
-NOTA: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt están en docs/ desde RAMA 3 (subidos en la rama docs/agregar-documentacion) y se actualizan en ramas docs/ aparte.
+NOTA: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.txt están en docs/ desde Parte 0 (subidos en la rama docs/agregar-documentacion). Info_Datos_CENTA.md (contrato de datos de viabilidad) está en docs/ desde 2-A. Todos se actualizan en ramas docs/ aparte.
+
+
 
 3. HERRAMIENTAS Y TECNOLOGÍAS (DEFINITIVAS)
 - Lenguaje principal: TypeScript
@@ -75,28 +84,30 @@ NOTA: Mapa_inicial.txt, Propuesta_Inicial.txt y este mismo Estado_del_Proyecto.t
 - Frontend: Angular
 - API Climática: Open-Meteo
 - Base de datos: MySQL
-- ORM: Prisma, fijado en la versión 7.10.0 (prisma y @prisma/client) — ver nota de versión más abajo y detalle en RAMA 1
+- ORM: Prisma, fijado en la versión 7.10.0 (prisma y @prisma/client) — ver nota de versión más abajo y detalle en Parte 0 (chore/db-setup)
 - Driver adapter de base de datos: @prisma/adapter-mariadb (obligatorio en Prisma 7 para proveedores SQL, usado tanto para MySQL como MariaDB)
-- Conexión (desde RAMA 10): el adapter se construye en config/prisma.ts parseando DATABASE_URL, con allowPublicKeyRetrieval activo salvo NODE_ENV=production. Producción: definir TLS hacia la base (Parte 7).
+- Conexión (desde 1-END): el adapter se construye en config/prisma.ts parseando DATABASE_URL, con allowPublicKeyRetrieval activo salvo NODE_ENV=production. Producción: definir TLS hacia la base (Parte 7).
 - Autenticación: correo + contraseña + DUI hasheado + verificación por correo
-  - Contraseña: argon2id, paquete argon2@0.45.1 (decidido en RAMA 2)
-  - DUI: HMAC-SHA256 con secreto de servidor (DUI_PEPPER en .env), NO bcrypt/argon2 (decidido en RAMA 2, ver justificación y desviación del Mapa en esa sección)
-  - Sesión: JWT stateless HS256 con jsonwebtoken (decidido en RAMA 6). Secreto JWT_SECRET (mín. 32 caracteres) y expiración JWT_EXPIRES_IN (por defecto 2h) en .env. Sin revocación: el middleware no consulta la BD.
+  - Contraseña: argon2id, paquete argon2@0.45.1 (decidido en 1-A)
+  - DUI: HMAC-SHA256 con secreto de servidor (DUI_PEPPER en .env), NO bcrypt/argon2 (decidido en 1-A, ver justificación y desviación del Mapa en esa sección)
+  - Sesión: JWT stateless HS256 con jsonwebtoken (decidido en 1-B). Secreto JWT_SECRET (mín. 32 caracteres) y expiración JWT_EXPIRES_IN (por defecto 2h) en .env. Sin revocación: el middleware no consulta la BD.
 - Despliegue: Docker
-- Control de versiones: Git + GitHub (flujo por ramas + PR)
+- Control de versiones: Git + GitHub (flujo por ramas + PR) Convención de ramas y de documentación: ver sección 6.
 - Entorno de desarrollo de base de datos: MySQL vía Docker (contenedor local por integrante, sin instancia compartida) — ver docker-compose.yml en la raíz
-- Datos de viabilidad (desde RAMA 14): scripts npm datos:limpiar (valida los exports de CENTA y genera CSV limpios) y datos:cargar (carga en MySQL con upsert y transacción). Sin dependencias nuevas.
+- Datos de viabilidad (desde 2-B): scripts npm datos:limpiar (valida los exports de CENTA y genera CSV limpios) y datos:cargar (carga en MySQL con upsert y transacción). Sin dependencias nuevas.
 
 Nota sobre TypeScript: en backend/package.json la versión de "typescript" quedó fijada en ^5.9.0. TypeScript 7.0.2 (el nuevo compilador nativo) es incompatible con ts-node-dev a la fecha de este documento. No actualizar typescript en backend/ sin antes confirmar compatibilidad con la herramienta de desarrollo en uso.
 
 Nota sobre versión de Prisma: al día de esta actualización, instalar el paquete "prisma" sin fijar versión (npm install prisma) resuelve a Prisma Next (línea 8.0.0-rc.x), la reescritura del ORM en Early Access, no recomendada para producción por el propio equipo de Prisma. El proyecto usa Prisma 7 (7.10.0), la línea estable y recomendada para producción actualmente. No actualizar prisma/@prisma/client sin fijar versión explícita ni sin confirmar antes en este documento, por el mismo motivo que la nota de TypeScript.
 
-Nota sobre el generator de Prisma (desde RAMA 2): el generator prisma-client está configurado con moduleFormat = "cjs" e importFileExtension = "" (imports sin extensión). Sin esta última opción, el cliente generado hace require("./internal/class.js") y ts-node-dev falla, porque el archivo generado es .ts. No quitar esa línea de schema.prisma.
+Nota sobre el generator de Prisma (desde 1-A): el generator prisma-client está configurado con moduleFormat = "cjs" e importFileExtension = "" (imports sin extensión). Sin esta última opción, el cliente generado hace require("./internal/class.js") y ts-node-dev falla, porque el archivo generado es .ts. No quitar esa línea de schema.prisma.
 
-Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión (definida antes de RAMA 12): los datos se obtienen de la herramienta de consulta del mapa de CENTA, exportando un CSV por capa (potencial de maíz, frijol y sorgo/maicillo, y riesgo de sequía; todo Morazán, todas las clases) más la tabla de división territorial. Implementado en RAMA 14: npm run datos:limpiar valida los exports y genera CSV limpios en backend/data/centa/clean/, y npm run datos:cargar los inserta en MySQL de forma idempotente y dentro de una transacción.
-Nota sobre la conexión a MySQL 8.4 (desde RAMA 10): MySQL 8.4 crea los usuarios con caching_sha2_password y, sin TLS, el conector MariaDB solo completa la autenticación si se activa allowPublicKeyRetrieval; sin esa opción las conexiones fallan en silencio y Prisma lo reporta como P2039 (pool timeout). La opción se pasa en config/prisma.ts y no como parámetro de DATABASE_URL (esa variable también la lee prisma7.config.ts y el .env no se versiona). No volver a pasar la cadena DATABASE_URL directamente al constructor de PrismaMariaDb sin conservar la opción. Detalle y diagnóstico en RAMA 10.
+Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión (definida antes de 2-A, feat/2-a-modelos-viabilidad): los datos se obtienen de la herramienta de consulta del mapa de CENTA, exportando un CSV por capa (potencial de maíz, frijol y sorgo/maicillo, y riesgo de sequía; todo Morazán, todas las clases) más la tabla de división territorial. Implementado en 2-B (feat/2-b-datos-centa): npm run datos:limpiar valida los exports y genera CSV limpios en backend/data/centa/clean/, y npm run datos:cargar los inserta en MySQL de forma idempotente y dentro de una transacción.
+Nota sobre la conexión a MySQL 8.4 (desde 1-END): MySQL 8.4 crea los usuarios con caching_sha2_password y, sin TLS, el conector MariaDB solo completa la autenticación si se activa allowPublicKeyRetrieval; sin esa opción las conexiones fallan en silencio y Prisma lo reporta como P2039 (pool timeout). La opción se pasa en config/prisma.ts y no como parámetro de DATABASE_URL (esa variable también la lee prisma7.config.ts y el .env no se versiona). No volver a pasar la cadena DATABASE_URL directamente al constructor de PrismaMariaDb sin conservar la opción. Detalle y diagnóstico en 1-END.
 
 Estas tecnologías ya no están sujetas a cambio salvo justificación documentada aquí.
+
+
 
 4. DISEÑO VISUAL BASE
 - login_base.html          → Pantalla de autenticación / registro (diseño definitivo, sin cambios)
@@ -104,20 +115,178 @@ Estas tecnologías ya no están sujetas a cambio salvo justificación documentad
 - Login: se mantiene exactamente como el archivo original.
 - Dashboard: se adopta la segunda versión mejorada (sidebar responsive, indicadores de sistema vivo, formulario agrupado, reporte de dos niveles, badges de riesgo, timeline vacío).
 - Nota: ambos archivos HTML/CSS fueron creados únicamente para probar y fijar el estilo visual; la implementación real se hará en componentes Angular (el sidebar, por ejemplo, deberá pasar del "checkbox hack" en CSS puro a manejo de estado por componente).
-- Cambio (RAMA 2): en la implementación Angular del registro, la etiqueta "Municipio (Morazán)" pasa a "Distrito (Morazán)" y el campo se envía como "distrito". login_base.html NO se modifica; sigue siendo referencia visual.
+- Cambio (1-A): en la implementación Angular del registro, la etiqueta "Municipio (Morazán)" pasa a "Distrito (Morazán)" y el campo se envía como "distrito". login_base.html NO se modifica; sigue siendo referencia visual.
 Colores, tipografía (Plus Jakarta Sans) y jerarquía visual se respetan como referencia.
+
+
 
 5. CONDICIONES DE EQUIPO Y PLAZO
 - Plazo total: 7 semanas.
 - 3 de los 4 integrantes seguirán trabajando en paralelo al proyecto, lo que limita el avance real principalmente a fines de semana.
 - Estrategia acordada: definir y completar primero una base funcional que cumpla todos los requisitos mínimos del Mapa_inicial.txt; solo si queda tiempo disponible, avanzar en automatizaciones o mejoras adicionales (ver Propuestas).
 
-------------------------------------------------------------
-SECCIÓN DE RAMAS (se irá agregando; nunca se modifica lo ya escrito)
+
+
+6. CONVENCIÓN DE RAMAS Y DE DOCUMENTACIÓN (desde 22 de octubre de 2026)
+Hasta aquí el historial se llevó con ramas numeradas (RAMA 0, RAMA 1, ...). Esa numeración dejó de ser útil: se mezclaban ramas feat, fix y docs, y los números de PR dejaron de coincidir con los de las ramas (una rama rechazada y rehecha como PR nuevo hizo saltar la serie). Desde esta versión el historial se organiza igual que el Mapa_inicial.txt: por Parte y por Punto. Los números de rama y de PR ya no tienen relevancia y no se usan.
+
+Reglas:
+- Cada Parte tiene sus Puntos (1-A, 1-B, ...) y, al final, un punto de cierre (1-END, 2-END, ...) para la verificación funcional, correcciones y pruebas de toda la Parte.
+- Bajo cada Punto se listan todas sus ramas, en orden cronológico y con su tipo: feat/ (código), fix/ (correcciones), docs/ (documentación) y chore/ (infraestructura). Normalmente un punto tiene 2 ramas (código y docs), pero puede tener más: fix adicionales, ramas rechazadas, etc.
+- Una rama rechazada (PR cerrado sin merge) se conserva en el historial marcada como "(rechazada)", con lo que se hizo y lo que se corrigió después. No se borra.
+- Al mencionar otra rama dentro del texto se escribe su nombre y su Parte-Punto, por ejemplo "feat/2-b-datos-centa (2-B)". No se usan números de rama ni de PR.
+- Nombre sugerido para ramas nuevas: tipo/parte-punto-descripcion-corta, por ejemplo feat/3-a-cliente-open-meteo, fix/3-a-timeout-open-meteo, docs/3-a-estado. Las ramas anteriores conservan su nombre original (algunas incluyen "rama-12" o "rama-14": son nombres históricos, no una numeración vigente).
+- Lo ya detallado de cada rama no se reescribe. Solo se permiten ajustes menores de estilo y redacción. Si una rama posterior corrige o contradice a otra, su propia sección dice qué prevalece.
+- Cada sección de rama usa esta plantilla: Responsable, Fecha, Contexto, Qué se hizo, Decisiones de diseño, Qué se modificó / eliminó, Cumplimiento del punto, Pruebas realizadas (y NO realizadas), Qué NO se hizo / qué falta, Qué se agregó de más, Archivos tocados fuera de su carpeta, Incidencias técnicas, Puntos de atención para las siguientes ramas.
+- La información base (secciones 1 a 8) sí se actualiza cuando cambie. Las secciones Propuestas y Pendientes van siempre al final del archivo.
+- Los textos entre corchetes ([COMPLETAR], [VERIFICAR]) son datos que faltan; están listados en Pendientes hasta que se llenen.
+
+Índice de ramas por Parte y Punto (en orden cronológico dentro de cada punto):
+  Parte 0   (sin rama: base del proyecto en main), chore/db-setup, docs/agregar-documentacion
+  1-A       feat/auth-registro-usuario
+  1-B       feat/1-b-login-auth-guards
+  1-C       feat/1-c-verificacion-correo, fix/1-c-endurecer-verificacion, docs (actualización hasta 1-C)
+  1-D       feature/parte-1d-perfil-usuario, docs (actualización hasta 1-D)
+  1-END     fix/prisma-mariadb-rsa-key, docs (actualización hasta 1-END)
+  2-A       feat/2-a-modelos-viabilidad, docs/actualizar-estado-rama-12
+  2-B       feat/2-b-datos-centa, docs/actualizar-estado-rama-14
+  2-C       feat/2-c-servicio-viabilidad, docs (nombre no registrado)
+  2-D       feat/2-d-endpoint-viabilidad (rechazada), fix (nombre por completar), docs (la de esta actualización)
+  2-END     pendiente (ver Pendientes)
+
+En el árbol de la sección 2 y en las notas de la sección 3, una referencia como "1-A" o "2-B" remite a las ramas de ese punto según este índice.
+
+
+
+7. PASOS PARA CLONAR Y LEVANTAR EL ENTORNO DE DESARROLLO
+(Válido desde 1-A en adelante; actualizado en 1-END y en la actualización de documentación del 22 de octubre de 2026.)
+
+Desde la raíz del repositorio, en este orden:
+
+1. Levantar MySQL de desarrollo:
+   docker compose up -d db
+   Antes de levantarlo, el puerto 3306 del equipo debe estar libre. En Windows, un servicio MySQL instalado (por ejemplo MySQL80 o MySQL96) puede ocuparlo: Docker publica el puerto pero no puede asignarlo, y Prisma termina hablando con el MySQL de Windows. Detenerlo y dejarlo en inicio manual (sc config <servicio> start= demand), desde una consola de administrador, sin borrar datos. Comprobar con docker ps que el contenedor publique 3306.
+   Si el contenedor es anterior a docker/mysql-init/grant-shadow.sql (ese script solo corre al crear el volumen por primera vez), prisma migrate dev falla con P3014. Solución: docker compose down -v y docker compose up -d db (borra los datos locales; después se repiten los pasos 5 y 5b).
+
+2. Instalar dependencias del backend:
+   cd backend
+   npm install
+
+   Si npm install falla con "Cannot read properties of null (reading 'edgesOut')", usar npm install --legacy-peer-deps.
+   Si npm run dev falla con "Cannot find module 'jsonwebtoken'" (u otro paquete declarado en package.json), el node_modules local quedó incompleto: correr npm ci --legacy-peer-deps (instala exactamente lo que dice package-lock.json, sin modificarlo) y luego npx prisma generate.
+
+3. Crear backend/.env a partir de la plantilla:
+   cp .env.example .env
+   Completar los dos secretos obligatorios, que la plantilla trae vacíos: DUI_PEPPER y JWT_SECRET (mín. 32 caracteres). Desde 1-END el servidor NO arranca si faltan. Generar cada uno con (correr el comando dos veces):
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   Valores esperados del resto de variables (desarrollo local):
+   DATABASE_URL="mysql://agroalerta:agroalerta@localhost:3306/agroalerta"
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=agroalerta
+   DB_PASSWORD=agroalerta
+   DB_NAME=agroalerta
+   Si en Windows Prisma falla con P1001 usando "localhost" (el nombre se resuelve primero a IPv6), usar 127.0.0.1 en DATABASE_URL del .env local (no versionado).
+   Variables agregadas después de 1-A (deben existir en .env):
+   EXPONER_TOKEN_VERIFICACION=true    (fix/1-c-endurecer-verificacion, 1-C; solo desarrollo)
+   JWT_SECRET=<secreto propio, mín. 32 caracteres>    (feat/1-b-login-auth-guards, 1-B)
+   JWT_EXPIRES_IN=2h    (feat/1-b-login-auth-guards, 1-B)
+   Tras un pull que modifique package.json: npm install --legacy-peer-deps dentro de backend/.
+
+4. Generar el cliente de Prisma (sigue en backend/):
+   npx prisma generate
+
+5. Sincronizar el esquema con la base de datos:
+   npx prisma migrate dev
+
+   5b. Cargar los datos de viabilidad (desde 2-B; requiere el paso 5 hecho), dentro de backend/:
+   npm run datos:cargar
+   Carga en MySQL los CSV de backend/data/centa/clean/, que ya vienen en el repo. Es idempotente (se puede repetir). No hace falta correr datos:limpiar salvo que se actualicen los exports de CENTA. Debe terminar con: municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312.
+
+6. Verificar el backend:
+   npm run dev
+   Debe imprimir "Backend corriendo en puerto 3000" y GET localhost:3000/health debe devolver {"status":"ok"}. Si el puerto está ocupado, el backend aborta con "No se pudo iniciar el backend en el puerto ..." (ver con docker ps y sudo ss -ltnp | grep :3000; en Windows, netstat -ano | findstr :3000). Si un registro falla con P2039 o "pool timeout", ver el diagnóstico de fix/prisma-mariadb-rsa-key (1-END).
+
+   6b. Prueba rápida del flujo completo: seguir la sección 8 (registro, verificación, login, GET /auth/yo y GET /viabilidad/distritos/1304).
+
+7. Frontend, en otra terminal, desde la raíz del repo:
+   cd frontend
+   npm install
+   ng serve
+   (debe responder en localhost:4200)
+
+Reglas de directorio: todos los comandos docker compose se corren desde la raíz del repo (ahí vive docker-compose.yml), nunca desde backend/. Todos los comandos npm y npx (prisma, datos:*, tsc) se corren desde backend/: correr npx prisma migrate dev en la raíz descarga una versión suelta de prisma (8.0.0-rc) sin el comando migrate. git add se escribe con rutas relativas al directorio actual.
+
+Después de cada git pull:
+- Si cambió backend/package.json: npm install --legacy-peer-deps (o npm ci --legacy-peer-deps) dentro de backend/.
+- Si cambió backend/prisma/schema.prisma o hay migraciones nuevas: repetir los pasos 4 y 5.
+- Si cambió backend/data/centa/clean/: repetir el 5b.
+- Si cambió backend/.env.example: revisar si hay variables nuevas y agregarlas a tu .env.
+
+
+
+8. PRUEBAS BÁSICAS ANTES DE ABRIR UN PR
+Objetivo: que ninguna rama llegue a revisión sin haber corrido, como mínimo, estas comprobaciones. Todas se hacen en tu máquina, con MySQL en Docker y sobre una copia de main al día (git pull origin main y, si hace falta, merge de main en tu rama antes de probar). Lo que hagas y lo que NO hagas se anota en la sección de la rama ("Pruebas realizadas" y "NO realizadas").
+
+A. Siempre (cualquier rama)
+1. Revisar qué cambia: git status y git diff main --stat. Solo deben aparecer los archivos de tu tarea. Nada de .env, .prettierrc, node_modules/, archivos de editor ni scripts temporales. Si tocaste un archivo compartido (schema.prisma, migrations/, index.ts, package.json, events/, config/prisma.ts), anótalo en "Archivos tocados fuera de su carpeta".
+2. Compilar sin errores de tipos, desde backend/: npx tsc --noEmit
+3. Arrancar el backend, desde backend/: npm run dev. Debe imprimir "Backend corriendo en puerto 3000" sin errores. Con un segundo npm run dev en otra terminal debe abortar con el mensaje de puerto ocupado (no debe imprimir que arrancó).
+4. GET localhost:3000/health debe responder {"status":"ok"}.
+5. Si cambiaste schema.prisma: npx prisma validate, npx prisma migrate dev (revisar el SQL generado) y una segunda corrida que diga "Already in sync". Recordar npx prisma generate.
+6. Si agregaste dependencias: avisar al equipo antes, instalar con --legacy-peer-deps y confirmar que no cambiaron las versiones fijadas (prisma, @prisma/client, typescript, argon2).
+7. Antes del push: que el mensaje de commit sea claro y que git add sea con archivos o rutas concretas (evitar git add . si hay archivos sin seguimiento ajenos a la tarea).
+
+B. Prueba del flujo base (curl, con el backend corriendo)
+Usar un correo y un DUI de 9 dígitos que no existan en tu base. En Windows usar Git Bash (los acentos pueden verse mal en la consola; es un tema de codificación de la terminal y no de la base).
+1. Registro, debe dar 201 (con EXPONER_TOKEN_VERIFICACION=true trae tokenVerificacion_DEV):
+   curl -X POST localhost:3000/auth/registro -H "Content-Type: application/json" -d '{"nombres":"Prueba","apellidos":"Uno","correo":"prueba1@email.com","contrasena":"ClaveSegura123","dui":"123456789","distrito":"Chilanga"}'
+2. Login antes de verificar, debe dar 403:
+   curl -X POST localhost:3000/auth/login -H "Content-Type: application/json" -d '{"correo":"prueba1@email.com","contrasena":"ClaveSegura123"}'
+3. Verificación con el token del paso 1, debe dar 200; repetirla debe dar 404:
+   curl localhost:3000/auth/verificar/<tokenVerificacion_DEV>
+4. Login, debe dar 200 con token y usuario (sin hashes). Con contraseña incorrecta, 401.
+5. GET /auth/yo con el token (Authorization: Bearer <token>) debe dar 200; sin encabezado, 401; con el token alterado, 401. Copiar el JWT completo: tiene tres segmentos separados por puntos y expira a las 2 horas.
+   curl localhost:3000/auth/yo -H "Authorization: Bearer <token>"
+6. Viabilidad (desde 2-D), con el token del paso 4:
+   curl localhost:3000/viabilidad/distritos/1304 -H "Authorization: Bearer <token>"
+   Debe dar 200 con las 4 capas; en maíz, las clases de Chilanga deben sumar 5998.537 ha (2024.138 + 2779.240 + 1195.159). Sin token, 401. Con /distritos/abc o /distritos/0, 400. Con /distritos/9999, 404. Con ?cultivo=maiz, 200 (incluye riesgo_sequia). Con ?capa=potencial_maiz&cultivo=maiz, 400.
+
+C. Según el tipo de cambio
+- Endpoint nuevo o modificado: el caso feliz y cada código de error del contrato { error, detalles } (400 datos inválidos, 401 sin token o token inválido o expirado, 404 no encontrado), una petición con entrada extrema (cadena vacía, valores repetidos, números enormes) y comprobar que los 500 no devuelven error.message al cliente.
+- Cambio de modelo o de datos: correr el script dos veces (idempotencia), comparar los conteos esperados (municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312) y, si hay CSV limpios nuevos, revisar el git diff contra los controles numéricos.
+- Cambio en autenticación: probar 400, 401, 403 y 409 además del caso feliz. No cambiar el orden actual (el 401 de login es uniforme; el 403 solo aparece con contraseña correcta).
+- Cambio en el frontend: ng build sin errores y ng serve respondiendo en localhost:4200; comparar contra login_base.html y dashboard_base.html (colores, tipografía, estructura).
+- Cambio solo de documentación: releer que no queden referencias rotas ni datos que contradigan el código real.
+
+D. Cuando el cambio es crítico (autenticación, base de datos, configuración de arranque)
+Probar en un clon limpio de tu rama: docker compose down -v, docker compose up -d db, .env armado desde .env.example, npx prisma migrate dev, npm run datos:cargar y repetir el bloque B completo. Así se detectan dependencias de estado local, como pasó con el error P2039 de 1-END.
+
+E. Qué escribir en la documentación de la rama
+Una lista de las pruebas hechas (petición, resultado esperado, resultado obtenido) y otra de las que NO se hicieron, con el motivo. Las pruebas automatizadas todavía no existen (ver Pendientes); hasta entonces estas comprobaciones manuales son el control mínimo.
+
+
 
 ------------------------------------------------------------
+9. HISTORIAL POR PARTES Y PUNTOS
+------------------------------------------------------------
+Cada Parte sigue el Mapa_inicial.txt. Bajo cada Punto se listan sus ramas en orden cronológico. Reglas e índice de ramas: sección 6.
 
-RAMA 0 — Base del proyecto (Parte 0 del Mapa_inicial.txt)
+Resumen de avance:
+  Parte 0   Preparación del repositorio y base común ........ completa
+  Parte 1   Autenticación y modelo de Usuario ............... completa en el backend (1-A a 1-END); falta frontend y lo de Pendientes
+  Parte 2   Datos de viabilidad y zonas de Morazán .......... 2-A a 2-D en main; falta 2-END (cierre)
+  Parte 3   Integración climática (Open-Meteo) .............. sin iniciar
+  Parte 4   Módulo de Siembra + formulario detallado ........ sin iniciar
+  Parte 5   Estimación y Recomendaciones (núcleo EDA) ....... sin iniciar
+  Parte 6   Frontend Dashboard y vistas principales ......... sin iniciar (existen solo las bases visuales HTML)
+  Parte 7   Integración final, Docker y despliegue .......... sin iniciar (existe docker-compose.yml con MySQL)
+
+============================================================
+PARTE 0 — Preparación del repositorio y base común
+============================================================
+
+Base del proyecto (sin rama: trabajo directo en main; Parte 0 del Mapa_inicial.txt)
 Responsable: Yona (owner del repositorio)
 Fecha: 21 de septiembre de 2026
 
@@ -147,9 +316,8 @@ Puntos de atención para las siguientes ramas:
 - backend/src/events/ es punto de contacto entre partes (bus de eventos compartido); coordinarse antes de modificarlo.
 - Falta subir Mapa_inicial.txt, Propuesta_Inicial.txt y este archivo al repositorio (carpeta docs/ sugerida).
 
-------------------------------------------------------------
 
-RAMA 1 — chore/db-setup (infraestructura de base de datos, pre-requisito de Parte 1-A y 2-A)
+Rama chore/db-setup (infraestructura de base de datos, pre-requisito de Parte 1-A y 2-A)
 Responsable: Yona
 Fecha: 23 de septiembre de 2026
 
@@ -192,9 +360,23 @@ Puntos de atención para las siguientes ramas:
 - docker-compose.yml vive en la raíz del repo, no en backend/; todos los comandos docker compose deben correrse desde ahí.
 - Si alguien instala dependencias de Prisma sin fijar versión exacta en el futuro, corre el riesgo de traer Prisma Next (v8) de nuevo — siempre usar prisma@7.10.0 / @prisma/client@7.10.0 explícito, o actualizar este documento primero si se decide subir de versión a propósito.
 
-------------------------------------------------------------
 
-RAMA 2 — feat/auth-registro-usuario (Parte 1, Punto A del Mapa_inicial.txt: Modelo de Usuario + registro)
+Rama docs/agregar-documentacion (docs; se subió después de mergear feat/auth-registro-usuario, 1-A)
+Responsable: Yona
+Se agregaron a docs/ los archivos:
+- Estado_del_Proyecto.txt
+- Mapa_inicial.txt
+- Propuesta_Inicial.txt
+
+============================================================
+PARTE 1 — Autenticación y modelo de Usuario
+============================================================
+
+
+1-A — Modelo de Usuario + registro
+----------------------------------
+
+Rama feat/auth-registro-usuario (Parte 1, Punto A del Mapa_inicial.txt: Modelo de Usuario + registro)
 Responsable: Yona
 Fecha: 23 de septiembre de 2026
 
@@ -258,7 +440,7 @@ Qué NO se hizo / qué falta:
 - Validación del dígito verificador del DUI (solo se valida formato de 9 dígitos).
 - Rate limiting o protección contra abuso en /auth/registro.
 - Pruebas automatizadas.
-- CORS sigue sin configurarse (pendiente desde RAMA 0).
+- CORS sigue sin configurarse (pendiente desde Parte 0, base del proyecto).
 - Ningún listener del evento AgricultorRegistrado.
 - Subida de docs/ al repositorio (se hace en una rama aparte, docs/agregar-documentacion, después de mergear esta).
 
@@ -283,161 +465,15 @@ Puntos de atención para las siguientes ramas:
 - El 409 usa un mensaje genérico para correo o DUI repetido (no revela cuál), pero el endpoint sigue permitiendo inferir qué correos existen; aceptable para el alcance del proyecto.
 - Quien clone o actualice debe copiar backend/.env.example a backend/.env y generar su DUI_PEPPER (ver pasos de clonado).
 
-------------------------------------------------------------
 
-RAMA 3 — docs/agregar documentacion del proyecto
-Responsable: Yona
-Se agregaron los archivos:
-Estado_del_Proyecto.txt
-Mapa_inicial.txt
-Propuesta_Inicial.txt
+1-B — Login + middleware / guards de autenticación
+--------------------------------------------------
 
-------------------------------------------------------------
-RAMA 4: feat/1-c-verificacion-correo
-Responsable: Requeno
-Parte 1 — Punto C: Verificación de correo
-
-QUÉ SE HIZO:
-- Se agregaron 2 campos nullable al modelo Usuario en schema.prisma:
-  tokenVerificacion (String, único, VarChar(64)) y
-  tokenVerificacionExpira (DateTime).
-- Migración nueva creada y aplicada: 20260927210046_add_verificacion_correo.
-- En registro.service.ts: nueva función generarTokenVerificacion() (crypto.randomBytes,
-  32 bytes = 64 caracteres hex) con expiración de 24 horas (HORAS_EXPIRACION_TOKEN).
-- registrarUsuario() ahora genera el token al crear el usuario y lo guarda en los
-  campos nuevos.
-- Nueva función verificarUsuario(token) en registro.service.ts: busca por token,
-  valida que no esté ya verificado, valida que no haya expirado, marca
-  verificado=true y limpia el token (uso único).
-- Nuevo endpoint GET /auth/verificar/:token en registro.routes.ts.
-- POST /auth/registro ahora devuelve el token en un campo separado
-  tokenVerificacion_DEV, comentado en el código como simulación temporal
-  (no hay envío real de correo, según lo acordado con el equipo: estrategia
-  "base primero, extras después" del proyecto).
-
-DECISIÓN DE DISEÑO:
-- Se optó por token de un solo uso simulado (NO verificado=true automático al
-  registrar), para que la lógica real ya exista y solo falte conectar
-  Nodemailer/SMTP más adelante si sobra tiempo.
-
-QUÉ SE PROBÓ MANUALMENTE (curl):
-- POST /auth/registro → 201, devuelve tokenVerificacion_DEV de 64 caracteres. OK.
-- GET /auth/verificar/:token con token válido → 200, verificado:true. OK.
-- Reutilizar el mismo token ya usado → 404 (Token de verificación inválido). OK.
-- Token con formato inválido (longitud distinta a 64) → 400. OK.
-- No se probó el caso de expiración real (requeriría esperar 24h o manipular
-  la fecha directamente en la base de datos); la lógica de comparación de
-  fechas está implementada pero queda como PENDIENTE de prueba explícita.
-
-ARCHIVOS TOCADOS:
-- backend/prisma/schema.prisma (modificado)
-- backend/prisma/migrations/20260927210046_add_verificacion_correo/ (nuevo)
-- backend/src/auth/registro.routes.ts (modificado)
-- backend/src/auth/registro.service.ts (modificado)
-- backend/package.json (TOCADO AUNQUE NO CORRESPONDÍA A ESTA TAREA: se agregó el
-  bloque "allowScripts" con @prisma/engines, argon2 y prisma en true. Esto viene
-  de un `npm approve-scripts` corrido localmente durante el setup del entorno,
-  necesario porque npm bloqueaba los scripts de instalación de esos paquetes.
-  Se incluyó en este commit porque ya estaba modificado localmente y es útil
-  para que el resto del equipo no vea la misma advertencia al instalar. No se
-  tocó ninguna versión de dependencias.)
-
-QUÉ FALTÓ / QUEDA PENDIENTE PARA OTRAS RAMAS:
-- Integración real de envío de correo (Nodemailer + proveedor SMTP) — pospuesto
-  a propósito, no es parte de la base funcional mínima.
-- El campo tokenVerificacion_DEV en la respuesta de POST /auth/registro debe
-  quitarse o protegerse detrás de una variable de entorno (ej. NODE_ENV) antes
-  de cualquier despliegue real. Actualmente siempre se devuelve.
-- No se probó el flujo de expiración de token (410) de forma manual.
-- Cualquiera que haga git pull después de este merge DEBE correr, dentro de
-  backend/: npx prisma generate y npx prisma migrate dev (hay migración nueva).
-
-PUNTOS DE ATENCIÓN PARA OTRAS RAMAS:
-- schema.prisma fue tocado (coordinar antes de editarlo en paralelo, según README).
-- No se tocó events/bus.ts ni events/types.ts — no hubo evento nuevo para esto,
-  no hay riesgo de choque ahí.
-- Hay un archivo .prettierrc nuevo, sin commitear, generado localmente por VS Code
-  (extensión de formateo) durante esta rama. NO se subió a propósito porque es
-  una decisión de equipo (formato de código global) que no corresponde decidir
-  unilateralmente en esta rama. Si el equipo quiere adoptar Prettier, debe
-  discutirse y subirse en una rama/PR aparte.
-
-------------------------------------------------------------
-
-RAMA 5 — fix/1-c-endurecer-verificacion (Parte 1, Punto C del Mapa_inicial.txt: complemento y corrección de RAMA 3)
-Responsable: Yona
-Fecha: 27 de septiembre de 2026
-
-Contexto: RAMA 4 (Requeno) dejó la verificación de correo funcionando en modalidad simulada. Al revisarla se encontraron huecos que se corrigen en esta rama. La sección de RAMA 3 no se modifica; donde difiera de lo descrito aquí, prevalece esta sección.
-
-Qué se hizo:
-- El token de verificación ya no se guarda en texto plano: en la columna tokenVerificacion (VarChar 64, única, ya existente) se guarda su SHA-256 en hexadecimal (64 caracteres). No requirió migración. El token crudo (randomBytes(32), 64 caracteres hex) solo existe en memoria y se entrega al llamador de registrarUsuario / reenviarVerificacion; nunca se persiste. Justificación: si se filtra la base, los tokens guardados no sirven para verificar cuentas. SHA-256 sin sal es adecuado aquí porque el token tiene 256 bits de entropía (no es una contraseña).
-- registro.service.ts: nueva función hashToken(); generarTokenVerificacion() ahora devuelve {token, tokenHash, expira}. registrarUsuario() guarda el hash, ya no incluye tokenVerificacion en el select (habría devuelto el hash) y retorna {...usuario, tokenVerificacion: token crudo}, de modo que registro.routes.ts conserva su desestructuración.
-- registro.service.ts: verificarUsuario() ahora busca por hash del token recibido, eliminó la rama 409 ("ya verificado"), que era inalcanzable porque al verificar se limpia el token y un usuario verificado nunca se encuentra por token, y consume el token con updateMany (where: id + tokenVerificacion) verificando count === 0 → 404, para que dos peticiones simultáneas con el mismo token no puedan consumirlo ambas. Retorna {id, correo, verificado: true}. Códigos: 404 token inexistente o ya usado, 410 token expirado.
-- registro.service.ts: nueva función reenviarVerificacion(correo): si el usuario existe y no está verificado, genera un token nuevo, reemplaza hash y expiración (invalida el anterior) y devuelve el token crudo; si no existe o ya está verificado, devuelve null.
-- registro.routes.ts: constante TOKEN_RE = /^[a-f0-9]{64}$/ para validar el formato en GET /auth/verificar/:token (400 si no cumple; antes solo se validaba la longitud).
-- registro.routes.ts: nuevo endpoint POST /auth/reenviar-verificacion (body: {correo}). Valida formato de correo (400) y responde siempre 200 con el mismo mensaje genérico, exista o no el correo o esté ya verificado, para no revelar qué correos están registrados. Cierra el callejón sin salida de RAMA 3: el 410 decía "solicita uno nuevo" pero no existía forma de hacerlo.
-- Campo tokenVerificacion_DEV: pasa de devolverse siempre a ser opt-in con la variable EXPONER_TOKEN_VERIFICACION=true en .env, tanto en POST /auth/registro como en POST /auth/reenviar-verificacion. Sin la variable (o con cualquier otro valor), POST /auth/registro vuelve al contrato de RAMA 2 (nunca expone tokens ni hashes). Se eligió opt-in y no NODE_ENV porque, si NODE_ENV no está definido, se expondría por defecto.
-- backend/.env.example: se agregó EXPONER_TOKEN_VERIFICACION=true.
-- Limpieza de formato: indentación de la validación de distrito en registro.routes.ts, espacios sobrantes al final de línea y línea en blanco dentro del select en registro.service.ts.
-
-Qué se modificó:
-- backend/src/auth/registro.service.ts (import de createHash, hashToken, generarTokenVerificacion, registrarUsuario, verificarUsuario, nueva reenviarVerificacion).
-- backend/src/auth/registro.routes.ts (import, TOKEN_RE, respuesta de POST /registro, validación de GET /verificar/:token, nueva ruta POST /reenviar-verificacion).
-- backend/.env.example (una línea nueva).
-Qué se eliminó:
-- Rama 409 de verificarUsuario (código muerto).
-- Campo tokenVerificacion del select de registrarUsuario.
-- Devolución incondicional de tokenVerificacion_DEV.
-- Validación del token solo por longitud.
-
-Cumplimiento del punto 1-C del Mapa ("verificación de correo o flujo simulado"):
-- Flujo simulado con token de un solo uso y expiración de 24 h: cumplido (RAMA 3), ahora con token almacenado como hash, reenvío y sin exposición por defecto.
-- Envío real de correo: NO cumplido, pospuesto a propósito (no es parte de la base funcional mínima).
-
-Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
-- Registro con flag activo: 201 con tokenVerificacion_DEV de 64 caracteres y sin campo tokenVerificacion; en la base, token_verificacion de 64 caracteres distinto al token devuelto (es el hash).
-- GET /auth/verificar con token de formato inválido (corto, y 64 caracteres no hex): 400. Con 64 ceros: 404.
-- Verificación con token válido: 200; en la base verificado = 1 y token/expiración en NULL. Reutilizar el token: 404.
-- POST /auth/reenviar-verificacion con usuario ya verificado y con correo inexistente: 200 con el mismo mensaje y sin token; con correo mal formado: 400.
-- Expiración (410) probada forzando token_verificacion_expira con UPDATE en MySQL: 410 al verificar; tras reenviar, el token anterior da 404 y el nuevo da 200. Esto cierra el pendiente de RAMA 3 (caso de expiración sin probar).
-- Registro repetido: 409; contraseña corta: 400.
-- Flag desactivado: POST /auth/registro sin ningún campo de token.
-- NO realizada: prueba de concurrencia (dos verificaciones simultáneas con el mismo token). No se escribieron pruebas automatizadas.
-
-Qué NO se hizo / qué falta:
-- Envío real de correo (Nodemailer + SMTP).
-- Rate limiting y cooldown en /auth/reenviar-verificacion y en el resto de /auth (el reenvío sin límite sería vector de spam cuando exista envío real).
-- Pruebas automatizadas de verificar y reenviar.
-- Migración de tokens en texto plano preexistentes: quedan inválidos (solo afecta bases de desarrollo; el reenvío emite uno nuevo).
-- Definir si un usuario no verificado puede iniciar sesión (corresponde a 1-B; hoy nada lo impide).
-- Decisión de equipo sobre Prettier (.prettierrc).
-
-Qué se agregó de más (no pedido originalmente):
-- Endpoint POST /auth/reenviar-verificacion (no está en el Mapa; necesario para que el 410 sea recuperable).
-- Flag EXPONER_TOKEN_VERIFICACION y hash del token (endurecimiento no previsto en el Mapa).
-
-Archivos tocados fuera de auth/ (puntos de contacto entre partes):
-- backend/.env.example. No se tocaron schema.prisma, prisma/migrations/, events/, package.json ni index.ts.
-
-Incidencias técnicas durante el desarrollo:
-- Error de TypeScript "tokenVerificacion no existe en el tipo UsuarioWhereUniqueInput" y "tokenVerificacionExpira no existe en el tipo ..." en registro.service.ts. Causa: el cliente Prisma generado (src/generated/, no versionado) estaba desactualizado respecto a la migración de RAMA 3. Solución: npx prisma generate, npx prisma migrate dev y reiniciar el servidor de TypeScript del editor. Es la misma regla de RAMA 2: regenerar el cliente tras cada pull que toque schema.prisma.
-- El aviso "Using a password on the command line interface can be insecure" de MySQL CLI es solo informativo (ver RAMA 1); se puede evitar con -e MYSQL_PWD=... en docker compose exec.
-
-Puntos de atención para las siguientes ramas:
-- Tras mergear esta rama, cada integrante debe agregar EXPONER_TOKEN_VERIFICACION=true a su backend/.env local; sin eso dejará de ver el token en las pruebas. En producción debe estar en false o ausente.
-- Envío real de correo: el token crudo solo existe en memoria dentro de registrarUsuario() y reenviarVerificacion(). Si el envío se implementa como listener de AgricultorRegistrado, el payload actual no lleva token y habría que ampliarlo (events/types.ts es archivo compartido: coordinar antes de tocarlo) sin persistir el token crudo; la alternativa es llamar al servicio de correo desde esas funciones. Al integrarlo, retirar el flag y el campo tokenVerificacion_DEV de ambos endpoints.
-- 1-B (login): decidir si verificado = false bloquea el inicio de sesión (recomendado bloquearlo o limitarlo) y crear auth/login.routes.ts propio con su app.use("/auth", ...) en index.ts.
-- El 404 de verificarUsuario es uniforme para token inexistente y ya usado (no distingue), y el reenvío responde igual en todos los casos: mantener ese comportamiento en futuros cambios.
-- backend/package.json tiene un bloque allowScripts atado a versiones exactas (prisma@7.10.0, argon2@0.45.1, @prisma/engines@7.10.0): al subir versión habrá que reaprobar, y conviene confirmar en la documentación de npm que la clave se soporta en la versión que usa todo el equipo.
-
-------------------------------------------------------------
-
-RAMA 6 — feat/1-b-login-auth-guards (Parte 1, Punto B del Mapa_inicial.txt: Login + middleware / guards de autenticación)
+Rama feat/1-b-login-auth-guards (Parte 1, Punto B del Mapa_inicial.txt: Login + middleware / guards de autenticación)
 Responsable: Smith
 Fecha: 27 de septiembre de 2026
 
-Contexto: RAMA 2 dejó el registro y RAMA 4/5 la verificación de correo. Esta rama agrega el inicio de sesión y el guard de autenticación. Resuelve el pendiente de RAMA 5 "definir si un usuario no verificado puede iniciar sesión": NO puede (403).
+Contexto: feat/auth-registro-usuario (1-A) dejó el registro y feat/1-c-verificacion-correo con fix/1-c-endurecer-verificacion (1-C) la verificación de correo. Esta rama agrega el inicio de sesión y el guard de autenticación. Resuelve el pendiente de fix/1-c-endurecer-verificacion (1-C) "definir si un usuario no verificado puede iniciar sesión": NO puede (403).
 
 Qué se hizo:
 - Dependencias nuevas, instaladas con --legacy-peer-deps: jsonwebtoken ^9.0.2 (dependencies) y @types/jsonwebtoken ^9 (devDependencies). [VERIFICAR versiones resueltas en package.json y que no cambiaron prisma, @prisma/client, typescript, argon2 ni el bloque allowScripts.]
@@ -487,7 +523,7 @@ Qué NO se hizo / qué falta:
 - Refresh tokens, logout y revocación de tokens.
 - Perfil y endpoint /auth/yo (Parte 1-D).
 - Integración del frontend (formulario de login, almacenamiento del token, interceptor y guard de Angular).
-- CORS (pendiente desde RAMA 0): sin él el navegador bloqueará las peticiones y el encabezado Authorization.
+- CORS (pendiente desde Parte 0, base del proyecto): sin él el navegador bloqueará las peticiones y el encabezado Authorization.
 - Pruebas automatizadas (Jest + supertest).
 - Validación de JWT_SECRET al arrancar el servidor (hoy falla en la primera petición, no al iniciar).
 
@@ -510,25 +546,166 @@ Puntos de atención para las siguientes ramas:
 - El payload solo lleva id y correo. Si otra parte necesita más datos del usuario, debe consultarlos en la BD con req.usuario.id, no ampliar el token sin coordinarlo.
 - Frontend: definir dónde se guarda el token (memoria, sessionStorage o localStorage; cada opción tiene compromisos frente a XSS) y configurar CORS con el encabezado Authorization permitido.
 - El 401 de login es uniforme y el 403 solo aparece con contraseña correcta: mantener ese orden en futuros cambios.
-- Numeración: los textos de RAMA 5 y de Pendientes se refieren a la verificación de correo como "RAMA 3" y "RAMA 4", pero en este documento la rama de Requeno es RAMA 4 y la corrección de Yona es RAMA 5. Las secciones ya escritas no se modifican; en Pendientes se corrigió la referencia.
 - package.json/lock: conflicto probable con cualquier otra rama que instale paquetes. Quien mergee segundo debe hacer git checkout main -- package-lock.json y reinstalar.
 
-------------------------------------------------------------
 
-RAMA 7 — docs/actualizar documentacion del proyecto
+1-C — Verificación de correo
+----------------------------
+
+Rama feat/1-c-verificacion-correo
+Responsable: Requeno
+Parte 1 — Punto C: Verificación de correo
+
+Qué se hizo:
+- Se agregaron 2 campos nullable al modelo Usuario en schema.prisma:
+  tokenVerificacion (String, único, VarChar(64)) y
+  tokenVerificacionExpira (DateTime).
+- Migración nueva creada y aplicada: 20260927210046_add_verificacion_correo.
+- En registro.service.ts: nueva función generarTokenVerificacion() (crypto.randomBytes,
+  32 bytes = 64 caracteres hex) con expiración de 24 horas (HORAS_EXPIRACION_TOKEN).
+- registrarUsuario() ahora genera el token al crear el usuario y lo guarda en los
+  campos nuevos.
+- Nueva función verificarUsuario(token) en registro.service.ts: busca por token,
+  valida que no esté ya verificado, valida que no haya expirado, marca
+  verificado=true y limpia el token (uso único).
+- Nuevo endpoint GET /auth/verificar/:token en registro.routes.ts.
+- POST /auth/registro ahora devuelve el token en un campo separado
+  tokenVerificacion_DEV, comentado en el código como simulación temporal
+  (no hay envío real de correo, según lo acordado con el equipo: estrategia
+  "base primero, extras después" del proyecto).
+
+Decisión de diseño:
+- Se optó por token de un solo uso simulado (NO verificado=true automático al
+  registrar), para que la lógica real ya exista y solo falte conectar
+  Nodemailer/SMTP más adelante si sobra tiempo.
+
+Qué se probó manualmente (curl):
+- POST /auth/registro → 201, devuelve tokenVerificacion_DEV de 64 caracteres. OK.
+- GET /auth/verificar/:token con token válido → 200, verificado:true. OK.
+- Reutilizar el mismo token ya usado → 404 (Token de verificación inválido). OK.
+- Token con formato inválido (longitud distinta a 64) → 400. OK.
+- No se probó el caso de expiración real (requeriría esperar 24h o manipular
+  la fecha directamente en la base de datos); la lógica de comparación de
+  fechas está implementada pero queda como PENDIENTE de prueba explícita.
+
+Archivos tocados:
+- backend/prisma/schema.prisma (modificado)
+- backend/prisma/migrations/20260927210046_add_verificacion_correo/ (nuevo)
+- backend/src/auth/registro.routes.ts (modificado)
+- backend/src/auth/registro.service.ts (modificado)
+- backend/package.json (TOCADO AUNQUE NO CORRESPONDÍA A ESTA TAREA: se agregó el
+  bloque "allowScripts" con @prisma/engines, argon2 y prisma en true. Esto viene
+  de un `npm approve-scripts` corrido localmente durante el setup del entorno,
+  necesario porque npm bloqueaba los scripts de instalación de esos paquetes.
+  Se incluyó en este commit porque ya estaba modificado localmente y es útil
+  para que el resto del equipo no vea la misma advertencia al instalar. No se
+  tocó ninguna versión de dependencias.)
+
+Qué faltó / queda pendiente para otras ramas:
+- Integración real de envío de correo (Nodemailer + proveedor SMTP) — pospuesto
+  a propósito, no es parte de la base funcional mínima.
+- El campo tokenVerificacion_DEV en la respuesta de POST /auth/registro debe
+  quitarse o protegerse detrás de una variable de entorno (ej. NODE_ENV) antes
+  de cualquier despliegue real. Actualmente siempre se devuelve.
+- No se probó el flujo de expiración de token (410) de forma manual.
+- Cualquiera que haga git pull después de este merge DEBE correr, dentro de
+  backend/: npx prisma generate y npx prisma migrate dev (hay migración nueva).
+
+Puntos de atención para otras ramas:
+- schema.prisma fue tocado (coordinar antes de editarlo en paralelo, según README).
+- No se tocó events/bus.ts ni events/types.ts — no hubo evento nuevo para esto,
+  no hay riesgo de choque ahí.
+- Hay un archivo .prettierrc nuevo, sin commitear, generado localmente por VS Code
+  (extensión de formateo) durante esta rama. NO se subió a propósito porque es
+  una decisión de equipo (formato de código global) que no corresponde decidir
+  unilateralmente en esta rama. Si el equipo quiere adoptar Prettier, debe
+  discutirse y subirse en una rama/PR aparte.
+
+
+Rama fix/1-c-endurecer-verificacion (Parte 1, Punto C del Mapa_inicial.txt: complemento y corrección de feat/1-c-verificacion-correo)
+Responsable: Yona
+Fecha: 27 de septiembre de 2026
+
+Contexto: feat/1-c-verificacion-correo (1-C, Requeno) dejó la verificación de correo funcionando en modalidad simulada. Al revisarla se encontraron huecos que se corrigen en esta rama. La sección de esa rama se conserva sin cambios; donde difiera de lo descrito aquí, prevalece esta sección.
+
+Qué se hizo:
+- El token de verificación ya no se guarda en texto plano: en la columna tokenVerificacion (VarChar 64, única, ya existente) se guarda su SHA-256 en hexadecimal (64 caracteres). No requirió migración. El token crudo (randomBytes(32), 64 caracteres hex) solo existe en memoria y se entrega al llamador de registrarUsuario / reenviarVerificacion; nunca se persiste. Justificación: si se filtra la base, los tokens guardados no sirven para verificar cuentas. SHA-256 sin sal es adecuado aquí porque el token tiene 256 bits de entropía (no es una contraseña).
+- registro.service.ts: nueva función hashToken(); generarTokenVerificacion() ahora devuelve {token, tokenHash, expira}. registrarUsuario() guarda el hash, ya no incluye tokenVerificacion en el select (habría devuelto el hash) y retorna {...usuario, tokenVerificacion: token crudo}, de modo que registro.routes.ts conserva su desestructuración.
+- registro.service.ts: verificarUsuario() ahora busca por hash del token recibido, eliminó la rama 409 ("ya verificado"), que era inalcanzable porque al verificar se limpia el token y un usuario verificado nunca se encuentra por token, y consume el token con updateMany (where: id + tokenVerificacion) verificando count === 0 → 404, para que dos peticiones simultáneas con el mismo token no puedan consumirlo ambas. Retorna {id, correo, verificado: true}. Códigos: 404 token inexistente o ya usado, 410 token expirado.
+- registro.service.ts: nueva función reenviarVerificacion(correo): si el usuario existe y no está verificado, genera un token nuevo, reemplaza hash y expiración (invalida el anterior) y devuelve el token crudo; si no existe o ya está verificado, devuelve null.
+- registro.routes.ts: constante TOKEN_RE = /^[a-f0-9]{64}$/ para validar el formato en GET /auth/verificar/:token (400 si no cumple; antes solo se validaba la longitud).
+- registro.routes.ts: nuevo endpoint POST /auth/reenviar-verificacion (body: {correo}). Valida formato de correo (400) y responde siempre 200 con el mismo mensaje genérico, exista o no el correo o esté ya verificado, para no revelar qué correos están registrados. Cierra el callejón sin salida de 1-C (feat/1-c-verificacion-correo): el 410 decía "solicita uno nuevo" pero no existía forma de hacerlo.
+- Campo tokenVerificacion_DEV: pasa de devolverse siempre a ser opt-in con la variable EXPONER_TOKEN_VERIFICACION=true en .env, tanto en POST /auth/registro como en POST /auth/reenviar-verificacion. Sin la variable (o con cualquier otro valor), POST /auth/registro vuelve al contrato de 1-A (feat/auth-registro-usuario) (nunca expone tokens ni hashes). Se eligió opt-in y no NODE_ENV porque, si NODE_ENV no está definido, se expondría por defecto.
+- backend/.env.example: se agregó EXPONER_TOKEN_VERIFICACION=true.
+- Limpieza de formato: indentación de la validación de distrito en registro.routes.ts, espacios sobrantes al final de línea y línea en blanco dentro del select en registro.service.ts.
+
+Qué se modificó:
+- backend/src/auth/registro.service.ts (import de createHash, hashToken, generarTokenVerificacion, registrarUsuario, verificarUsuario, nueva reenviarVerificacion).
+- backend/src/auth/registro.routes.ts (import, TOKEN_RE, respuesta de POST /registro, validación de GET /verificar/:token, nueva ruta POST /reenviar-verificacion).
+- backend/.env.example (una línea nueva).
+Qué se eliminó:
+- Rama 409 de verificarUsuario (código muerto).
+- Campo tokenVerificacion del select de registrarUsuario.
+- Devolución incondicional de tokenVerificacion_DEV.
+- Validación del token solo por longitud.
+
+Cumplimiento del punto 1-C del Mapa ("verificación de correo o flujo simulado"):
+- Flujo simulado con token de un solo uso y expiración de 24 h: cumplido (1-C, feat/1-c-verificacion-correo), ahora con token almacenado como hash, reenvío y sin exposición por defecto.
+- Envío real de correo: NO cumplido, pospuesto a propósito (no es parte de la base funcional mínima).
+
+Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
+- Registro con flag activo: 201 con tokenVerificacion_DEV de 64 caracteres y sin campo tokenVerificacion; en la base, token_verificacion de 64 caracteres distinto al token devuelto (es el hash).
+- GET /auth/verificar con token de formato inválido (corto, y 64 caracteres no hex): 400. Con 64 ceros: 404.
+- Verificación con token válido: 200; en la base verificado = 1 y token/expiración en NULL. Reutilizar el token: 404.
+- POST /auth/reenviar-verificacion con usuario ya verificado y con correo inexistente: 200 con el mismo mensaje y sin token; con correo mal formado: 400.
+- Expiración (410) probada forzando token_verificacion_expira con UPDATE en MySQL: 410 al verificar; tras reenviar, el token anterior da 404 y el nuevo da 200. Esto cierra el pendiente de 1-C (feat/1-c-verificacion-correo) (caso de expiración sin probar).
+- Registro repetido: 409; contraseña corta: 400.
+- Flag desactivado: POST /auth/registro sin ningún campo de token.
+- NO realizada: prueba de concurrencia (dos verificaciones simultáneas con el mismo token). No se escribieron pruebas automatizadas.
+
+Qué NO se hizo / qué falta:
+- Envío real de correo (Nodemailer + SMTP).
+- Rate limiting y cooldown en /auth/reenviar-verificacion y en el resto de /auth (el reenvío sin límite sería vector de spam cuando exista envío real).
+- Pruebas automatizadas de verificar y reenviar.
+- Migración de tokens en texto plano preexistentes: quedan inválidos (solo afecta bases de desarrollo; el reenvío emite uno nuevo).
+- Definir si un usuario no verificado puede iniciar sesión (corresponde a 1-B; hoy nada lo impide).
+- Decisión de equipo sobre Prettier (.prettierrc).
+
+Qué se agregó de más (no pedido originalmente):
+- Endpoint POST /auth/reenviar-verificacion (no está en el Mapa; necesario para que el 410 sea recuperable).
+- Flag EXPONER_TOKEN_VERIFICACION y hash del token (endurecimiento no previsto en el Mapa).
+
+Archivos tocados fuera de auth/ (puntos de contacto entre partes):
+- backend/.env.example. No se tocaron schema.prisma, prisma/migrations/, events/, package.json ni index.ts.
+
+Incidencias técnicas durante el desarrollo:
+- Error de TypeScript "tokenVerificacion no existe en el tipo UsuarioWhereUniqueInput" y "tokenVerificacionExpira no existe en el tipo ..." en registro.service.ts. Causa: el cliente Prisma generado (src/generated/, no versionado) estaba desactualizado respecto a la migración de 1-C (feat/1-c-verificacion-correo). Solución: npx prisma generate, npx prisma migrate dev y reiniciar el servidor de TypeScript del editor. Es la misma regla de 1-A (feat/auth-registro-usuario): regenerar el cliente tras cada pull que toque schema.prisma.
+- El aviso "Using a password on the command line interface can be insecure" de MySQL CLI es solo informativo (ver Parte 0, chore/db-setup); se puede evitar con -e MYSQL_PWD=... en docker compose exec.
+
+Puntos de atención para las siguientes ramas:
+- Tras mergear esta rama, cada integrante debe agregar EXPONER_TOKEN_VERIFICACION=true a su backend/.env local; sin eso dejará de ver el token en las pruebas. En producción debe estar en false o ausente.
+- Envío real de correo: el token crudo solo existe en memoria dentro de registrarUsuario() y reenviarVerificacion(). Si el envío se implementa como listener de AgricultorRegistrado, el payload actual no lleva token y habría que ampliarlo (events/types.ts es archivo compartido: coordinar antes de tocarlo) sin persistir el token crudo; la alternativa es llamar al servicio de correo desde esas funciones. Al integrarlo, retirar el flag y el campo tokenVerificacion_DEV de ambos endpoints.
+- 1-B (login): decidir si verificado = false bloquea el inicio de sesión (recomendado bloquearlo o limitarlo) y crear auth/login.routes.ts propio con su app.use("/auth", ...) en index.ts.
+- El 404 de verificarUsuario es uniforme para token inexistente y ya usado (no distingue), y el reenvío responde igual en todos los casos: mantener ese comportamiento en futuros cambios.
+- backend/package.json tiene un bloque allowScripts atado a versiones exactas (prisma@7.10.0, argon2@0.45.1, @prisma/engines@7.10.0): al subir versión habrá que reaprobar, y conviene confirmar en la documentación de npm que la clave se soporta en la versión que usa todo el equipo.
+
+
+Rama docs (actualización de documentación hasta 1-C; nombre original no registrado)
 Responsable: Smith (+Yona)
-Se modifico el archivo: Estado_del_Proyecto.txt
-Con la documentacio hasta la parte 1-C
+Se modificó el archivo: Estado_del_Proyecto.txt
+Con la documentación hasta la parte 1-C.
 
-------------------------------------------------------------
 
-RAMA 8 — feature/parte-1d-perfil-usuario (Parte 1, Punto D del Mapa_inicial.txt: Perfil básico del agricultor + endpoint "yo")
+1-D — Perfil básico del agricultor + endpoint "yo"
+--------------------------------------------------
+
+Rama feature/parte-1d-perfil-usuario (Parte 1, Punto D del Mapa_inicial.txt: Perfil básico del agricultor + endpoint "yo")
 Responsable: Pocho
 Fecha: 3 de octubre de 2026
 Estado al cierre: código completo y revisado, SIN verificación funcional (ver Incidencias). Se mergeó en este estado; la verificación se hace después sobre main (ver Pendientes).
 
 Qué se hizo:
-- Archivo nuevo backend/src/auth/perfil.routes.ts: exporta perfilRouter (Router de Express) con una única ruta, GET /yo, protegida por requireAuth (auth.middleware.ts, de RAMA 6).
+- Archivo nuevo backend/src/auth/perfil.routes.ts: exporta perfilRouter (Router de Express) con una única ruta, GET /yo, protegida por requireAuth (auth.middleware.ts, de 1-B, feat/1-b-login-auth-guards).
 - La ruta toma req.usuario?.id (tipado por el declare global de auth.middleware.ts) y consulta prisma.usuario.findUnique con select explícito: id, nombres, apellidos, correo, distrito, verificado, fechaRegistro. contrasenaHash y duiHash quedan excluidos.
 - Respuestas: 200 {success: true, usuario}; 401 {error, detalles} si el token no trae usuario (rama defensiva); 404 {error, detalles} si el usuario del token ya no existe en la base; 500 {error, detalles} con console.error.
 - backend/src/index.ts: import de perfilRouter y app.use("/auth", perfilRouter) después del montaje de loginRouter. Se consume como GET /auth/yo.
@@ -557,7 +734,7 @@ Incidencias técnicas durante el desarrollo:
 - Verificado: MySQL responde dentro del contenedor (docker exec ... SELECT 1) y la tabla usuarios existe. Esa prueba no valida la conexión desde el host hacia el contenedor, que es la ruta que usa la aplicación.
 - Intentos que no resolvieron el error: cambiar DATABASE_URL de mysql:// a mysql2://; regenerar DUI_PEPPER y JWT_SECRET; borrar node_modules, reinstalar y correr npx prisma generate.
 - Efectos colaterales en el .env local (no versionado): DATABASE_URL quedó con mysql2:// (debe revertirse a mysql://); los dui_hash ya guardados en esa base dejan de coincidir con el nuevo DUI_PEPPER y los JWT emitidos antes dejan de ser válidos. Aceptable en desarrollo.
-- El uso de @prisma/adapter-mariadb con MySQL es lo definido en RAMA 1 y es obligatorio en Prisma 7; no hay evidencia de que sea la causa. Hipótesis a descartar: otro MySQL ocupando el puerto 3306 del host, resolución de localhost a IPv6 (probar 127.0.0.1) y autenticación caching_sha2_password de MySQL 8.4 contra el conector.
+- El uso de @prisma/adapter-mariadb con MySQL es lo definido en Parte 0 (chore/db-setup) y es obligatorio en Prisma 7; no hay evidencia de que sea la causa. Hipótesis a descartar: otro MySQL ocupando el puerto 3306 del host, resolución de localhost a IPv6 (probar 127.0.0.1) y autenticación caching_sha2_password de MySQL 8.4 contra el conector.
 - Criterio: si el error se reproduce en main limpio en otra máquina, es un fallo de config/prisma.ts y requiere rama fix; si no, es de entorno local.
 
 Observaciones de la revisión previa al merge:
@@ -569,34 +746,35 @@ Observaciones de la revisión previa al merge:
 Puntos de atención para las siguientes ramas:
 - Parte 2-A: también edita index.ts (montaje de su router); conflicto trivial junto a las líneas de /auth. No hay cambios en schema.prisma, no hace falta regenerar Prisma tras este pull.
 - Parte 6: el consumo de /auth/yo debe manejar 401 (token ausente, inválido o expirado) y 404 (usuario eliminado).
-- Parte 7: CORS (pendiente desde RAMA 0) y rate limiting deben cubrir /auth/yo.
+- Parte 7: CORS (pendiente desde Parte 0, base del proyecto) y rate limiting deben cubrir /auth/yo.
 
-------------------------------------------------------------
 
-RAMA 9 — docs/actualizar documentacion del proyecto
+Rama docs (actualización de documentación hasta 1-D; nombre original no registrado)
 Responsable: Pocho (+Yona)
-Se modifico el archivo: Estado_del_Proyecto.txt
-Con la documentacio hasta la parte 1-D
+Se modificó el archivo: Estado_del_Proyecto.txt
+Con la documentación hasta la parte 1-D.
 
-------------------------------------------------------------
 
-RAMA 10 — fix/prisma-mariadb-rsa-key (cierre de la Parte 1: verificación funcional sobre main y correcciones)
+1-END — Cierre de la Parte 1 (verificación funcional y correcciones)
+--------------------------------------------------------------------
+
+Rama fix/prisma-mariadb-rsa-key (cierre de la Parte 1: verificación funcional sobre main y correcciones)
 Responsable: Yona
 Fecha: 3 de octubre de 2026
 
-Contexto: RAMA 8 se mergeó sin verificación funcional por el error P2039 (ver RAMA 8, Incidencias). Esta rama ejecuta esa verificación sobre main (registro, verificación, login, GET /auth/yo), encuentra la causa real del P2039 y corrige lo detectado. Las secciones de RAMA 6 y RAMA 8 no se modifican; donde difieran de lo descrito aquí (causa del P2039, formato de errores, código de GET /auth/yo para usuario inexistente), prevalece esta sección. El nombre de la rama refleja solo la causa inicial; el alcance final es mayor.
+Contexto: 1-D (feature/parte-1d-perfil-usuario) se mergeó sin verificación funcional por el error P2039 (ver 1-D (feature/parte-1d-perfil-usuario), Incidencias). Esta rama ejecuta esa verificación sobre main (registro, verificación, login, GET /auth/yo), encuentra la causa real del P2039 y corrige lo detectado. Las secciones de 1-B (feat/1-b-login-auth-guards) y 1-D (feature/parte-1d-perfil-usuario) no se modifican; donde difieran de lo descrito aquí (causa del P2039, formato de errores, código de GET /auth/yo para usuario inexistente), prevalece esta sección. El nombre de la rama refleja solo la causa inicial; el alcance final es mayor.
 
 Causa del P2039 (resuelta):
 - Síntoma: cualquier operación de base de datos fallaba con PrismaClientKnownRequestError P2039 "pool timeout: failed to retrieve a connection from pool after 10000ms (active=0 idle=0 limit=10)". Prisma oculta la causa en "cause: [Object]".
 - Diagnóstico: conectar con el paquete mariadb directamente (sin Prisma) desde backend/ mostró el error real: ER_CANNOT_RETRIEVE_RSA_KEY (45044), "RSA public key is not available client side".
 - Causa: MySQL 8.4 crea los usuarios con caching_sha2_password. Cuando el servidor no tiene la cuenta en su caché de autenticación (volumen o contenedor nuevo, reinicio de MySQL), exige autenticación completa y, sin TLS, el cliente necesita la clave pública RSA del servidor. El conector MariaDB solo la pide si se activa allowPublicKeyRetrieval. Sin esa opción rechaza la conexión y el pool reintenta en silencio hasta el timeout.
-- Por qué no apareció en RAMA 2 a 6: hipótesis, no comprobada. Con la cuenta ya en la caché del servidor (por ejemplo tras autenticarse el CLI de Prisma con migrate) la autenticación rápida no requiere la clave. Lo comprobado es que el fallo es reproducible y afecta a cualquiera que levante el contenedor desde cero.
-- El diagnóstico de RAMA 8 ("incompatibilidad del adapter MariaDB con MySQL 8.4") queda descartado: @prisma/adapter-mariadb es el adapter correcto y obligatorio (RAMA 1). Los intentos de RAMA 8 (mysql2://, regenerar secretos, reinstalar) no tenían relación con la causa.
+- Por qué no apareció en 1-A, 1-C y 1-B (ramas anteriores): hipótesis, no comprobada. Con la cuenta ya en la caché del servidor (por ejemplo tras autenticarse el CLI de Prisma con migrate) la autenticación rápida no requiere la clave. Lo comprobado es que el fallo es reproducible y afecta a cualquiera que levante el contenedor desde cero.
+- El diagnóstico de 1-D (feature/parte-1d-perfil-usuario) ("incompatibilidad del adapter MariaDB con MySQL 8.4") queda descartado: @prisma/adapter-mariadb es el adapter correcto y obligatorio (Parte 0, chore/db-setup). Los intentos de 1-D (feature/parte-1d-perfil-usuario) (mysql2://, regenerar secretos, reinstalar) no tenían relación con la causa.
 
-Resultado de la verificación funcional pendiente de RAMA 8 (sobre main, antes de los cambios de esta rama, con el P2039 ya resuelto en local):
-- GET /auth/yo con token válido: 200 con {success: true, usuario} (verificado true, sin hashes). Sin encabezado Authorization: 401. Token alterado: 401. Token válido firmado con un id inexistente: 404 (comportamiento de RAMA 8; cambia en esta rama, ver abajo).
+Resultado de la verificación funcional pendiente de 1-D (feature/parte-1d-perfil-usuario) (sobre main, antes de los cambios de esta rama, con el P2039 ya resuelto en local):
+- GET /auth/yo con token válido: 200 con {success: true, usuario} (verificado true, sin hashes). Sin encabezado Authorization: 401. Token alterado: 401. Token válido firmado con un id inexistente: 404 (comportamiento de 1-D (feature/parte-1d-perfil-usuario); cambia en esta rama, ver abajo).
 - El sub del JWT viaja como texto ("9"); verificarToken() lo convierte a número y GET /auth/yo funcionó sin cambios, así que ese punto queda confirmado.
-- Se confirmaron además varios ítems marcados [VERIFICAR] en RAMA 6: login sin verificar con contraseña correcta, 403; tras verificar, login 200 con token y usuario sin hashes (payload {correo, iat, exp, sub}, expiración de 2h); contraseña incorrecta, 401 genérico; correo inexistente, 401; JWT_SECRET inválido, login 500; requireAuth probado a través de GET /auth/yo (sin encabezado 401, token alterado 401, token válido 200). Versiones resueltas de las dependencias de RAMA 6: jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10. No se probaron aquí: body vacío o correo mal formado en login, expiración con JWT_EXPIRES_IN corto, JWT_SECRET ausente en requireAuth. El campo "Incidencias" de RAMA 6 sigue sin completar en esa sección.
+- Se confirmaron además varios ítems marcados [VERIFICAR] en 1-B (feat/1-b-login-auth-guards): login sin verificar con contraseña correcta, 403; tras verificar, login 200 con token y usuario sin hashes (payload {correo, iat, exp, sub}, expiración de 2h); contraseña incorrecta, 401 genérico; correo inexistente, 401; JWT_SECRET inválido, login 500; requireAuth probado a través de GET /auth/yo (sin encabezado 401, token alterado 401, token válido 200). Versiones resueltas de las dependencias de 1-B (feat/1-b-login-auth-guards): jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10. No se probaron aquí: body vacío o correo mal formado en login, expiración con JWT_EXPIRES_IN corto, JWT_SECRET ausente en requireAuth. El campo "Incidencias" de 1-B (feat/1-b-login-auth-guards) sigue sin completar en esa sección.
 
 Qué se hizo:
 - backend/src/config/prisma.ts: el adapter ya no recibe la cadena DATABASE_URL tal cual; se parsea con new URL() y se construye PrismaMariaDb con host, port (3306 por defecto), user, password (decodeURIComponent), database y allowPublicKeyRetrieval = (NODE_ENV !== "production"). DATABASE_URL sigue siendo la única fuente de configuración.
@@ -608,7 +786,7 @@ Qué se hizo:
 Decisiones de diseño:
 - allowPublicKeyRetrieval va en el código y no como parámetro de DATABASE_URL: el .env no se versiona (el resto del equipo no recibiría el cambio) y esa variable también la lee prisma7.config.ts (CLI de Prisma), que usa otro camino de conexión.
 - allowPublicKeyRetrieval se desactiva en producción: la opción es aceptable en una red local de desarrollo, pero en producción corresponde usar TLS hacia la base (Parte 7).
-- Se eligió { error, detalles } (formato ya usado por GET /auth/yo en RAMA 8) como contrato único, aplicado a los errores y no a las respuestas exitosas, que se unifican cuando el frontend las consuma.
+- Se eligió { error, detalles } (formato ya usado por GET /auth/yo en 1-D, feature/parte-1d-perfil-usuario) como contrato único, aplicado a los errores y no a las respuestas exitosas, que se unifican cuando el frontend las consuma.
 - Plantilla con secretos vacíos y validación al arrancar: es preferible que falte un secreto y el servidor no inicie a que inicie con uno público o inválido.
 
 Qué se modificó:
@@ -618,8 +796,8 @@ Qué se modificó:
 Qué se eliminó: las claves "mensaje" y "errores" en los cuerpos de error de /auth; el 404 de GET /auth/yo; el valor de ejemplo de JWT_SECRET y DUI_PEPPER en .env.example. Dependencias nuevas: ninguna. No se tocaron schema.prisma, migrations/, events/ ni package.json.
 
 Cumplimiento:
-- Parte 1 completa en el backend: 1-A (RAMA 2), 1-C (RAMA 4 y 5), 1-B (RAMA 6), 1-D (RAMA 8). Esta rama deja verificado el flujo registro, verificación, login y perfil.
-- Revisión previa al merge de RAMA 8: Crítico (verificación funcional y P2039), cerrado. Importante (error.message en 500 y contrato inconsistente), cerrado; login y registro ya devolvían mensajes genéricos y solo GET /auth/yo filtraba el detalle. Menos (indentación, 404 a 401), cerrado; "municipio derivado en /yo" sigue atado a 2-A; el nombre de rama no se puede corregir.
+- Parte 1 completa en el backend: 1-A (feat/auth-registro-usuario), 1-C (feat/1-c-verificacion-correo y fix/1-c-endurecer-verificacion), 1-B (feat/1-b-login-auth-guards), 1-D (feature/parte-1d-perfil-usuario). Esta rama deja verificado el flujo registro, verificación, login y perfil.
+- Revisión previa al merge de 1-D (feature/parte-1d-perfil-usuario): Crítico (verificación funcional y P2039), cerrado. Importante (error.message en 500 y contrato inconsistente), cerrado; login y registro ya devolvían mensajes genéricos y solo GET /auth/yo filtraba el detalle. Menos (indentación, 404 a 401), cerrado; "municipio derivado en /yo" sigue atado a 2-A; el nombre de rama no se puede corregir.
 
 Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
 - Antes de los cambios, sobre main: reproducción del P2039; script con el paquete mariadb: sin la opción falla con ER_CANNOT_RETRIEVE_RSA_KEY y con allowPublicKeyRetrieval conecta; registro 201; en la base contrasena_hash con prefijo $argon2id$ y dui_hash de 64 caracteres; las pruebas de login y GET /auth/yo descritas arriba.
@@ -637,13 +815,13 @@ Qué NO se hizo / qué falta:
 Qué se agregó de más (no pedido originalmente):
 - Validación de entorno y manejo del error de listen en index.ts.
 - Cambio de 404 a 401 en GET /auth/yo y reescritura de formato de perfil.routes.ts.
-- Cambio de formato de error en archivos de RAMA 2, 4, 5 y 6 (necesario para unificar el contrato).
+- Cambio de formato de error en archivos de 1-A (feat/auth-registro-usuario), 1-C (feat/1-c-verificacion-correo y fix/1-c-endurecer-verificacion) y 1-B (feat/1-b-login-auth-guards), necesario para unificar el contrato.
 
 Archivos tocados fuera de auth/ (puntos de contacto entre partes): backend/src/config/prisma.ts, backend/src/index.ts y backend/.env.example.
 
 Incidencias técnicas durante el desarrollo:
 - Puerto 3000 ocupado por un contenedor de Docker de otro proyecto (docker-proxy): curl a /health devolvía "Cannot GET /health" de un Express ajeno, y el backend mostraba "Backend corriendo en puerto 3000" sin estar escuchando. Diagnóstico: docker ps y sudo ss -ltnp | grep :3000 (sin sudo no se ve el proceso de docker-proxy). Se resolvió deteniendo ese contenedor (docker stop y docker update --restart=no); sin borrar nada. Con el cambio de index.ts un puerto ocupado ya no se disfraza de arranque exitoso.
-- "Cannot find module 'jsonwebtoken'": el node_modules local no tenía las dependencias de RAMA 6 aunque package.json y package-lock.json las declaraban. Solución: npm ci --legacy-peer-deps (instala exactamente el lock, sin modificar package.json ni el lock) y repetir npx prisma generate. No era un fallo del repositorio.
+- "Cannot find module 'jsonwebtoken'": el node_modules local no tenía las dependencias de 1-B (feat/1-b-login-auth-guards) aunque package.json y package-lock.json las declaraban. Solución: npm ci --legacy-peer-deps (instala exactamente el lock, sin modificar package.json ni el lock) y repetir npx prisma generate. No era un fallo del repositorio.
 - Login 500 por "JWT_SECRET no está definido o tiene menos de 32 caracteres": el .env local no tenía un valor válido. Antes de esta rama el servidor arrancaba igual y solo fallaba en el primer login; ahora aborta al iniciar.
 - Prueba de GET /auth/yo con un token firmado a mano: dotenv imprime "injected env (N) from .env" por stdout, lo que contamina variables de shell al capturar la salida de node; filtrar con tail -n 1.
 
@@ -655,19 +833,25 @@ Puntos de atención para las siguientes ramas:
 - index.ts: la 2-A agrega su app.use(...) en este archivo; el conflicto con esta rama ya no aplica (esta rama está mergeada), pero el validador de entorno queda arriba del archivo: nuevas variables críticas se agregan a esa lista.
 - EXPONER_TOKEN_VERIFICACION=true en la plantilla es solo para desarrollo: con el flag activo, POST /auth/reenviar-verificacion devuelve token únicamente si el correo existe y está pendiente, lo que permite saber qué correos existen. En cualquier entorno real debe ser false o no existir.
 
-------------------------------------------------------------
 
-RAMA 11 — docs/actualizar documentacion del proyecto
+Rama docs (actualización de documentación hasta 1-END; nombre original no registrado)
 Responsable: Yona
-Se modifico el archivo: Estado_del_Proyecto.txt
-Con la documentacion hasta la RAMA 10 (cierre de la Parte 1)
+Se modificó el archivo: Estado_del_Proyecto.txt
+Con la documentación hasta fix/prisma-mariadb-rsa-key (1-END, cierre de la Parte 1).
 
-------------------------------------------------------------
-RAMA 12 — feat/2-a-modelos-viabilidad (Parte 2, Punto A del Mapa_inicial.txt: Tabla / modelo de zonas + granos viables, referencia CENTA)
+============================================================
+PARTE 2 — Datos de viabilidad y zonas de Morazán
+============================================================
+
+
+2-A — Tabla / modelo de zonas + granos viables (referencia CENTA)
+-----------------------------------------------------------------
+
+Rama feat/2-a-modelos-viabilidad (Parte 2, Punto A del Mapa_inicial.txt: Tabla / modelo de zonas + granos viables, referencia CENTA)
 Responsable: Yona
 Fecha: 4 de octubre de 2026
 
-Contexto: la Parte 1 quedó cerrada en RAMA 10. Antes de implementar se cerró la definición de los datos de viabilidad (análisis de los exports de CENTA; detalle en docs/Parte2_Datos_CENTA_2A_2B.md, agregado a docs/ en RAMA 13). Esta rama implementa SOLO el modelo de datos y su migración: no carga datos (2-B), ni servicio de consulta (2-C), ni endpoint (2-D). Yona asume también el 2-B (antes asignado a otro integrante). Numeración acordada: RAMA 12 = 2-A, RAMA 13 = docs, RAMA 14 = 2-B.
+Contexto: la Parte 1 quedó cerrada en fix/prisma-mariadb-rsa-key (1-END). Antes de implementar se cerró la definición de los datos de viabilidad (análisis de los exports de CENTA; detalle en docs/Info_Datos_CENTA.md, que se agregó a docs/ en la rama docs/actualizar-estado-rama-12 y entonces se llamaba Parte2_Datos_CENTA_2A_2B.md). Esta rama implementa SOLO el modelo de datos y su migración: no carga datos (2-B), ni servicio de consulta (2-C), ni endpoint (2-D). Yona asume también el 2-B (antes asignado a otro integrante).
 
 Qué se hizo:
 - backend/prisma/schema.prisma: se agregó al final, bajo el comentario "Parte 2 — Viabilidad (datos de referencia CENTA)", un enum y cinco modelos. No se tocó Usuario ni el generator.
@@ -700,7 +884,7 @@ Cambios respecto al Mapa_inicial.txt (documentados según reglas del proyecto):
 - Se agrega la capa de riesgo de sequía (no estaba en el Mapa).
 - 2-B: lo asume Yona (antes otra persona); incluye script de limpieza, CSV limpios y seed.
 - 2-C: la consulta será por distrito + capa, no "zona + grano + temporada"; la temporada queda diferida.
-- Se concreta el catálogo Municipio (2) / Distrito (26) anunciado desde RAMA 2.
+- Se concreta el catálogo Municipio (2) / Distrito (26) anunciado desde 1-A (feat/auth-registro-usuario).
 
 Qué se modificó: backend/prisma/schema.prisma (solo adición al final) y backend/prisma/migrations/ (carpeta nueva).
 Qué se eliminó: nada. Dependencias nuevas: ninguna.
@@ -719,7 +903,7 @@ Pruebas realizadas (manuales, MySQL en Docker):
 - NO realizadas: inserción y lectura de datos (no hay datos hasta el 2-B), pruebas de las restricciones únicas y claves foráneas con inserciones de prueba, pruebas automatizadas.
 
 Qué NO se hizo / qué falta:
-- Carga de datos, script de limpieza y CSV limpios (2-B, RAMA 14); servicio de consulta (2-C); endpoint y pruebas (2-D).
+- Carga de datos, script de limpieza y CSV limpios (2-B, feat/2-b-datos-centa); servicio de consulta (2-C); endpoint y pruebas (2-D).
 - Validar o relacionar Usuario.distrito con el catálogo.
 - Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B): no están en el mapa de CENTA; no se modelan.
 - No se corrió npx prisma format, a propósito: reordenaría la alineación de Usuario y del generator y el diff dejaría de ser aditivo en un archivo compartido. Esas desalineaciones y el comentario de plantilla de Prisma siguen ahí.
@@ -731,22 +915,25 @@ Incidencias técnicas durante el desarrollo: [COMPLETAR: "Ninguna" si no hubo].
 Puntos de atención para las siguientes ramas:
 - Tras el merge, cada integrante corre npx prisma generate y npx prisma migrate dev. Aún no hay código que use los modelos, pero el cliente regenerado ya los incluye.
 - Las partes 4-A y 5 también agregan modelos al final de schema.prisma: el conflicto se resuelve conservando ambos bloques. Quien mergee segundo regenera su migración sobre main actualizado.
-- RAMA 14 (2-B) depende de esta migración aplicada. El seed inserta Distrito.id explícito, genera Capa y ClaseCapa desde capas.config.ts, carga 312 filas de AreaClase, pasa las áreas a Decimal como texto y usa el cliente compartido (import { prisma } desde config/prisma).
+- 2-B (feat/2-b-datos-centa) depende de esta migración aplicada. El seed inserta Distrito.id explícito, genera Capa y ClaseCapa desde capas.config.ts, carga 312 filas de AreaClase, pasa las áreas a Decimal como texto y usa el cliente compartido (import { prisma } desde config/prisma).
 - nombre_normalizado: la función de normalización (mayúsculas, sin tildes, espacios colapsados) debe ser una sola, compartida entre el seed y la futura validación del registro.
-- El contrato de datos para 2-C y 2-D está en docs/Parte2_Datos_CENTA_2A_2B.md (sección 9): distribución completa por clase, clase dominante solo como resumen, manzanas solo para mostrar, errores con { error, detalles }.
+- El contrato de datos para 2-C y 2-D está en docs/Info_Datos_CENTA.md (sección 9): distribución completa por clase, clase dominante solo como resumen, manzanas solo para mostrar, errores con { error, detalles }.
 
-------------------------------------------------------------
-RAMA 13 — docs/actualizar-estado-rama-12
+
+Rama docs/actualizar-estado-rama-12 (docs)
 Responsable: Yona
-Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Propuestas y Pendientes, más las secciones nuevas de RAMA 12 y 13). Se agregó a docs/: Parte2_Datos_CENTA_2A_2B.md.
-Con la documentación hasta la RAMA 12 (Parte 2-A: modelos de viabilidad)
+Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Propuestas y Pendientes, más la sección nueva de feat/2-a-modelos-viabilidad y de esta rama). Se agregó a docs/: Info_Datos_CENTA.md (entonces con el nombre Parte2_Datos_CENTA_2A_2B.md).
+Con la documentación hasta 2-A (modelos de viabilidad).
 
-------------------------------------------------------------
-RAMA 14 — feat/2-b-datos-centa (Parte 2, Punto B del Mapa_inicial.txt: Carga inicial de datos de Morazán)
+
+2-B — Carga inicial de datos de Morazán
+---------------------------------------
+
+Rama feat/2-b-datos-centa (Parte 2, Punto B del Mapa_inicial.txt: Carga inicial de datos de Morazán)
 Responsable: Yona
 Fecha: 6 de octubre de 2026
 
-Contexto: RAMA 12 dejó los modelos de viabilidad (Municipio, Distrito, Capa, ClaseCapa, AreaClase) y RAMA 13 su documentación. Esta rama obtiene, valida y carga en esos modelos los datos de viabilidad de CENTA. Son dos programas independientes: datos:limpiar (valida los exports crudos y genera CSV limpios) y datos:cargar (lee solo los CSV limpios y los guarda en MySQL). Numeración acordada: RAMA 12 = 2-A, RAMA 13 = docs, RAMA 14 = 2-B, RAMA 15 = docs. Contrato de datos y reglas de interpretación: docs/Info_Datos_CENTA.md. Las secciones de RAMA 12 y RAMA 13 no se modifican: donde mencionan el documento de datos con su nombre anterior (Parte2_Datos_CENTA_2A_2B.md), se refieren a Info_Datos_CENTA.md.
+Contexto: feat/2-a-modelos-viabilidad (2-A) dejó los modelos de viabilidad (Municipio, Distrito, Capa, ClaseCapa, AreaClase) y docs/actualizar-estado-rama-12 su documentación. Esta rama obtiene, valida y carga en esos modelos los datos de viabilidad de CENTA. Son dos programas independientes: datos:limpiar (valida los exports crudos y genera CSV limpios) y datos:cargar (lee solo los CSV limpios y los guarda en MySQL). Contrato de datos y reglas de interpretación: docs/Info_Datos_CENTA.md.
 
 Qué se hizo:
 - Datos crudos versionados en backend/data/centa/raw/, con nombres fijos y sin tildes: Potencial_maiz.csv, Potencial_frijol.csv, Potencial_sorgo.csv (es el maicillo; CENTA lo llama sorgo), Riesgo_sequia.csv, division_territorial_morazan.csv y fuente.json ({"fuente": "CENTA", "fechaExtraccion": "2026-10-04"}). Son los exports de la herramienta de consulta del mapa de CENTA (todo Morazán, todas las clases) sin modificar: no se abren ni se guardan en Excel.
@@ -761,7 +948,7 @@ Qué se hizo:
   - Totales: el área total clasificada de cada distrito debe coincidir entre capas (tolerancia 5 ha) y ningún distrito puede faltar por completo en una capa.
   - Si hay cualquier error, los lista TODOS, no escribe ningún archivo y termina con código de salida 1.
   - Salida determinista (una segunda corrida produce archivos idénticos byte a byte): data/centa/clean/distritos.csv (id_distrito, distrito, municipio; 26 filas) y data/centa/clean/areas_clase.csv (capa, id_distrito, valor, clase, area_ha; 312 filas; área con 3 decimales). UTF-8 sin BOM, separador ",", saltos LF. Imprime un resumen con los controles numéricos.
-- backend/src/viabilidad/datos/cargar-centa.ts (nuevo; script npm run datos:cargar). Lee los CSV limpios (no los crudos) y fuente.json, y valida antes de escribir: 26 distritos, 2 municipios, 4 capas, 12 clases, 312 áreas (constante ESPERADO), sin áreas negativas, clases coherentes con capas.config.ts, sin duplicados, ids de distrito existentes y nombres normalizados únicos. Si hay errores, no toca la base y sale con código 1. Si no, carga con upsert en UNA transacción, en este orden: Municipio, Distrito (id explícito = código CENTA, con nombreNormalizado), Capa y ClaseCapa (desde capas.config.ts), AreaClase (áreas pasadas como texto a Decimal; fecha de extracción en UTC). Antes de confirmar cuenta las filas de las cinco tablas y, si no coinciden con ESPERADO, revierte todo. Usa el cliente compartido (import { prisma } desde config/prisma). Idempotente. Mensajes con pista para P2021/P2022 (tablas ausentes: npx prisma generate y migrate dev) y P2039 (ver RAMA 10). Cierra la conexión al terminar.
+- backend/src/viabilidad/datos/cargar-centa.ts (nuevo; script npm run datos:cargar). Lee los CSV limpios (no los crudos) y fuente.json, y valida antes de escribir: 26 distritos, 2 municipios, 4 capas, 12 clases, 312 áreas (constante ESPERADO), sin áreas negativas, clases coherentes con capas.config.ts, sin duplicados, ids de distrito existentes y nombres normalizados únicos. Si hay errores, no toca la base y sale con código 1. Si no, carga con upsert en UNA transacción, en este orden: Municipio, Distrito (id explícito = código CENTA, con nombreNormalizado), Capa y ClaseCapa (desde capas.config.ts), AreaClase (áreas pasadas como texto a Decimal; fecha de extracción en UTC). Antes de confirmar cuenta las filas de las cinco tablas y, si no coinciden con ESPERADO, revierte todo. Usa el cliente compartido (import { prisma } desde config/prisma). Idempotente. Mensajes con pista para P2021/P2022 (tablas ausentes: npx prisma generate y migrate dev) y P2039 (ver 1-END, fix/prisma-mariadb-rsa-key). Cierra la conexión al terminar.
 - backend/package.json: se agregaron los scripts datos:limpiar y datos:cargar (ambos con ts-node-dev --transpile-only). No se agregaron dependencias ni se tocó package-lock.json.
 - Los dos archivos de punto de entrada solo se ejecutan si se corren directamente (require.main === module), de modo que el seed importa constantes del limpiador sin dispararlo.
 
@@ -794,7 +981,7 @@ Archivos tocados fuera de viabilidad/ (puntos de contacto entre partes): backend
 Cumplimiento del punto 2-B ("Carga inicial de datos de Morazán"):
 - Datos de viabilidad cargados y verificados en MySQL: cumplido (26 distritos x 4 capas, 312 áreas).
 - Catálogo Municipio / Distrito cargado: cumplido; la relación de Usuario.distrito con el catálogo sigue pendiente (no era de este punto).
-- Cierra parcialmente el pendiente de RAMA 12 "inserción y lectura de datos": la carga y la lectura por SQL funcionan; no se probaron a propósito las restricciones únicas y claves foráneas con inserciones inválidas.
+- Cierra parcialmente el pendiente de 2-A (feat/2-a-modelos-viabilidad) "inserción y lectura de datos": la carga y la lectura por SQL funcionan; no se probaron a propósito las restricciones únicas y claves foráneas con inserciones inválidas.
 
 Pruebas realizadas (en el entorno del proyecto, MySQL 8.4 en Docker; manuales):
 - datos:limpiar con datos reales: salida con 0 errores y controles numéricos de arriba; archivos limpios con 313 y 27 líneas (con encabezado), sin BOM; Chilanga en maíz; suma independiente con awk; 78 filas por capa; 38 filas con 0.000.
@@ -832,148 +1019,25 @@ Puntos de atención para las siguientes ramas:
 - Si datos:cargar falla con "la tabla de ... quedó con N filas y se esperaban M", hay filas ajenas a la carga en esa tabla (por ejemplo, insertadas a mano); la transacción ya se revirtió.
 - package.json es punto de contacto: conflicto probable con cualquier rama que agregue scripts o dependencias; quien mergee segundo conserva ambas líneas.
 
-------------------------------------------------------------
-RAMA 15 — docs/actualizar-estado-rama-14
+
+Rama docs/actualizar-estado-rama-14 (docs)
 Responsable: Yona
-Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Pasos para clonar, Propuestas y Pendientes, más las secciones nuevas de RAMA 14 y 15) y docs/Info_Datos_CENTA.md (estado y nota de implementación de la RAMA 14).
-Con la documentación hasta la RAMA 14 (Parte 2-B: limpieza y carga de datos CENTA)
+Se modificó el archivo: Estado_del_Proyecto.txt (secciones base 1, 2 y 3, Pasos para clonar, Propuestas y Pendientes, más las secciones nuevas de feat/2-b-datos-centa y de esta rama) y docs/Info_Datos_CENTA.md (estado y nota de implementación de 2-B).
+Con la documentación hasta 2-B (limpieza y carga de datos CENTA).
 
-------------------------------------------------------------
-IMPORTANTE — Pasos para clonar y levantar el entorno de desarrollo
-------------------------------------------------------------
-(Válido desde RAMA 2 en adelante; los pasos 2, 3 y 6 se actualizaron en RAMA 10.)
 
-Desde la raíz del repositorio, en este orden:
+2-C — Servicio de consulta de viabilidad
+----------------------------------------
 
-1. Levantar MySQL de desarrollo:
-   docker compose up -d db
-
-2. Instalar dependencias del backend:
-   cd backend
-   npm install
-
-  Si npm run dev falla con "Cannot find module 'jsonwebtoken'" (u otro paquete declarado en package.json), el node_modules local quedó incompleto: correr npm ci --legacy-peer-deps (instala exactamente lo que dice package-lock.json, sin modificarlo) y luego npx prisma generate.
-
-3. Crear backend/.env a partir de la plantilla:
-   cp .env.example .env
-  Completar los dos secretos obligatorios, que la plantilla trae vacíos: DUI_PEPPER y JWT_SECRET (mín. 32 caracteres). Desde RAMA 10 el servidor NO arranca si faltan. Generar cada uno con (correr el comando dos veces):
-   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-   Valores esperados del resto de variables (desarrollo local):
-   DATABASE_URL="mysql://agroalerta:agroalerta@localhost:3306/agroalerta"
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=agroalerta
-   DB_PASSWORD=agroalerta
-   DB_NAME=agroalerta
-   Variables agregadas después de RAMA 2 (deben existir en .env):
-   EXPONER_TOKEN_VERIFICACION=true    (RAMA 5; solo desarrollo)
-   JWT_SECRET=<secreto propio, mín. 32 caracteres>    (RAMA 6)
-   JWT_EXPIRES_IN=2h    (RAMA 6)
-   Tras un pull que modifique package.json: npm install --legacy-peer-deps dentro de backend/.
-
-4. Generar el cliente de Prisma (sigue en backend/):
-   npx prisma generate
-
-5. Sincronizar el esquema con la base de datos:
-   npx prisma migrate dev
-
-   5b. Cargar los datos de viabilidad (desde RAMA 14; requiere el paso 5 hecho), dentro de backend/:
-   npm run datos:cargar
-   Carga en MySQL los CSV de backend/data/centa/clean/, que ya vienen en el repo. Es idempotente (se puede repetir). No hace falta correr datos:limpiar salvo que se actualicen los exports de CENTA. Debe terminar con: municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312.
-
-6. Verificar el backend:
-   npm run dev
-   (debe responder en localhost:3000/health; el registro responde en POST localhost:3000/auth/registro)
-    Debe imprimir "Backend corriendo en puerto 3000" y /health debe devolver {"status":"ok"}. Si el puerto está ocupado, el backend aborta con "No se pudo iniciar el backend en el puerto ..." (ver con docker ps y sudo ss -ltnp | grep :3000). Si un registro falla con P2039, ver RAMA 10.
-
-7. Frontend, en otra terminal, desde la raíz del repo:
-   cd frontend
-   npm install
-   ng serve
-   (debe responder en localhost:4200)
-
-Nota: todos los comandos docker compose se corren desde la raíz del repo (ahí vive docker-compose.yml), nunca desde backend/. Tras cada pull que modifique schema.prisma, repetir los pasos 4 y 5. Tras cada pull que modifique backend/data/centa/clean/, repetir el 5b.
-
-------------------------------------------------------------
-PROPUESTAS (opcionales)
-------------------------------------------------------------
-- Definir temprano un contrato de eventos (nombres y payload) para evitar desalineaciones entre módulos. (Avance en RAMA 2: ya existen events/bus.ts y events/types.ts con AgricultorRegistrado; falta definir SiembraRegistrada, ActualizacionMeteorologica y CondicionClimaticaActualizada.)
-- Crear un pequeño set de datos de prueba (zonas de Morazán + rendimientos promedio) desde el inicio.
-- Automatizar en el futuro (si el tiempo lo permite) la extracción de datos de viabilidad CENTA mediante un script de scraping, en vez de mantenerlos únicamente a mano. No es requisito de la base funcional.
-- Definir un script de seed (datos de prueba: usuario, zona, siembra de ejemplo) una vez existan los modelos de Parte 2 y Parte 4.
-- Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
-- Agregar rate limiting a los endpoints de /auth (registro, login y perfil) antes del despliegue.
-- Agregar pruebas automatizadas (por ejemplo Jest + supertest) para /auth/registro, incluyendo 201, 400, 409 y la emisión del evento, y para GET /auth/yo (200; 401 sin token, con token inválido o expirado y con usuario inexistente).
-- Revocación de sesión (lista de tokens revocados o versión de token por usuario) y/o refresh tokens, si se necesita logout real o invalidar sesiones al desverificar o eliminar usuarios.
-- Bloqueo temporal por intentos fallidos de login por correo e IP, junto con el rate limiting.
-- Hacer que GET /health verifique también la conexión a la base (consulta trivial tipo SELECT 1) y responda 503 si falla, para detectar problemas como el P2039 sin esperar a la primera operación de negocio. Hoy /health solo confirma que Express levantó.
-- Unificar también la forma de las respuestas exitosas de /auth (hoy: {token, usuario}, {mensaje, usuario}, {success, usuario} y objeto directo) cuando el frontend empiece a consumirlas (Parte 6).
-- Validar longitud mínima de DUI_PEPPER al arrancar (hoy solo se valida que exista).
-- Mostrar el mapa de CENTA en la vista Clima Zonal (Parte 6-D), por ejemplo con Leaflet y un GeoJSON propio. No es parte de la base mínima.
-- Capas futuras (caña, vainilla, banano, elevación, temperatura, humedad): evaluar cuando se vean sus datos; el modelo de la RAMA 12 permite agregar capas por clases insertando filas.
-- Pruebas automatizadas del script de limpieza (conversión de números, validaciones) y del servicio y endpoint de viabilidad (2-C / 2-D).
-- Pruebas automatizadas del seed (cargar-centa.ts) contra una base de prueba: carga, segunda corrida sin duplicados, reversión ante filas ajenas y rechazo de CSV inválidos.
-
-------------------------------------------------------------
-PENDIENTES (obligatorio)
-------------------------------------------------------------
-Cuando se cree el formulario de siembra (o registro de cultivo), debe ser más detallado y ajustado a la propuesta real:
-
-Campos obligatorios / recomendados:
-- Estado actual: Sembrado / Por sembrar
-- Fecha: cuándo sembró / cuándo planea sembrar
-- Qué sembró / sembrará: 3 granos principales (Maíz, Frijol, Maicillo)
-- (Opcional, si se obtienen datos): tipos de semilla para cada grano
-- Área sembrada / por sembrar (manzanas y/o km²)
-- Cantidad sembrada / a sembrar (libras o bolsas de semilla)
-
-Detalles sí/no:
-- ¿Alquila la zona sembrada / a sembrar?
-- ¿Usa maquinaria?
-- ¿Usa regadío?
-
-Inversión:
-- Dinero invertido / estimación a invertir (debe incluir: semilla, venenos, fertilizantes, alquiler de tierras, mano de obra, maquinaria y sistema de riego → en general TODO)
-
-Requerimiento adicional de lógica:
-- El sistema debe poder calcular un estimado de inversión antes de que el usuario lo digite, usando:
-  - Precios promedio de materiales (semillas, abonos, venenos, etc.)
-  - Fórmulas por proporción de tierra
-  - Redondeo hacia arriba (ej: 19.2 qq de abono → 20 qq × precio promedio)
-- Mostrar al usuario: "Se estima que invirtió / invertirá aproximadamente $##" como referencia antes de que introduzca su propio valor.
-- Pendiente adicional: definir cómo se obtiene y estructura la tabla de datos CENTA (zonas × granos viables) a partir de extracción manual, y quién del equipo la levanta, antes de que arranque la Parte 2.
-
-Pendientes acumulados y nuevos:
-- Parte 1 (autenticación, backend): completa. 1-A en RAMA 2, 1-C en RAMA 4 y 5, 1-B en RAMA 6, 1-D en RAMA 8; verificación funcional y correcciones en RAMA 10. Falta lo del lado del frontend y lo listado abajo (envío real de correo, rate limiting, pruebas automatizadas).
-- Rate limiting y cooldown en /auth (registro, login y reenviar-verificacion) antes del despliegue. Login es el más crítico (fuerza bruta).
-- Pruebas automatizadas (Jest + supertest) para /auth: registro, verificar (200, 400, 404, 410) y reenviar-verificacion.
-- Parte 2: el catálogo Municipio (2) / Distrito (26) ya está modelado (RAMA 12), cargado desde RAMA 14 (26 distritos. Falta validar o relacionar el campo distrito de Usuario contra ese catálogo (hoy texto libre): definir quién y cuándo; toca registro.routes.ts y el modelo Usuario, y exige una migración que convierta los distritos ya guardados. La normalización (mayúsculas, sin tildes, espacios colapsados) debe ser la misma que use el seed para nombre_normalizado: la función normalizarNombre de src/viabilidad/datos/utilidades.ts, la misma que usó el seed.
-- Modelos de la Parte 2-A: ya definidos en RAMA 12. Quedan las partes 4-A y 5 por agregar los suyos en schema.prisma: mismo riesgo de conflicto al final del archivo y en migrations/ (quien mergee segundo regenera su migración sobre main).
-- Definir también TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de RAMA 10.
-- Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token, interceptor HTTP y route guard.
-- Decisión de equipo sobre Prettier (.prettierrc): si se adopta, subirlo en una rama aparte con formato acordado.
-- Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
-- Pruebas automatizadas de /auth/login (200, 400, 401, 403), requireAuth (401 sin token, expirado e inválido; 200) y GET /auth/yo (200, 401).
-- GET /auth/yo: evaluar incluir el municipio derivado cuando exista el catálogo de Parte 2 (decide 2-A).
-- Frontend (Parte 6): el contrato de error de /auth es { error, detalles } (detalles: string o lista de strings); GET /auth/yo no devuelve 404 (usuario inexistente es 401).
-- EXPONER_TOKEN_VERIFICACION=true en .env.example es solo para desarrollo: con el flag activo, POST /auth/reenviar-verificacion revela qué correos existen y están pendientes. Debe ser false o no existir en cualquier entorno real (ya incluido arriba en la definición de credenciales de Parte 7).
-- Parte 2-B: completada en RAMA 14 (limpieza, CSV limpios y carga verificada en MySQL). Queda escribir pruebas automatizadas de limpiar-centa.ts y cargar-centa.ts (no se conectó prisma db seed: no es necesario). Verificar que Smith, Requeno y Pocho hayan corrido tras el merge git pull, npx prisma generate, npx prisma migrate dev y npm run datos:cargar, y que sus bases queden con 312 filas en areas_clase.
-- Mantener ESPERADO (cargar-centa.ts) y capas.config.ts en sincronía al agregar una capa o cambiar la división territorial.
-- Partes 2-C y 2-D: Los datos ya están cargados (RAMA 14). servicio y endpoint de viabilidad según el contrato de docs/Parte2_Datos_CENTA_2A_2B.md (distribución completa por clase, clase dominante como resumen, errores { error, detalles }). Responsables por confirmar. Definir si el endpoint exige requireAuth (se sugiere que sí). Temporadas diferidas hasta la Parte 3. Las recomendaciones deben redactarse como referencia distrital citando a CENTA, no como veredicto sobre la parcela.
-- Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B y 5-B): no están en el mapa de CENTA; hay que conseguirlos de otra fuente.
-- Opcional: confrontar la división territorial (hoy coincide con publicaciones secundarias) con el texto de la Ley Especial de Reestructuración Municipal.
-Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama correspondiente al formulario / módulo de estimación.
-
-------------------------------------------------------------
-RAMA 16 — feat/2-c-servicio-viabilidad (Parte 2, Punto C del Mapa_inicial.txt: Servicio de consulta de viabilidad)
+Rama feat/2-c-servicio-viabilidad (Parte 2, Punto C del Mapa_inicial.txt: Servicio de consulta de viabilidad)
 Responsable: Requeno
 Fecha: 8 de octubre de 2026
-Commit: cf0539a — PR: #16
+Commit: cf0539a
 
-Contexto: la Parte 2-A (modelo, RAMA 12) y 2-B (datos, RAMA 14) están en main; la base queda con 2 municipios, 26 distritos, 4 capas, 12 clases y 312 áreas. Esta rama implementa SOLO el servicio de consulta (2-C). No expone endpoint (2-D, RAMA 18), no cubre temporadas y no incluye pruebas automatizadas.
+Contexto: la Parte 2-A (modelo, feat/2-a-modelos-viabilidad) y 2-B (datos, feat/2-b-datos-centa) están en main; la base queda con 2 municipios, 26 distritos, 4 capas, 12 clases y 312 áreas. Esta rama implementa SOLO el servicio de consulta (2-C). No expone endpoint (2-D), no cubre temporadas y no incluye pruebas automatizadas.
 
 Qué se hizo (dos archivos nuevos, ambos en backend/src/viabilidad/):
-- constantes.ts: exporta HA_POR_MANZANA = 0.7. Es el único lugar donde existe la conversión ha → manzanas (mz = ha / 0.7), tal como se definió en RAMA 12. Solo se usa para mostrar.
+- constantes.ts: exporta HA_POR_MANZANA = 0.7. Es el único lugar donde existe la conversión ha → manzanas (mz = ha / 0.7), tal como se definió en 2-A (feat/2-a-modelos-viabilidad). Solo se usa para mostrar.
 - service.ts: exporta
   - class ViabilidadError extends Error, con propiedad status (mismo patrón que RegistroError de auth).
   - interfaces OpcionesConsulta, ClaseViabilidad, CapaViabilidad y ResultadoViabilidad.
@@ -1000,14 +1064,14 @@ Decisiones de diseño:
 - areaHa es Decimal(12,3) en la base. Se convierte con .mul(1000).toNumber() a milésimas de hectárea (enteros) y todas las sumas y porcentajes se calculan sobre enteros: sin error de coma flotante. Se devuelve como número con 3 decimales.
 - El porcentaje se calcula en cada consulta, sobre la suma de áreas del distrito en esa capa (no se guarda). Se redondea a 1 decimal solo en la salida; la clase dominante se decide con las áreas exactas, no con el porcentaje redondeado. En empate gana la de menor valor. Los porcentajes redondeados pueden no sumar exactamente 100 (Chilanga maíz: 33.7 + 46.3 + 19.9 = 99.9).
 - Manzanas (areaMz, totalMz) = ha / HA_POR_MANZANA, redondeadas a 2 decimales, solo para mostrar. Los cálculos internos son siempre en hectáreas.
-- Una clase sin fila de área para el distrito cuenta como 0 ha y se lista igual (coherente con "Clase ausente = 0 ha" de RAMA 12). Si el total de una capa es 0, los porcentajes son 0 y claseDominante es null.
+- Una clase sin fila de área para el distrito cuenta como 0 ha y se lista igual (coherente con "Clase ausente = 0 ha" de 2-A, feat/2-a-modelos-viabilidad). Si el total de una capa es 0, los porcentajes son 0 y claseDominante es null.
 - fuente = la de la primera fila de área leída; fechaExtraccion = la más reciente entre las filas leídas. Hoy las 312 filas tienen CENTA y 2026-10-04.
 - Al filtrar por cultivo se incluyen también las capas sin cultivo (riesgo_sequia), porque la sequía aplica a todos los cultivos. Esta decisión se agregó al criterio original y queda para confirmar (ver Pendientes).
 - Capa y cultivo juntos se rechazan con 400 en vez de combinarse, para no inventar una semántica de intersección. También se agregó al criterio original.
-- El servicio lanza ViabilidadError con status y mensaje; no formatea respuestas HTTP. Convertirlo a { error, detalles } es trabajo del router (RAMA 18).
-- No cubre temporadas (diferidas a la Parte 3, como se acordó en RAMA 12).
+- El servicio lanza ViabilidadError con status y mensaje; no formatea respuestas HTTP. Convertirlo a { error, detalles } es trabajo del router (2-D).
+- No cubre temporadas (diferidas a la Parte 3, como se acordó en 2-A, feat/2-a-modelos-viabilidad).
 
-Cambios respecto al Mapa_inicial.txt y al documento de datos: ninguno. Se cumple la interpretación fijada en RAMA 12 (consulta por distrito + capa, sin temporada).
+Cambios respecto al Mapa_inicial.txt y al documento de datos: ninguno. Se cumple la interpretación fijada en 2-A (feat/2-a-modelos-viabilidad) (consulta por distrito + capa, sin temporada).
 
 Qué se modificó: nada. Qué se eliminó: nada. Dependencias nuevas: ninguna.
 Archivos tocados fuera de lo que correspondía: ninguno. No se tocaron schema.prisma, migrations/, index.ts, config/, auth/, events/, package.json ni los archivos de viabilidad/datos/. El único archivo de otra carpeta que el servicio usa es viabilidad/datos/utilidades.ts (importa normalizarNombre), solo lectura.
@@ -1027,8 +1091,8 @@ Pruebas realizadas (manuales):
 - NO realizadas: pruebas automatizadas del servicio, errores contra MySQL real, otros distritos aparte de Chilanga, otras capas filtradas por separado, y la integración con un endpoint (no existe aún).
 
 Qué NO se hizo / qué falta:
-- Router, montaje en index.ts, validación del id, mapeo de ViabilidadError a respuestas HTTP y decisión de requireAuth (2-D, RAMA 18).
-- Pruebas automatizadas del servicio y del endpoint (2-D) y revisión general (RAMA 20).
+- Router, montaje en index.ts, validación del id, mapeo de ViabilidadError a respuestas HTTP y decisión de requireAuth (2-D, feat/2-d-endpoint-viabilidad).
+- Pruebas automatizadas del servicio y del endpoint (2-D) y revisión general de la Parte 2 (2-END).
 - Validar Usuario.distrito contra el catálogo (sigue pendiente, ver Pendientes).
 
 Qué se agregó de más (no pedido originalmente):
@@ -1043,13 +1107,266 @@ Incidencias técnicas durante el desarrollo (de entorno, no del código):
 - Se ejecutó "npx prisma migrate dev" en la raíz del repo, lo que descargó una versión suelta de prisma (8.0.0-rc.22) sin el comando migrate. Los comandos npm/npx se corren desde backend/.
 - El nombre de la rama se creó con un typo (feat/2-c-servicio-viabilida) y se renombró con git branch -m antes del primer push.
 - Un git add con la ruta backend/... estando dentro de backend/ falló por duplicar el prefijo.
-- Estos tres últimos puntos confirman la advertencia de RAMA 14: docker compose desde la raíz, npm/npx desde backend/, git add con rutas relativas al directorio actual.
+- Estos tres últimos puntos confirman la advertencia de 2-B (feat/2-b-datos-centa): docker compose desde la raíz, npm/npx desde backend/, git add con rutas relativas al directorio actual.
 
 Puntos de atención para las siguientes ramas:
-- RAMA 18 (2-D): importar { consultarViabilidad, ViabilidadError } desde viabilidad/service. Convertir ViabilidadError a { error, detalles } con su status; cualquier otro error es 500 sin devolver error.message. Validar que el id sea un entero positivo ANTES de llamar al servicio (400 con error: "Datos inválidos"): el servicio asume un número válido. Los parámetros capa y cultivo llegan como texto; con exactOptionalPropertyTypes activo, OpcionesConsulta acepta undefined explícito, pero conviene no mandar ambos a la vez.
-- RAMA 18: el servicio ya devuelve 404 para distrito, capa o cultivo inexistente; decidir si el endpoint lo conserva y si exige requireAuth (se sugiere que sí).
-- RAMA 18: el JSON ya sale con números normales (no Decimal), listo para serializar.
+- 2-D (feat/2-d-endpoint-viabilidad): importar { consultarViabilidad, ViabilidadError } desde viabilidad/service. Convertir ViabilidadError a { error, detalles } con su status; cualquier otro error es 500 sin devolver error.message. Validar que el id sea un entero positivo ANTES de llamar al servicio (400 con error: "Datos inválidos"): el servicio asume un número válido. Los parámetros capa y cultivo llegan como texto; con exactOptionalPropertyTypes activo, OpcionesConsulta acepta undefined explícito, pero conviene no mandar ambos a la vez.
+- 2-D: el servicio ya devuelve 404 para distrito, capa o cultivo inexistente; decidir si el endpoint lo conserva y si exige requireAuth (se sugiere que sí).
+- 2-D: el JSON ya sale con números normales (no Decimal), listo para serializar.
 - Acoplamiento: service.ts importa normalizarNombre de viabilidad/datos/utilidades.ts (que también importa módulos de archivos para el limpiador). Si esa función se mueve, hay que actualizar el import. Es la misma normalización del seed y de la futura validación de Usuario.distrito.
 - Frontend (Parte 6): la respuesta trae porcentaje y manzanas ya redondeados para mostrar; no recalcular en el cliente.
-- RAMA 20: comparar contra la respuesta real los ejemplos de Chilanga (maíz y sequía), que en esta rama ya coinciden; verificar los 312 registros en las bases de los otros integrantes.
-- Conflictos de merge: la rama solo agrega archivos nuevos; ninguna otra rama de la Parte 2 los toca. El riesgo está en Estado_del_Proyecto.txt si dos personas lo editan en paralelo: lo edita solo quien haga la rama 17.
+- 2-END: comparar contra la respuesta real los ejemplos de Chilanga (maíz y sequía), que en esta rama ya coinciden; verificar los 312 registros en las bases de los otros integrantes.
+- Conflictos de merge: la rama solo agrega archivos nuevos; ninguna otra rama de la Parte 2 los toca. El riesgo está en Estado_del_Proyecto.txt si dos personas lo editan en paralelo: lo edita solo quien haga la rama docs de 2-C.
+
+
+Rama docs (documentación de 2-C; nombre original por completar)
+Responsable: [COMPLETAR]
+Se agregó a Estado_del_Proyecto.txt la sección de feat/2-c-servicio-viabilidad (2-C).
+Con la documentación hasta 2-C (servicio de consulta de viabilidad).
+
+
+2-D — Endpoint de consulta de viabilidad
+----------------------------------------
+
+Rama feat/2-d-endpoint-viabilidad — RECHAZADA (Parte 2, Punto D del Mapa_inicial.txt: Endpoint de consulta de viabilidad)
+Responsable: Pocho 
+Fecha: 18 de octubre 2026
+Estado: el PR fue rechazado y no se mergeó. Se rehízo como PR nuevo con las correcciones descritas en la rama fix de este mismo punto. Motivo del rechazo: [COMPLETAR; no figura en el documento de la rama].
+
+Contexto: feat/2-c-servicio-viabilidad (2-C, servicio de consulta) está en main. Esta rama expone ese servicio como endpoint HTTP. No cubre temporadas y no incluye pruebas automatizadas.
+
+Qué se hizo:
+- backend/src/viabilidad/viabilidad.routes.ts (nuevo): GET /viabilidad/distritos/:id, protegido con requireAuth.
+- backend/src/index.ts: import de viabilidadRouter y app.use("/viabilidad", viabilidadRouter).
+- Validación del id antes de llamar al servicio: solo dígitos y mayor que 0. Si no cumple, 400 { error: "Datos inválidos", detalles: "El id del distrito debe ser un entero positivo" }.
+- Parámetros capa y cultivo: una cadena vacía se trata como ausente. Si llegan repetidos (?capa=a&capa=b), 400 { error: "Datos inválidos", detalles: "capa y cultivo no pueden repetirse" }.
+- Errores de ViabilidadError: se responde con su status y { error, detalles }, donde error es "Datos inválidos" (400), "No encontrado" (404) o "Error de consulta" (otros), y detalles es el mensaje del servicio.
+- Cualquier otro error: 500 { error: "Error interno del servidor" }, sin error.message al cliente y con console.error en el servidor.
+
+Decisiones tomadas (pendientes de confirmar en el PR):
+- Ruta: /viabilidad/distritos/:id.
+- Exige requireAuth (token JWT en Authorization: Bearer).
+- Alias "sorgo": NO aceptado. Responde 404 "Cultivo no encontrado". Si el equipo lo acepta, el alias va en viabilidad.routes.ts, no en el servicio.
+- Al filtrar por cultivo se incluye riesgo_sequia, que aplica a todos los cultivos (heredado de feat/2-c-servicio-viabilidad, 2-C).
+- El error de capa y cultivo juntos se responde con 400 desde el servicio.
+
+Cumplimiento del punto 2-D:
+- Endpoint GET con validación de entrada, protección con requireAuth y manejo de errores según el contrato { error, detalles }: cumplido.
+- Montaje en index.ts: cumplido.
+- Pruebas manuales: cumplidas (ver abajo).
+- Pruebas automatizadas (Jest + supertest): NO realizadas. Requieren aprobación del equipo para agregar dependencias.
+
+Pruebas realizadas (manuales, curl contra localhost:3000, MySQL 8.4 en Docker, usuario verificado de prueba; las rutas son relativas a /viabilidad):
+ 1. GET /distritos/1304 (sin filtros, con token): esperado 200, obtenido 200. OK
+ 2. GET /distritos/1304?cultivo=maiz: esperado 200, obtenido 200. OK
+ 3. GET /distritos/1304?capa=riesgo_sequia: esperado 200, obtenido 200. OK
+ 4. GET /distritos/9999: esperado 404, obtenido 404. OK
+ 5. GET /distritos/abc: esperado 400, obtenido 400. OK
+ 6. GET /distritos/0: esperado 400, obtenido 400. OK
+ 7. GET /distritos/1304?capa=potencial_maiz&cultivo=maiz: esperado 400, obtenido 400. OK
+ 8. GET /distritos/1304?cultivo= (vacío): esperado 200, obtenido 200. OK
+ 9. GET /distritos/1304?cultivo=sorgo: esperado 404, obtenido 404. OK
+10. GET /distritos/1304?capa=potencial_maiz&capa=riesgo_sequia: esperado 400, obtenido 400. OK
+11. GET /distritos/1304 (sin token): esperado 401, obtenido 401. OK
+
+Verificación de datos (Chilanga, 1304, con token):
+- Respuesta 200 con distrito, municipio (Morazán Sur), fuente CENTA, fechaExtraccion 2026-10-04 y las 4 capas.
+- Maíz: 2024.138 (Bajo) + 2779.240 (Medio) + 1195.159 (Alto) = 5998.537 ha, igual al control de feat/2-b-datos-centa (2-B) y de feat/2-c-servicio-viabilidad (2-C).
+- Riesgo de sequía: 2104.254 (Leve) + 3092.186 (Moderada) + 802.098 (Severa), dominante Moderada 51.5 %.
+- Sin hashes ni campos sensibles en la respuesta.
+
+Observaciones de las pruebas:
+- Los acentos en nombres de usuario aparecen como caracteres sustituidos en la consola de Git Bash (Windows). Es un tema de codificación de la terminal; no se verificó en la base.
+- El token de login tiene expiración de 2 horas; las pruebas se hicieron dentro de esa ventana.
+
+Qué se modificó: backend/src/index.ts (import y montaje de viabilidadRouter).
+Qué se agregó: backend/src/viabilidad/viabilidad.routes.ts.
+Qué se eliminó: nada. Dependencias nuevas: ninguna.
+Archivos tocados fuera de viabilidad/: backend/src/index.ts (punto de contacto entre partes).
+
+Incidencias técnicas durante el desarrollo (de entorno local, no del código):
+- Prisma P3014 al correr "prisma migrate dev": el usuario agroalerta no tenía permiso para crear la shadow database en un contenedor que ya existía. El script docker/mysql-init/grant-shadow.sql solo corre al crear el volumen por primera vez.
+- Docker publicaba el puerto 3306 pero no podía asignarlo: el servicio MySQL96 de Windows ocupaba el puerto. Se detuvo MySQL96 y se dejó en inicio manual; no se borraron datos.
+- Prisma P1001 con "localhost": en Windows el nombre se resolvió primero a IPv6 y la conexión falló. Se usó 127.0.0.1 en DATABASE_URL del .env local (no versionado).
+- En las pruebas, un token copiado de forma incompleta devuelve "Token inválido". Un JWT completo tiene tres segmentos separados por puntos.
+
+Puntos de atención para las siguientes ramas:
+- Frontend (Parte 6): manejar 400, 401 y 404 según el contrato { error, detalles }. Los porcentajes y las manzanas ya vienen redondeados desde el servidor; no recalcularlos en el cliente.
+- Alias "sorgo": si el equipo lo acepta, agregarlo en viabilidad.routes.ts como mapa de alias y anotarlo en la sección de la rama que lo agregue.
+- Pruebas automatizadas (Jest + supertest) para el endpoint de viabilidad: pendientes de aprobación de dependencias.
+- Cada integrante debe tener el puerto 3306 libre para su contenedor de MySQL antes de correr las migraciones.
+
+
+Rama fix(viabilidad): rechazar ids fuera de rango seguro y restaurar manejo de error de listen — corrección de 2-D tras el rechazo 
+Responsable: Pocho
+Fecha: 21 de octubre 2026
+Estado: mergeada en main (es la versión de 2-D que quedó en el repositorio).
+
+Contexto: corrige la rama feat/2-d-endpoint-viabilidad (2-D, rechazada). Todo lo descrito en la sección de esa rama se mantiene; esta sección solo agrega lo que cambió.
+
+Qué se hizo:
+- Un id fuera del rango seguro ahora responde 400 (antes respondía 500 con ids de 20 dígitos). Probado: 99999999999999999999 → 400; 2147483648 → 404; 1304 y 01304 → 200.
+- backend/src/index.ts: app.listen recibe el error y sale con código 1 si el puerto está ocupado. Esto no estaba en main aunque fix/prisma-mariadb-rsa-key (1-END) lo documenta. Comprobado con una segunda instancia del backend: ahora imprime el error EADDRINUSE y aborta.
+
+Archivos tocados: backend/src/viabilidad/viabilidad.routes.ts y backend/src/index.ts (punto de contacto entre partes).
+
+Cambios de forma de la respuesta respecto a Info_Datos_CENTA.md: la respuesta del servicio usa "nombre" en cada clase (y "clases" en lugar de "distribucion"), en lugar de "clase" como decía la sección 9 de ese documento. Se documentó la forma real en Info_Datos_CENTA.md (sección 9) en la rama docs de este punto, como forma vigente y pendiente de confirmar como definitiva.
+
+Decisiones para confirmar (preguntas dejadas por la rama):
+- Mantener la ruta /viabilidad/distritos/:id, requireAuth y no aceptar el alias "sorgo".
+- Dejar la forma de la respuesta con "nombre" en cada clase y documentarla como definitiva.
+
+Puntos de atención:
+- La discrepancia sobre app.listen sugiere que parte de los cambios de index.ts de 1-END no llegaron a main (por ejemplo, por un conflicto de merge resuelto de más). Verificar que la validación de JWT_SECRET y DUI_PEPPER al arrancar siga en index.ts (ver Pendientes).
+
+
+Rama docs/2-d-estado-por-partes — Reorganización del Estado del proyecto por Partes y Puntos, y documentación de 2-D
+Responsable: Yona
+Fecha: 22 de octubre de 2026
+Se modificó el archivo: Estado_del_Proyecto.txt (reescrito por completo) y docs/Info_Datos_CENTA.md (estado, referencias a ramas y sección 9).
+
+Qué se hizo:
+- Estado_del_Proyecto.txt: el historial pasa de ramas numeradas a Partes y Puntos (ver sección 6 con las reglas y el índice de ramas). Cada punto lista sus ramas (feat, fix, docs, rechazadas). Se reemplazaron las referencias "RAMA N" de todo el documento por nombre de rama y Parte-Punto.
+- Se agregaron las secciones 6 (convención de ramas y documentación) y 8 (pruebas básicas antes de abrir un PR), y se reubicó "Pasos para clonar" como sección 7, antes del historial.
+- Se agregó el punto 2-D (feat rechazada, fix y esta rama docs) a partir de doc_rama-18.txt.
+- Secciones base 1 a 5 actualizadas: fecha, estado de avance, árbol de archivos con los archivos de 2-C y 2-D, y notas de tecnología.
+- Pasos para clonar actualizados con las incidencias de entorno vistas en 2-C y 2-D (puerto 3306 en Windows, P3014, P1001/IPv6, reglas de directorio).
+- Propuestas y Pendientes reescritas y ordenadas por Parte.
+- Info_Datos_CENTA.md: se actualizó el estado, se cambiaron referencias a ramas por nombre y Parte-Punto, y la sección 9 refleja la forma real de la respuesta de 2-C/2-D.
+
+Qué se modificó en lo ya documentado (solo estilo y redacción):
+- Encabezados de rama y referencias cruzadas (sin cambiar el contenido).
+- Etiquetas en mayúsculas de la rama feat/1-c-verificacion-correo (1-C) normalizadas al formato del resto.
+- Errores tipográficos en las ramas de documentación (por ejemplo "documentacio", "modifico").
+- Se quitó el número de PR de 2-C ("PR: #16") y las frases de "numeración acordada" (2-A y 2-B).
+- El nombre anterior de Info_Datos_CENTA.md (Parte2_Datos_CENTA_2A_2B.md) se reemplazó por el actual en 2-A.
+
+Qué se eliminó:
+- La nota "Numeración" de feat/1-b-login-auth-guards (1-B), que solo trataba la confusión entre números de rama; deja de aplicar.
+- El pendiente "definir cómo se obtiene la tabla CENTA antes de que arranque la Parte 2" (resuelto en 2-A y 2-B).
+- Duplicados entre Propuestas y Pendientes (rate limiting y pruebas automatizadas quedan solo en Pendientes) y Pendientes que quedaron cumplidos o desactualizados (responsables de 2-C y 2-D).
+
+Qué se agregó de más (no pedido originalmente):
+- Pendientes nuevos detectados al revisar: verificar que los cambios de index.ts de 1-END estén en main (el fix de 2-D encontró que app.listen no estaba), lista de campos [COMPLETAR]/[VERIFICAR] abiertos y decisiones de 2-D por confirmar.
+
+Cumplimiento: documentación al día hasta 2-D. Falta 2-END (ver Pendientes).
+
+Puntos de atención para las siguientes ramas:
+- De aquí en adelante, cada punto se documenta bajo su Parte-Punto, sin numerar ramas; usar la plantilla de la sección 6.
+- Estado_del_Proyecto.txt lo edita una sola persona por rama docs para evitar conflictos de merge.
+
+
+2-END — Cierre de la Parte 2
+----------------------------
+
+Sin ramas todavía. Alcance propuesto en Pendientes (Parte 2).
+
+============================================================
+PARTES 3 A 7
+============================================================
+
+Sin ramas todavía. Ver Mapa_inicial.txt para el alcance de cada una y Pendientes para lo ya identificado.
+
+
+
+------------------------------------------------------------
+10. PROPUESTAS (opcionales)
+------------------------------------------------------------
+Mejoras que no son requisito de la base funcional. Solo se atienden si queda tiempo, según la estrategia de la sección 5.
+
+Arquitectura y backend
+- Definir temprano un contrato de eventos (nombres y payload) para evitar desalineaciones entre módulos. Ya existen events/bus.ts y events/types.ts con AgricultorRegistrado (1-A); faltan SiembraRegistrada, ActualizacionMeteorologica y CondicionClimaticaActualizada. Conviene definirlos antes de empezar la Parte 3. events/types.ts es archivo compartido: coordinar antes de tocarlo.
+- Hacer que GET /health verifique también la conexión a la base (consulta trivial tipo SELECT 1) y responda 503 si falla, para detectar problemas como el P2039 sin esperar a la primera operación de negocio. Hoy /health solo confirma que Express levantó.
+- Unificar la forma de las respuestas exitosas de /auth (hoy: {token, usuario}, {mensaje, usuario}, {success, usuario} y objeto directo) antes de que el frontend las consuma (Parte 6). Los errores ya están unificados en { error, detalles }.
+- Mover normalizarNombre a un módulo común (por ejemplo src/comun/), porque service.ts de viabilidad lo importa desde viabilidad/datos/utilidades.ts, que también trae código de lectura de archivos del limpiador. Lo usarán el seed, el servicio de viabilidad y la futura validación de Usuario.distrito.
+- Alias "sorgo" para el parámetro cultivo del endpoint de viabilidad (mapa de alias en viabilidad.routes.ts), si el equipo decide aceptarlo.
+- Definir un script de seed de datos de prueba (usuario, siembra de ejemplo) una vez existan los modelos de la Parte 4.
+- Conseguir un set de rendimientos promedio de referencia desde el inicio de la Parte 3 o 5, para poder probar la estimación con datos realistas (la zonificación de CENTA ya está cargada).
+
+Seguridad
+- Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
+- Validar longitud mínima de DUI_PEPPER al arrancar (hoy solo se valida que exista).
+- Revocación de sesión (lista de tokens revocados o versión de token por usuario) y/o refresh tokens, si se necesita logout real o invalidar sesiones al desverificar o eliminar usuarios.
+- Bloqueo temporal por intentos fallidos de login por correo e IP, junto con el rate limiting (que está en Pendientes).
+
+Datos
+- Automatizar en el futuro la extracción de datos de viabilidad de CENTA mediante un script, en vez de hacerla a mano desde el mapa. CENTA no expone API pública.
+- Mostrar el mapa de CENTA en la vista Clima Zonal (Parte 6-D), por ejemplo con Leaflet y un GeoJSON propio.
+- Capas futuras (caña, vainilla, banano, elevación, temperatura, humedad): evaluar cuando se vean sus datos; el modelo de feat/2-a-modelos-viabilidad (2-A) permite agregar capas por clases insertando filas.
+- Confrontar la división territorial (hoy coincide con publicaciones secundarias) con el texto de la Ley Especial de Reestructuración Municipal.
+
+Proceso del equipo
+- Decisión de equipo sobre Prettier (.prettierrc): si se adopta, subirlo en una rama aparte con formato acordado. Mientras tanto, no subir el archivo.
+- Agregar a package.json un script "typecheck" (tsc --noEmit) para la comprobación A.2 de la sección 8, sin dependencias nuevas.
+- Un script de prueba rápida del flujo (registro, verificación, login, /auth/yo y viabilidad) que automatice el bloque B de la sección 8, sin dependencias nuevas.
+- Plantilla de Pull Request (.github/pull_request_template.md) con la lista de la sección 8, para que cada PR declare qué se probó y qué no.
+
+
+
+------------------------------------------------------------
+11. PENDIENTES (obligatorio)
+------------------------------------------------------------
+Organizados por Parte. Cuando un pendiente se cumple, se quita de aquí y queda registrado en la sección de la rama que lo resolvió.
+
+PARTE 1 — Autenticación y puntos abiertos
+- Verificar en main los cambios de fix/prisma-mariadb-rsa-key (1-END): el fix de 2-D encontró que el manejo del error de app.listen no estaba en index.ts aunque 1-END lo documenta. Comprobar también la validación de JWT_SECRET y DUI_PEPPER al arrancar, el parseo de DATABASE_URL con allowPublicKeyRetrieval en config/prisma.ts, el contrato { error, detalles } en los routers de /auth y que GET /auth/yo responda 401 para un usuario inexistente. Corregir lo que falte en una rama fix.
+- Rate limiting y cooldown en /auth (registro, login, reenviar-verificacion y yo) antes del despliegue. Login es el más crítico (fuerza bruta).
+- Envío real de correo (Nodemailer + SMTP). Al integrarlo, retirar el flag EXPONER_TOKEN_VERIFICACION y el campo tokenVerificacion_DEV de POST /auth/registro y POST /auth/reenviar-verificacion. Mientras tanto, EXPONER_TOKEN_VERIFICACION=true en .env.example es solo para desarrollo: con el flag activo, el reenvío revela qué correos existen y están pendientes. Debe ser false o no existir en cualquier entorno real.
+- Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
+
+PARTE 2 — Cierre (2-END) y viabilidad
+Se propone una rama de cierre de la Parte 2 (2-END) antes de seguir con la Parte 3, para resolver:
+- Confirmar las decisiones de 2-D que quedaron como "por confirmar": ruta /viabilidad/distritos/:id, requireAuth, no aceptar el alias "sorgo", inclusión de riesgo_sequia al filtrar por cultivo, 400 con capa y cultivo juntos, y la forma de la respuesta ("nombre" en cada clase y "clases" por capa). Si se confirman, marcar la sección 9 de Info_Datos_CENTA.md como definitiva.
+- Verificar que Smith, Requeno y Pocho hayan corrido tras los merges git pull, npx prisma generate, npx prisma migrate dev y npm run datos:cargar, y que sus bases queden con 312 filas en areas_clase.
+- Comparar contra la respuesta real del endpoint los ejemplos de Chilanga (maíz y sequía); ya coincidieron en 2-C y 2-D, falta repetirlo en otros distritos y capas.
+- Probar las restricciones únicas y claves foráneas de las tablas de viabilidad con inserciones inválidas (no se hizo en 2-A ni en 2-B).
+- Validar o relacionar Usuario.distrito (hoy texto libre) con el catálogo de distritos: definir quién y cuándo; toca registro.routes.ts y el modelo Usuario, y exige una migración que convierta los distritos ya guardados. Debe usar la misma normalización que el seed (normalizarNombre de src/viabilidad/datos/utilidades.ts).
+- GET /auth/yo: incluir el municipio derivado ahora que el catálogo existe.
+- Mantener ESPERADO (cargar-centa.ts) y capas.config.ts en sincronía al agregar una capa o cambiar la división territorial.
+- Temporadas (primera y postrera): diferidas a la Parte 3.
+- Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B y 5-B): no están en el mapa de CENTA; hay que conseguirlos de otra fuente.
+- Las recomendaciones basadas en CENTA deben redactarse como referencia distrital citando a CENTA, no como veredicto sobre la parcela.
+
+PARTE 4 — Formulario de siembra (requisito de Mapa_inicial.txt, Parte 4-B)
+Cuando se cree el formulario de siembra (o registro de cultivo), debe ser más detallado y ajustado a la propuesta real. Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama del formulario / módulo de estimación.
+
+Campos obligatorios / recomendados:
+- Estado actual: Sembrado / Por sembrar
+- Fecha: cuándo sembró / cuándo planea sembrar
+- Qué sembró / sembrará: 3 granos principales (Maíz, Frijol, Maicillo)
+- (Opcional, si se obtienen datos): tipos de semilla para cada grano
+- Área sembrada / por sembrar (manzanas y/o km²)
+- Cantidad sembrada / a sembrar (libras o bolsas de semilla)
+
+Detalles sí/no:
+- ¿Alquila la zona sembrada / a sembrar?
+- ¿Usa maquinaria?
+- ¿Usa regadío?
+
+Inversión:
+- Dinero invertido / estimación a invertir (debe incluir: semilla, venenos, fertilizantes, alquiler de tierras, mano de obra, maquinaria y sistema de riego → en general TODO)
+
+Requerimiento adicional de lógica:
+- El sistema debe poder calcular un estimado de inversión antes de que el usuario lo digite, usando:
+  - Precios promedio de materiales (semillas, abonos, venenos, etc.)
+  - Fórmulas por proporción de tierra
+  - Redondeo hacia arriba (ej: 19.2 qq de abono → 20 qq × precio promedio)
+- Mostrar al usuario: "Se estima que invirtió / invertirá aproximadamente $##" como referencia antes de que introduzca su propio valor.
+- La tabla de datos de viabilidad CENTA (que figuraba aquí como pendiente) ya quedó definida y cargada en 2-A y 2-B.
+- Las partes 4-A y 5 agregan modelos al final de schema.prisma: mismo riesgo de conflicto en ese archivo y en migrations/ (quien mergee segundo regenera su migración sobre main).
+
+PARTE 6 — Frontend
+- Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token (memoria, sessionStorage o localStorage, cada uno con compromisos frente a XSS), interceptor HTTP y route guard.
+- Contrato de error de /auth y /viabilidad: { error, detalles } (detalles: string o lista de strings). GET /auth/yo no devuelve 404: un usuario inexistente es 401. El endpoint de viabilidad puede dar 400, 401 y 404.
+- Los porcentajes y las manzanas de la viabilidad ya vienen redondeados desde el servidor: no recalcularlos en el cliente.
+
+PARTE 7 — Despliegue
+- TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de 1-END.
+- Credenciales reales de base de datos (las de desarrollo son agroalerta/agroalerta y root/root), JWT_SECRET único guardado como secreto (rotarlo invalida todas las sesiones) y DUI_PEPPER único que no debe rotarse sin un plan de migración (invalidaría la detección de DUI duplicados).
+- CORS y rate limiting deben cubrir todos los endpoints, incluidos /auth/yo y /viabilidad.
+
+TRANSVERSAL — Pruebas y documentación
+- Pruebas automatizadas (Jest + supertest): requieren aprobación del equipo para agregar dependencias. Alcance pendiente: /auth/registro (201, 400, 409 y emisión del evento), verificar (200, 400, 404, 410), reenviar-verificacion, /auth/login (200, 400, 401, 403), requireAuth (401 sin token, expirado e inválido; 200), GET /auth/yo (200 y 401), limpiar-centa.ts y utilidades.ts (conversión de números, validaciones), cargar-centa.ts contra una base de prueba (carga, segunda corrida sin duplicados, reversión ante filas ajenas, rechazo de CSV inválidos) y el servicio y endpoint de viabilidad (incluido el error de id fuera de rango).
+- Pruebas manuales nunca realizadas, que las pruebas automatizadas deberían cubrir: concurrencia al verificar un token, expiración de JWT, medición de tiempos de login con correo existente e inexistente, body vacío o correo mal formado en login, JWT_SECRET ausente en requireAuth, carga con una base no vacía y dos cargas simultáneas.
+- Completar los campos abiertos del historial: feat/1-b-login-auth-guards (1-B): marcas [VERIFICAR] (varias fueron confirmadas en fix/prisma-mariadb-rsa-key, 1-END, y deben limpiarse) e "Incidencias" sin llenar; feat/2-a-modelos-viabilidad (2-A): nombre exacto de la carpeta de la migración add_viabilidad e incidencias; feat/2-b-datos-centa (2-B): otras incidencias; 2-C: nombre y responsable de la rama docs; 2-D: responsable, fecha y motivo del rechazo de la feat, nombre de la rama fix y de la rama docs.
+- Mantener esta convención: una sola persona edita Estado_del_Proyecto.txt por rama docs; cada punto se documenta bajo su Parte-Punto.
