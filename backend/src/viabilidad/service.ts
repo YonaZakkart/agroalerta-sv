@@ -3,7 +3,7 @@
 
 import { prisma } from "../config/prisma";
 import { HA_POR_MANZANA } from "./constantes";
-import { normalizarNombre } from "./datos/utilidades";
+import { normalizarNombre } from "../comun/normalizar";
 
 export class ViabilidadError extends Error {
     constructor(public status: number, message: string) {
