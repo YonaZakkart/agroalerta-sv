@@ -75,7 +75,8 @@ export async function consultarViabilidad(idDistrito: number, opciones: Opciones
 
     let seleccion = capas;
     if (capa !== undefined) {
-        seleccion = capas.filter((c) => c.codigo === capa);
+        const buscada = normalizarNombre(capa);
+        seleccion = capas.filter((c) => normalizarNombre(c.codigo) === buscada);
         if (seleccion.length === 0) throw new ViabilidadError(404, "Capa no encontrada");
     } else if (cultivo !== undefined) {
         const buscado = normalizarNombre(cultivo);
