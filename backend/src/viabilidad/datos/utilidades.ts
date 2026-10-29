@@ -209,16 +209,6 @@ export function parsearNumero(crudo: string): Numero | null {
   return { texto, valor: Number(texto) };
 }
 
-/** Recorta y colapsa espacios repetidos (incluidos los de los extremos). */
-export function colapsarEspacios(s: string): string {
-  return s.replace(/\s+/g, " ").trim();
-}
-
-/**
- * Clave de comparación de nombres: sin tildes, en mayúsculas y con espacios colapsados.
- * Es la que se guarda en distritos.nombre_normalizado; la futura validación del registro
- * debe usar esta misma función.
- */
-export function normalizarNombre(s: string): string {
-  return colapsarEspacios(s).normalize("NFD").replace(/\p{M}/gu, "").toUpperCase();
-}
+// colapsarEspacios y normalizarNombre viven ahora en src/comun/normalizar.ts.
+// Se re-exportan aquí para que limpiar-centa.ts y cargar-centa.ts sigan funcionando sin cambios.
+export { colapsarEspacios, normalizarNombre } from "../../comun/normalizar";

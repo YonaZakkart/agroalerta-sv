@@ -236,7 +236,7 @@ function reportarError(error: unknown): void {
         console.error("Parece que las tablas no existen o están desactualizadas: corre npx prisma generate y npx prisma migrate dev.");
     }
     if (codigo === "P2039") {
-        console.error("Pool timeout: Prisma oculta la causa real; ver RAMA 10 de Estado_del_Proyecto.txt (conexión a MySQL 8.4).");
+                console.error("Pool timeout: Prisma oculta la causa real; ver 1-END (fix/prisma-mariadb-rsa-key) en Estado_del_Proyecto.txt (conexión a MySQL 8.4).");
     }
     console.error(error instanceof Error ? error.message : error);
 }
