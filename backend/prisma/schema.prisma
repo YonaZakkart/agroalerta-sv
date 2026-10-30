@@ -22,7 +22,8 @@ model Usuario {
   correo         String   @unique @db.VarChar(255)
   contrasenaHash String   @map("contrasena_hash") @db.VarChar(255)
   duiHash        String   @unique @map("dui_hash") @db.Char(64)
-  distrito      String   @db.VarChar(100)
+  distritoId     Int      @map("distrito_id")
+  distrito       Distrito @relation(fields: [distritoId], references: [id])
   verificado     Boolean  @default(false)
   tokenVerificacion       String?   @unique @map("token_verificacion") @db.VarChar(64)
   tokenVerificacionExpira DateTime? @map("token_verificacion_expira")
@@ -53,6 +54,7 @@ model Distrito {
   municipioId       Int         @map("municipio_id")
   municipio         Municipio   @relation(fields: [municipioId], references: [id])
   areas             AreaClase[]
+  usuarios          Usuario[]
 
   @@map("distritos")
 }

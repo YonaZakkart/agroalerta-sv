@@ -3,6 +3,8 @@ import { createHash, createHmac, randomBytes } from "crypto";
 import { prisma } from "../config/prisma";
 import { bus } from "../events/bus";
 import { EVENTOS, AgricultorRegistradoPayload } from "../events/types";
+import { normalizarNombre } from "../comun/normalizar";
+import { SELECT_DISTRITO } from "./distrito.select";
 
 export interface DatosRegistro {
     nombres: string;
@@ -14,7 +16,7 @@ export interface DatosRegistro {
 }
 
 export class RegistroError extends Error {
-    constructor(public status: number, message: string) {
+    constructor(public status: number, message: string, public detalles?: string[]) {
         super(message);
     }
 }
@@ -38,6 +40,13 @@ function generarTokenVerificacion(): { token: string; tokenHash: string; expira:
 }
 
 export async function registrarUsuario(datos: DatosRegistro) {
+        const distrito = await prisma.distrito.findUnique({
+        where: { nombreNormalizado: normalizarNombre(datos.distrito) },
+        select: { id: true },
+    });
+    if (!distrito) {
+        throw new RegistroError(400, "Datos inválidos", ["distrito debe ser uno de los 26 distritos de Morazán"]);
+    }
     const contrasenaHash = await argon2.hash(datos.contrasena);
     const duiHash = hashDui(datos.dui);
     const { token, tokenHash, expira: tokenVerificacionExpira } = generarTokenVerificacion();
@@ -51,13 +60,13 @@ export async function registrarUsuario(datos: DatosRegistro) {
                 correo: datos.correo,
                 contrasenaHash,
                 duiHash,
-                distrito: datos.distrito,
+                distritoId: distrito.id,
                 tokenVerificacion: tokenHash,
                 tokenVerificacionExpira,
             },
             select: {
                 id: true, nombres: true, apellidos: true,
-                correo: true, distrito: true, verificado: true, fechaRegistro: true,
+                correo: true, distrito: SELECT_DISTRITO, verificado: true, fechaRegistro: true,
             },
         });
 
@@ -71,7 +80,8 @@ export async function registrarUsuario(datos: DatosRegistro) {
     const payload: AgricultorRegistradoPayload = {
         usuarioId: usuario.id,
         correo: usuario.correo,
-        distrito: usuario.distrito,
+        distrito: usuario.distrito.nombre,
+        distritoId: usuario.distrito.id,
         fechaRegistro: usuario.fechaRegistro,
     };
     try {

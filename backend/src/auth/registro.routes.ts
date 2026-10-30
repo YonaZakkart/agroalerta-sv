@@ -19,7 +19,7 @@ router.post("/registro", async (req, res) => {
     if (typeof contrasena !== "string" || contrasena.length < 8 || contrasena.length > 128)
         errores.push("contrasena debe tener entre 8 y 128 caracteres");
     if (typeof dui !== "string" || !DUI_RE.test(dui)) errores.push("dui debe tener 9 dígitos sin guiones");
-    // TODO Parte 2: validar contra el catálogo de los 26 distritos de Morazán
+    // La existencia del distrito se valida contra el catálogo en registrarUsuario (400 si no existe).
     if (!texto(distrito)) errores.push("distrito inválido");
 
     if (errores.length > 0) return res.status(400).json({ error: "Datos inválidos", detalles: errores });
@@ -44,7 +44,9 @@ router.post("/registro", async (req, res) => {
         return res.status(201).json(usuarioPublico);
 
     } catch (e) {
-        if (e instanceof RegistroError) return res.status(e.status).json({ error: e.message });
+        if (e instanceof RegistroError) {
+            return res.status(e.status).json(e.detalles ? { error: e.message, detalles: e.detalles } : { error: e.message });
+        }
         console.error(e);
         return res.status(500).json({ error: "Error interno del servidor" });
     }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../config/prisma";
 import { requireAuth } from "./auth.middleware";
+import { SELECT_DISTRITO } from "./distrito.select";
 
 export const perfilRouter = Router();
 
@@ -8,7 +9,7 @@ export const perfilRouter = Router();
  * GET /auth/yo
  * Retorna el perfil del usuario autenticado.
  * Requiere: Authorization: Bearer <token> válido.
- * 200: { success: true, usuario: { id, nombres, apellidos, correo, distrito, verificado, fechaRegistro } }
+ * 200: { success: true, usuario: { id, nombres, apellidos, correo, distrito: { id, nombre, municipio: { id, nombre } }, verificado, fechaRegistro } }
  * 401: { error, detalles } (token ausente/inválido/expirado, o usuario del token inexistente)
  * 500: { error }
  */
@@ -28,7 +29,7 @@ perfilRouter.get("/yo", requireAuth, async (req, res) => {
         nombres: true,
         apellidos: true,
         correo: true,
-        distrito: true,
+        distrito: SELECT_DISTRITO,
         verificado: true,
         fechaRegistro: true,
       },

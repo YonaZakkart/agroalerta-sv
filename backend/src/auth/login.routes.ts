@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as argon2 from "argon2";
 import { prisma } from "../config/prisma";
 import { firmarToken } from "./jwt";
+import { SELECT_DISTRITO } from "./distrito.select";
 
 export const loginRouter = Router();
 
@@ -35,7 +36,7 @@ loginRouter.post("/login", async (req, res) => {
         nombres: true,
         apellidos: true,
         correo: true,
-        distrito: true,
+        distrito: SELECT_DISTRITO,
         verificado: true,
         contrasenaHash: true,
       },
