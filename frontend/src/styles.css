@@ -196,3 +196,32 @@ select:focus {
     grid-column: span 2;
   }
 }
+
+/* Mensajes de estado de formularios (login, registro y futuros) */
+.alerta {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--text-dark);
+}
+
+.alerta p+p {
+  margin-top: 0.25rem;
+}
+
+.alerta-error {
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+
+.alerta-aviso {
+  background: var(--warning-light);
+  border-color: var(--warning);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

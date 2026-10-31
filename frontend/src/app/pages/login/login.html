@@ -1,13 +1,28 @@
 <app-auth-shell>
-  <form novalidate (submit)="enviar($event)">
+  <form novalidate [formGroup]="formulario" (ngSubmit)="enviar()">
+    @if (avisoSesion) {
+      <p class="alerta alerta-aviso" role="status">{{ avisoSesion }}</p>
+    }
+    @if (errores().length > 0) {
+      <div class="alerta alerta-error" role="alert">
+        @for (mensaje of errores(); track $index) {
+          <p>{{ mensaje }}</p>
+        }
+      </div>
+    }
+
     <div class="form-group">
       <label for="correo">Correo electrónico</label>
-      <input id="correo" name="correo" type="email" autocomplete="email" placeholder="correo@ejemplo.com">
+      <input id="correo" name="correo" type="email" autocomplete="email" placeholder="correo@ejemplo.com"
+        formControlName="correo">
     </div>
     <div class="form-group">
       <label for="contrasena">Contraseña</label>
-      <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••">
+      <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••"
+        formControlName="contrasena">
     </div>
-    <button type="submit" class="btn-primary">Iniciar sesión</button>
+    <button type="submit" class="btn-primary" [disabled]="cargando()">
+      {{ cargando() ? 'Ingresando...' : 'Iniciar sesión' }}
+    </button>
   </form>
 </app-auth-shell>
