@@ -1,0 +1,27 @@
+.alerta-ok {
+  background: var(--success-light);
+  border-color: var(--success);
+}
+
+.resultado .btn-primary+.alerta,
+.resultado .alerta+.btn-primary {
+  margin-top: 0.5rem;
+}
+
+.reintentar {
+  margin-left: 0.4rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.enlace-boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
