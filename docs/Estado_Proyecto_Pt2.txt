@@ -1,0 +1,127 @@
+============================================================
+ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
+Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
+Primera versión: 31 de octubre de 2026.
+============================================================
+
+0. CÓMO SE USA ESTE ARCHIVO
+- Estado_del_Proyecto.txt (Pt1) queda cerrado con la Parte 2 y ya no se edita, salvo la rama docs que registre el cierre de la Parte 2 (2-END), que está pendiente.
+- Este archivo registra desde el Mapa v2 (docs/Mapa_v2.txt), que sustituye a Mapa_inicial.txt desde la Parte 3.
+- Las secciones base (tecnologías, convención de ramas, pasos de clonado, pruebas básicas) se copian desde Pt1 en la rama docs. Hasta entonces, rigen las de Pt1.
+- Se mantienen las reglas de Pt1: historial por Parte y Punto, lo ya documentado de cada rama no se reescribe, y al final siempre van Propuestas y Pendientes.
+- Cambio de mapa (documentado según reglas del proyecto): Mapa v2 adelanta el frontend (6-0, 6-A, 6-B = Hito 1) y agrega 3-0 como preparación de la Parte 3.
+
+============================================================
+PARTE 6 — Frontend (adelantado por el Mapa v2)
+============================================================
+
+6-0 — Base de Angular
+---------------------
+
+Rama feat/6-0-base-angular (Parte 6, Punto 0 del Mapa v2: Base de Angular)
+Responsable: Yona
+Fecha: 31 de octubre de 2026
+
+Contexto: el frontend era el proyecto generado con Angular CLI (22.1.8), con el placeholder de bienvenida y sin rutas. El Mapa v2 pide una base común que se mergee primero y rápido, porque toca los archivos compartidos del frontend (app.routes, app.config, styles.css y package.json). Esta rama NO se conecta al backend.
+
+Alcance acordado (reduce el del Mapa v2, ver "Cambios respecto al Mapa v2"): estructura, estilos, rutas, layout y vistas vacías, sin ninguna función.
+
+Qué se hizo:
+- app.html pasa a contener solo <router-outlet />; app.ts queda con el componente raíz mínimo (App, con RouterOutlet). Se eliminó el placeholder de Angular y la señal "title".
+- app.spec.ts: se reemplazó la prueba, que buscaba el texto "Hello, frontend" y habría fallado, por una prueba de creación del componente.
+- index.html: idioma es, título "AgroAlerta Morazán", meta viewport y theme-color (#059669), fuente Plus Jakarta Sans (Google Fonts) e iconos Font Awesome 6.4.0 (cdnjs), ambos por CDN.
+- styles.css: variables CSS (colores, radios, sombras, fuente) tomadas de login_base.html y dashboard_base.html; reset básico; estilos de formulario compartidos (.form-group, label, input, select, .form-grid, .btn-primary), con campos de 44 px de alto mínimo y fuente de 16 px para evitar el zoom automático en iOS.
+- app.routes.ts: /login y /registro (carga diferida, con título), y un grupo con el layout Shell que contiene /dashboard; "" redirige a /dashboard y "**" a "". Sin guard.
+- Componentes nuevos (ng generate, sin pruebas): layout/auth-shell, layout/shell, pages/login, pages/registro y pages/dashboard.
+- AuthShell: panel de acceso con pestañas Iniciar sesión / Registrarse (routerLink con routerLinkActive) y proyección de contenido (ng-content).
+- Login y Registro: formularios con los campos de la referencia visual (registro: nombres, apellidos, correo, contraseña, DUI, distrito), con submit que solo hace preventDefault.
+- Shell: sidebar y encabezado con estado de componente (signal menuAbierto) en lugar del "checkbox hack" del HTML base. Cajón con fondo oscurecido en móvil; columna fija desde 1024 px. Historial, Clima Zonal y Configuración aparecen deshabilitados (aria-disabled) porque aún no hay vistas.
+- Dashboard: tarjeta vacía con texto indicativo.
+
+Decisiones de diseño:
+- Los HTML base son solo referencia visual (colores, tipografía, jerarquía). Estructura y comportamiento responsive son propios, porque los HTML base no son responsive.
+- Mobile-first: el CSS base es el de móvil y se amplía con min-width (600 px formularios en dos columnas; 900 px panel de acceso con lado visual; 1024 px barra lateral fija). Los HTML base usaban max-width.
+- Se quitó la foto de Unsplash del lado visual del login y se dejó solo el degradado: evita una dependencia externa de peso en la demo.
+- Texto del lado visual: "viabilidad de suelo" pasa a "viabilidad de cultivo", que es lo que muestran los datos de CENTA.
+- Campo distrito del registro: texto libre sin valor precargado (el HTML base traía "Chilanga"). Si la 6-A lo convierte en select, hace falta el endpoint público de distritos (C1 del Mapa v2).
+- Iconos por CDN en lugar de dependencia npm: no toca package.json ni el lock. La demo requiere internet (confirmado sin problema por el equipo).
+- Foco y accesibilidad básica: botones de menú con aria-label y aria-expanded; el cajón cerrado usa visibility:hidden para que el teclado no entre en él.
+
+Cambios respecto al Mapa v2 (documentados según reglas del proyecto):
+- 6-0 del Mapa v2 incluía servicio de autenticación con almacenamiento del token, interceptor HTTP, guard de rutas, URL del API (proxy o CORS) y modelos TypeScript de los contratos. Se aplazan a la 6-A, para conectar con el backend solo cuando exista una pantalla que lo use.
+- Criterio del Mapa v2 "ng build sin errores, ruta protegida redirige al login, interceptor agrega el encabezado": se cumple solo el primer punto; los otros dos pasan a la 6-A.
+- Decisión sobre proxy o CORS: la presentación será en local (confirmado), por lo que se prevé proxy de desarrollo de Angular; se decide en la 6-A.
+
+Qué se modificó: app.ts, app.html, app.spec.ts, index.html, styles.css, app.routes.ts.
+Qué se eliminó: el placeholder de bienvenida de Angular (app.html) y la señal title de app.ts.
+Qué se agregó: layout/shell, layout/auth-shell, pages/login, pages/registro, pages/dashboard (cada uno con .ts, .html y .css).
+Dependencias nuevas: ninguna. package.json y package-lock.json no se tocaron [VERIFICAR con git status antes del commit; un npm install previo pudo modificar el lock y debía descartarse].
+
+Cumplimiento del punto 6-0:
+- Rutas de login, registro y área con layout: cumplido (sin protección).
+- Estilos globales con las variables CSS, fuente e iconos: cumplido.
+- Configuración con la URL del API: NO cumplido, aplazado a 6-A.
+- Servicio de autenticación, interceptor y guard: NO cumplido, aplazado a 6-A.
+- Modelos TypeScript de los contratos: NO cumplido, aplazado a 6-A.
+
+Pruebas realizadas (manuales):
+- node -v: v22.23.1 (las dependencias de Angular 22 piden 22.22.3 o superior).
+- npm install y npx ng serve en frontend/: el servidor levantó en localhost:4200 y mostró la pantalla en blanco con el título esperado antes de agregar las vistas.
+- npx ng build sin errores .
+- Con ng serve: / redirige a /dashboard y muestra el layout; /login y /registro muestran el formulario y las pestañas cambian entre sí; una ruta inexistente redirige al dashboard.
+- Modo dispositivo del navegador a 375 px: barra superior con botón de menú; el menú abre como cajón con fondo oscurecido y se cierra con la X o tocando fuera; el registro va en una columna. A 600 px nombres y apellidos pasan a dos columnas. A 1024 px la barra lateral queda fija y el botón de menú desaparece.
+- npx ng test --watch=false .
+- NO realizadas: prueba en un teléfono real, navegación por teclado completa, prueba en Safari/iOS, y pruebas de componentes (se generaron con --skip-tests).
+
+Qué NO se hizo / qué falta:
+- Todo lo marcado como aplazado a la 6-A (ver arriba).
+- Ninguna función: los formularios no validan ni envían nada.
+- Historial, Clima Zonal y Configuración no existen como vistas (6-C, 6-D).
+- Favicon y logotipo propios: se mantiene el favicon por defecto de Angular.
+- Prueba de los componentes nuevos.
+
+Qué se agregó de más (no pedido originalmente): atributos de accesibilidad del menú, tamaños táctiles mínimos de 44 px y entradas deshabilitadas del menú, que el Mapa v2 no detallaba.
+
+Archivos tocados fuera de su carpeta (puntos de contacto entre partes): app.routes.ts, styles.css e index.html. No se tocaron app.config.ts, package.json ni nada de backend/.
+
+Incidencias técnicas:
+- npm install avisó que 4 paquetes (@parcel/watcher, esbuild, lmdb, msgpackr-extract) tienen scripts de instalación bloqueados por allowScripts de npm. El build y el servidor funcionan igual, y no se aprobaron para no modificar package.json. Revisar solo si falla ng build por esbuild.
+- npm install reporta 18 vulnerabilidades (8 moderadas, 8 altas, 2 críticas), en su mayoría de herramientas de desarrollo. No se ejecutó npm audit fix para no alterar versiones fijadas; queda por revisar.
+
+Puntos de atención para las siguientes ramas:
+- 6-A: agregar el guard solo al grupo hijo de Shell en app.routes.ts. Antes de eso, pasar el área protegida a RenderMode.Client en app.routes.server.ts: hoy todas las rutas ("**") usan RenderMode.Prerender y el token de sesión no existe en el servidor.
+- 6-A: decidir dónde se guarda el token (memoria o sessionStorage) considerando el SSR, y agregar provideHttpClient(withInterceptors(...)) en app.config.ts.
+- 6-A: el contrato de error es { error, detalles }; distrito se envía por nombre; en login y /auth/yo "distrito" llega como objeto { id, nombre, municipio: { id, nombre } }.
+- 6-A: decidir si distrito pasa a select (requiere endpoint público de distritos) o se deja de texto libre.
+- 6-B y siguientes: cada componente usa CSS propio mobile-first (base de móvil, min-width para ampliar). Reutilizar las variables de styles.css y no copiar los colores a mano.
+- Archivos compartidos del frontend (app.routes.ts, app.config.ts, styles.css, package.json): una sola persona a la vez; quien mergee segundo hace pull de main antes de seguir.
+- Hito 1 del Mapa v2: la fecha de presentación sigue sin fijar ([6 de noviembre; mínimo 2 vistas] entre corchetes en el Mapa v2).
+
+============================================================
+PROPUESTAS (opcionales)
+============================================================
+- Revisar y, si procede, aprobar con allowScripts los 4 paquetes del frontend con scripts bloqueados, con acuerdo del equipo, en una rama aparte.
+- Revisión de las vulnerabilidades de npm audit del frontend en una rama aparte, sin npm audit fix automático.
+- Sustituir los CDN de fuente e iconos por recursos locales si la demo llegara a hacerse sin internet.
+
+============================================================
+PENDIENTES (obligatorio)
+============================================================
+PARTE 2 — Cierre (documentación)
+- Rama docs que registre el cierre de la Parte 2 (2-END) en Estado_del_Proyecto.txt (Usuario.distrito como FK, migración 20261030231036, contrato de distrito como objeto, bloque C movido a la Parte 3) y actualice el README, que sigue diciendo que el endpoint de viabilidad no existe.
+
+MAPA v2
+- Corregir en Mapa_v2.txt la línea de fecha de presentación entre corchetes, la frase suelta "este cambio debe documentarse..." y "se rebalancea..", y subirlo a docs/.
+- Fijar la fecha de presentación y el mínimo de vistas.
+
+PARTE 6 — Frontend
+- 6-A (login y registro conectados), 6-B (dashboard con viabilidad real). Aplazado desde 6-0: servicio de autenticación, interceptor, guard, URL del API (proxy), modelos de contratos.
+- Pasar el área protegida a RenderMode.Client antes del guard.
+
+PARTE 3 y siguientes
+- 3-0: eventos faltantes, coordenadas por distrito (las columnas x e y de los exports de CENTA vienen vacías, no sirven) y umbrales de lluvia.
+- Datos de referencia fuera de CENTA (rendimientos, umbrales, precios, precio de venta): conseguirlos desde ya, bloquean 3-B, 4-C y 5-B.
+
+TRANSVERSAL
+- Copiar las secciones base de Pt1 a este archivo. (posteriormente)
+- Pruebas automatizadas del frontend (hoy solo existe la prueba de creación de App).

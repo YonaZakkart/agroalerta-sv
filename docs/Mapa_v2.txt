@@ -1,0 +1,145 @@
+============================================================
+MAPA v2 – AgroAlerta Morazán (desde la Parte 3)
+Versión 2.0 – 31 de octubre de 2026
+Sustituye a Mapa_inicial.txt desde la Parte 3. Las Partes 0, 1 y 2 conservan su registro en Estado_del_Proyecto.txt.
+ este cambio debe documentarse en Estado_del_Proyecto.txt
+============================================================
+
+Principio rector (se mantiene): cada parte interfiere lo menos posible con las demás; las dependencias se marcan explícitamente.
+Tamaños (S, M, L) son estimaciones gruesas para repartir: S = unas horas, M = un fin de semana de una persona, L = más de un fin de semana. Hay que ajustarlas con el equipo.
+
+------------------------------------------------------------
+0. POR QUÉ CAMBIA EL MAPA
+------------------------------------------------------------
+- Se pide presentar al menos 2 vistas del frontend y el frontend no se ha empezado. En v1 todo el frontend quedaba al final (Parte 6).
+- v2 adelanta la base del frontend y dos vistas (login/registro y dashboard), que solo necesitan endpoints que ya existen, para avanzar en paralelo con la Parte 3.
+- v2 agrega 3-0 (preparación de la Parte 3) con los pendientes de backend que la bloquean: coordenadas por distrito, eventos y umbrales de lluvia.
+- Los pendientes que quedan de 2-END se reparten en las partes donde se necesitan (sección 6).
+- No cambian el stack, el diseño visual base ni la arquitectura orientada a eventos.
+- Fecha límite de entrega (final): 13-20 de noviembre. Qué se presenta exactamente: [6 de noviembre; mínimo 2 vistas]. Sin estas dos fechas los hitos no tienen calendario.
+
+------------------------------------------------------------
+1. PUNTO DE PARTIDA
+------------------------------------------------------------
+Hecho en backend: autenticación completa (registro, verificación simulada, login, GET /auth/yo con distrito y municipio), catálogo de 2 municipios y 26 distritos, 312 áreas de viabilidad de CENTA, consulta GET /viabilidad/distritos/:id y bus de eventos con AgricultorRegistrado.
+Hecho en frontend: proyecto Angular generado y bases visuales HTML. No hay conexión con el backend.
+Falta: CORS o proxy (pendiente desde la Parte 0), listado de distritos, clima, siembra, estimación y todo el frontend real.
+
+------------------------------------------------------------
+2. HITOS (orden de entrega)
+------------------------------------------------------------
+Hito 1 – Demo mínima con datos reales: 6-0, 6-A y 6-B. Dos vistas (login/registro y dashboard con la viabilidad real del distrito del usuario). Es lo que se presenta aunque no llegue nada más.
+Hito 2 – Clima real: 3-0 a 3-D y, en frontend, 6-D (Clima Zonal) y el encabezado con datos del clima.
+Hito 3 – Siembra y estimación: 4-A a 4-D, 5-A a 5-D, 6-C (Historial) y 6-E (estimación real en el dashboard).
+Hito 4 – Cierre: Parte 7.
+Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección 5): empezar a conseguirlos desde ya.
+
+------------------------------------------------------------
+3. PISTAS DE TRABAJO
+------------------------------------------------------------
+Pista 1 – Frontend base y autenticación: 6-0, 6-A.
+Pista 2 – Frontend dashboard: 6-B y luego 6-D y 6-E.
+Pista 3 – Backend de clima: 3-0 y 3-A a 3-D.
+Pista 4 – Datos de referencia y siembra: documento de datos (sección 5) y luego 4-A y 4-C.
+Después del Hito 1 se rebalancea..
+
+------------------------------------------------------------
+PARTE 3 – Integración climática (Open-Meteo) + eventos
+Dependencias: 3-0 primero; 3-A necesita coordenadas; 3-B necesita umbrales.
+------------------------------------------------------------
+3-0 Preparación (tamaño M, sin dependencias):
+  a) Eventos (ex C3): definir en events/types.ts nombres y payload de ActualizacionMeteorologica, CondicionClimaticaActualizada y SiembraRegistrada. Una sola persona edita, solo agrega. Payload sugerido: ActualizacionMeteorologica { distritoId, fecha, precipitacionMm, fuente }; CondicionClimaticaActualizada { distritoId, condicion, condicionAnterior, precipitacionAcumuladaMm, fecha }; SiembraRegistrada { siembraId, usuarioId, distritoId, cultivo, areaMz, fecha }.
+  b) Coordenadas (ex C2): revisar qué contienen las columnas x e y de los exports de CENTA y en qué sistema de coordenadas están. Si no sirven, definir otra fuente (centroide oficial o cartográfico) y documentarla. Implica columnas latitud y longitud en Distrito, migración, CSV limpios y seed (actualizar ESPERADO).
+  c) Umbrales y temporadas: documento con los rangos de lluvia para clasificar sequía, exceso o invierno aceptable, y las ventanas de fechas de primera y postrera (sección 5, F2).
+3-A Cliente de Open-Meteo por distrito (M): fetch nativo de Node (sin dependencias), timeout, manejo de errores, usa las coordenadas de 3-0b. Verificar términos de uso y atribución de Open-Meteo y los parámetros en su documentación oficial antes de fijar el contrato.
+3-B Clasificación de la condición climática (M): función pura con los umbrales de 3-0c (se puede desarrollar con datos de ejemplo mientras llega 3-A); modelo y migración para guardar la última condición y la hora de actualización por distrito.
+3-C Emisión de eventos (S): ActualizacionMeteorologica en cada consulta y CondicionClimaticaActualizada solo cuando la condición cambia (decisión a confirmar).
+3-D Actualización periódica y endpoint (M): tarea con setInterval que arranca con el servidor, tolera fallos de red sin tumbar el backend; GET /clima/distritos/:id protegido con requireAuth que devuelve condición, precipitación y hora de actualización (alimenta "Datos actualizados hace X min").
+Archivos compartidos: schema.prisma y migrations/ (3-0b y 3-B), events/types.ts (3-0a), index.ts (3-D). Migraciones en secuencia, nunca en ramas paralelas.
+
+------------------------------------------------------------
+PARTE 4 – Siembra + formulario detallado
+Dependencias: Usuario y Viabilidad (listos); 4-C necesita precios (sección 5, F3); 4-B necesita 6-0.
+------------------------------------------------------------
+4-A Modelo de Siembra y migración (M): usuario, distrito, cultivo, estado (sembrado o por sembrar), fecha, área en manzanas, cantidad de semilla, alquila, usa maquinaria, usa riego, inversión. Respeta exactamente los campos de Pendientes (Parte 4) del estado.
+4-B Formulario de siembra en Angular (L): diseño del dashboard_base.html, dos grupos (datos agronómicos y parámetros técnicos), muestra el estimado de inversión antes de que el usuario escriba el suyo. Depende de 6-0 y de 4-A.
+4-C Estimación de costos (M): precios promedio y dosis por manzana, con redondeo hacia arriba (ej.: 19.2 qq de abono pasan a 20 qq). Los valores vienen del documento de datos y llevan fuente y fecha.
+4-D Evento SiembraRegistrada e historial (M): POST /siembras y GET /siembras protegidos, emite el evento al guardar.
+Archivos compartidos: schema.prisma, migrations/, events/types.ts, index.ts.
+
+------------------------------------------------------------
+PARTE 5 – Estimación y recomendaciones (núcleo EDA)
+Dependencias: 3-C, 4-D y datos F1 y F4. El núcleo orientado a eventos no se diluye.
+------------------------------------------------------------
+5-A Listeners de SiembraRegistrada y CondicionClimaticaActualizada (M).
+5-B Cálculo de proyección (M): rendimiento base por cultivo por el área, más el ajuste climático. Los porcentajes de ajuste son supuestos: documentarlos como tales, con su justificación.
+5-C Recomendaciones según riesgo (M): niveles verde, amarillo y rojo. La viabilidad de CENTA se redacta como referencia distrital y cita a CENTA, no como veredicto sobre la parcela.
+5-D Persistencia y exposición (M): guardar el reporte, GET de la última estimación y del historial.
+
+------------------------------------------------------------
+PARTE 6 – Frontend (adelantado y repartido por hitos)
+Diseño: login_base.html y dashboard_base.html son la referencia visual (colores, tipografía Plus Jakarta Sans, espaciado, estructura). El sidebar pasa del checkbox hack a estado de componente.
+------------------------------------------------------------
+6-0 Base de Angular (M, una sola persona, se mergea primero y rápido):
+  - Rutas: login, registro y un área protegida con el layout.
+  - Configuración con la URL del API. Decisión previa: proxy de desarrollo de Angular (no toca el backend) o CORS en Express con el encabezado Authorization (middleware propio sin dependencias, o el paquete cors si el equipo aprueba la dependencia). Depende de si se presenta en localhost o desplegado.
+  - Estilos globales con las variables CSS de los HTML base, fuente y iconos.
+  - Servicio de autenticación con almacenamiento del token (decisión: memoria o sessionStorage; cada una tiene compromisos frente a XSS y refresco), interceptor que agrega Authorization y atiende el 401 (con sesión expirada distinta de token inválido), guard de rutas.
+  - Modelos TypeScript de los contratos: { error, detalles }, usuario con distrito y municipio, respuesta de viabilidad.
+  Criterio: ng build sin errores, una ruta protegida redirige al login, el interceptor agrega el encabezado.
+6-A Login y registro (M, depende de 6-0): idéntico a login_base.html; el campo distrito se envía por nombre; muestra los "detalles" del 400; maneja 403 (cuenta no verificada) y 409. Verificación sin correo real: con EXPONER_TOKEN_VERIFICACION=true el registro devuelve el token; en la demo se puede ofrecer un paso "simular verificación" solo en desarrollo, declarándolo como tal.
+6-B Layout y dashboard (L, depende de 6-0): sidebar y encabezado con el usuario desde GET /auth/yo; KPI de zona de viabilidad real; tarjeta de viabilidad del distrito del usuario (distribución por clase, clase dominante, referencia CENTA); panel de estimación marcado como ejemplo ilustrativo hasta la Parte 5.
+6-C Historial de evaluaciones (M, depende de 4-D y 5-D).
+6-D Clima Zonal y Configuración básica (M, depende de 3-D).
+6-E Dashboard con estimación real (M, depende de 5-D): reemplaza el panel de ejemplo.
+Hito 1 = 6-0 + 6-A + 6-B.
+Archivos compartidos del frontend (alto riesgo de conflicto): app.routes, app.config, styles.css y package.json. Por eso 6-0 se hace primero.
+
+------------------------------------------------------------
+PARTE 7 – Integración final, Docker y despliegue
+Dependencias: casi todo lo anterior; 7-A puede empezar tras 6-0.
+------------------------------------------------------------
+7-A Docker Compose con backend, base de datos y frontend (M).
+7-B Configuración de producción (M): secretos propios, TLS hacia MySQL (con NODE_ENV=production no se activa allowPublicKeyRetrieval), CORS final, rate limiting en /auth, EXPONER_TOKEN_VERIFICACION en false, longitud mínima de DUI_PEPPER.
+7-C Pruebas automatizadas y de flujo completo (M): el limpiador y el seed ya aceptan carpetas por parámetro, lo que facilita probarlos; falta decidir el ejecutor de pruebas y separar app de listen en index.ts.
+7-D Documentación final y README de despliegue (M).
+
+------------------------------------------------------------
+5. DATOS DE REFERENCIA QUE NO ESTÁN EN CENTA (empezar ya, sin código)
+------------------------------------------------------------
+Bloquean 3-B, 4-C y 5-B. Documentarlos como Info_Datos_CENTA.md: fuente, fecha, formato y contrato.
+F1 Rendimiento estándar por cultivo (maíz, frijol, maicillo) en qq/mz.
+F2 Umbrales de lluvia para sequía, exceso o invierno aceptable, y ventanas de primera y postrera.
+F3 Precios promedio de insumos, dosis por manzana, jornales, alquiler, maquinaria y riego.
+F4 Precio de venta por quintal.
+Fuentes candidatas a verificar: guías técnicas de CENTA por cultivo y publicaciones de precios del MAG. Todo valor lleva fuente y fecha. Si un dato no se consigue, se presenta como supuesto declarado, nunca como dato oficial.
+
+------------------------------------------------------------
+6. PENDIENTES DE 2-END Y DÓNDE CAEN
+------------------------------------------------------------
+- C1 Listado de distritos: 6-A si el registro usa select (endpoint público, porque el registro ocurre antes del login); si queda campo de texto, no hace falta.
+- C2 Coordenadas y C3 Eventos: 3-0.
+- D1 Capa sensible a mayúsculas y cultivo no (viabilidad): ajuste pequeño, cuando se toque el servicio.
+- Bloque E Pruebas automatizadas: 7-C.
+- Bloque F Datos de referencia: sección 5.
+- Bloque G Documentación: rama docs después de cada hito.
+- Fuera de alcance por ahora: envío real de correo, validación del dígito verificador del DUI, GET /health con verificación de base, decisión sobre Prettier.
+
+------------------------------------------------------------
+7. REGLAS DE LA DEMO
+------------------------------------------------------------
+- Ningún valor de ejemplo de dashboard_base.html (45 qq/mz, +5 %, 180-220 mm, $1,900, $2,970) se muestra como dato real. Mientras no exista la Parte 5, el panel de estimación se rotula como ejemplo ilustrativo o se deja en estado vacío.
+- Lo que se muestre de CENTA se cita como referencia distrital.
+- Lo simulado (verificación sin correo) se declara en la presentación.
+
+------------------------------------------------------------
+8. RIESGOS Y RECORTES
+------------------------------------------------------------
+Orden de recorte si falta tiempo (de lo primero que se sacrifica a lo último):
+1) Pruebas automatizadas completas (se mantienen las pruebas manuales documentadas).
+2) Configuración y Clima Zonal como vistas propias.
+3) Historial.
+4) Actualización periódica del clima (se deja la consulta bajo demanda).
+5) Recomendaciones con reglas mínimas.
+No se recorta: Hito 1.
+Puntos calientes de merge: schema.prisma y migrations/ (partes 3 y 4: en secuencia), events/types.ts, index.ts, y los cuatro archivos compartidos del frontend. Quien mergee segundo regenera su migración sobre main.
