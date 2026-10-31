@@ -1,0 +1,23 @@
+<div class="auth">
+  <section class="visual" aria-hidden="true">
+    <h1>AgroAlerta<br>Morazán</h1>
+    <p>Sistema inteligente de prevención de riesgos agrícolas. Toma decisiones basadas en datos climáticos y de viabilidad de cultivo</p>
+  </section>
+
+  <section class="panel">
+    <div class="box">
+      <header class="auth-header">
+        <i class="fa-solid fa-seedling"></i>
+        <h2>Bienvenido</h2>
+        <p>Ingresa tus credenciales o crea una cuenta nueva</p>
+      </header>
+
+      <nav class="tabs" aria-label="Acceso">
+        <a class="tab" routerLink="/login" routerLinkActive="active">Iniciar sesión</a>
+        <a class="tab" routerLink="/registro" routerLinkActive="active">Registrarse</a>
+      </nav>
+
+      <ng-content />
+    </div>
+  </section>
+</div>

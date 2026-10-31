@@ -1,0 +1,45 @@
+<div class="shell" [class.menu-abierto]="menuAbierto()">
+  <button type="button" class="overlay" aria-label="Cerrar menú" tabindex="-1" (click)="cerrarMenu()"></button>
+
+  <aside class="sidebar" id="menu-principal">
+    <div class="sidebar-header">
+      <div class="brand">
+        <i class="fa-solid fa-leaf"></i>
+        <h2>AgroAlerta<br>Morazán</h2>
+      </div>
+      <button type="button" class="icon-btn cerrar" aria-label="Cerrar menú" (click)="cerrarMenu()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <nav class="nav-menu" aria-label="Principal">
+      <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" (click)="cerrarMenu()">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+      <span class="nav-item disabled" aria-disabled="true">
+        <i class="fa-solid fa-clock-rotate-left"></i> Historial
+      </span>
+      <span class="nav-item disabled" aria-disabled="true">
+        <i class="fa-solid fa-cloud-sun"></i> Clima Zonal
+      </span>
+      <span class="nav-item disabled" aria-disabled="true">
+        <i class="fa-solid fa-gear"></i> Configuración
+      </span>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="top-header">
+      <button type="button" class="icon-btn menu" aria-label="Abrir menú" aria-controls="menu-principal"
+        [attr.aria-expanded]="menuAbierto()" (click)="abrirMenu()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <h1>Monitoreo de Cultivos</h1>
+      <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
