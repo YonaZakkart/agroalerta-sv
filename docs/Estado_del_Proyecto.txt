@@ -1,6 +1,6 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán
-Última actualización: 22 de Octubre de 2026.
+Última actualización: 30 de Octubre de 2026.
 ============================================================
 
 1. RESUMEN DE LA IDEA
@@ -16,7 +16,9 @@ El sistema reacciona automáticamente a eventos (registro de siembra, actualizac
 Nota geográfica (desde 1-A): tras la reorganización territorial, el departamento de Morazán tiene solo 2 municipios (Morazán Norte y Morazán Sur). Los 26 antiguos municipios (Chilanga, etc.) son ahora DISTRITOS. El sistema trabaja a nivel de distrito, porque es la unidad que importa para zonas de viabilidad y estaciones climáticas. El campo del usuario se llama "distrito" (ya no "municipio"). Ver detalle en 1-A (feat/auth-registro-usuario).
 Desde 2-A el catálogo Municipio (2) / Distrito (26) existe como modelos en la base (el código CENTA 1301 a 1326 es la llave del distrito) y, desde 2-B, está cargado con los datos de CENTA (26 distritos: 11 en Morazán Norte y 15 en Morazán Sur). Desde 2-C el backend tiene el servicio de consulta de viabilidad y desde 2-D lo expone como GET /viabilidad/distritos/:id (protegido con requireAuth).
 
-Estado de avance (22 de octubre de 2026): Parte 0 completa. Parte 1 (autenticación) completa en el backend (1-A a 1-END). Parte 2 (viabilidad) con 2-A, 2-B, 2-C y 2-D en main; falta su cierre (2-END, ver Pendientes). Partes 3 a 7 sin iniciar. El frontend Angular todavía no se conecta al backend.
+Desde 2-END (chore/2-end-usuario-distrito-catalogo) el distrito del usuario ya no es texto libre: Usuario tiene distritoId (clave foránea a Distrito) y el registro valida el nombre recibido contra el catálogo de los 26 distritos, sin distinguir tildes ni mayúsculas (400 si no existe). Registro, login y GET /auth/yo devuelven el distrito como objeto { id, nombre, municipio: { id, nombre } }. Ver 2-END.
+
+Estado de avance (30 de octubre de 2026): Parte 0 completa. Parte 1 (autenticación) completa en el backend (1-A a 1-END). Parte 2 (viabilidad): 2-A a 2-D en main y cierre (2-END) con el código en dos ramas (chore/2-end-verificaciones-ajustes y chore/2-end-usuario-distrito-catalogo) [VERIFICAR: ambas mergeadas en main]. Del cierre quedan pendientes las pruebas automatizadas (bloque E), los datos de referencia (bloque F), las verificaciones A2 (Requeno y Pocho) y A4, y el bloque C, movido a la Parte 3 (ver Pendientes). Partes 3 a 7 sin iniciar. El frontend Angular todavía no se conecta al backend.
 
 
 
@@ -43,8 +45,8 @@ agroalerta-sv/
 │   │       ├── raw/           exports crudos de CENTA (Potencial_maiz.csv, Potencial_frijol.csv, Potencial_sorgo.csv, Riesgo_sequia.csv), division_territorial_morazan.csv y fuente.json; no abrirlos ni guardarlos en Excel
 │   │       └── clean/         distritos.csv (26 filas) y areas_clase.csv (312 filas), generados por npm run datos:limpiar; no se editan a mano
 │   ├── prisma/
-│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde 1-A + modelo Usuario, 1-A, ampliado en 1-C + modelos de la Parte 2: Municipio, Distrito, Capa, ClaseCapa, AreaClase y enum TipoCapa, 2-A)
-│   │   └── migrations/        (nuevo en 1-A — migraciones add_usuarios (1-A), add_verificacion_correo (1-C) y add_viabilidad (2-A); se versionan)
+│   │   ├── schema.prisma      (datasource MySQL + generator con importFileExtension = "" desde 1-A + modelo Usuario, 1-A, ampliado en 1-C + modelos de la Parte 2: Municipio, Distrito, Capa, ClaseCapa, AreaClase y enum TipoCapa, 2-A; desde 2-END Usuario.distritoId es clave foránea a Distrito y reemplaza al texto libre distrito)
+│   │   └── migrations/        (nuevo en 1-A — migraciones add_usuarios (1-A), add_verificacion_correo (1-C), add_viabilidad (2-A) y 20261030231036 (2-END: usuarios.distrito pasa a distrito_id con FK; carpeta sin sufijo de nombre); se versionan)
 │   └── src/
 │       ├── auth/
 │       │   ├── registro.service.ts   (nuevo en 1-A — hashing, creación de usuario, emisión de evento)
@@ -52,16 +54,19 @@ agroalerta-sv/
 │       │   ├── jwt.ts                (nuevo en 1-B — firma y verificación de JWT, secreto compartido)
 │       │   ├── auth.middleware.ts    (nuevo en 1-B — requireAuth, extiende Express.Request con "usuario")
 │       │   ├── login.routes.ts       (nuevo en 1-B — POST /auth/login)
-│       │   └── perfil.routes.ts      (nuevo en 1-D — GET /auth/yo protegido con requireAuth)
+│       │   ├── perfil.routes.ts      (nuevo en 1-D — GET /auth/yo protegido con requireAuth; desde 2-END incluye el distrito con su municipio)
+│       │   └── distrito.select.ts    (nuevo en 2-END — select compartido { id, nombre, municipio { id, nombre } } para registro, login y GET /auth/yo)
 │       ├── viabilidad/         (Parte 2: datos/ desde 2-B; servicio desde 2-C; endpoint desde 2-D)
 │       │   ├── constantes.ts       (nuevo en 2-C — HA_POR_MANZANA = 0.7, único lugar de la conversión ha → manzanas)
-│       │   ├── service.ts          (nuevo en 2-C — consultarViabilidad() y ViabilidadError)
+│       │   ├── service.ts          (nuevo en 2-C — consultarViabilidad() y ViabilidadError; desde 2-END importa normalizarNombre de comun/ y compara la capa sin distinguir tildes ni mayúsculas)
 │       │   ├── viabilidad.routes.ts (nuevo en 2-D — GET /viabilidad/distritos/:id protegido con requireAuth)
 │       │   └── datos/              (nuevo en 2-B)
 │       │       ├── capas.config.ts     configuración de las 4 capas (lo único que cambia al agregar una capa)
-│       │       ├── utilidades.ts       lector de CSV, números, normalizarNombre y acumulador de errores
+│       │       ├── utilidades.ts       lector de CSV, números y acumulador de errores; re-exporta colapsarEspacios y normalizarNombre desde comun/normalizar.ts (desde 2-END)
 │       │       ├── limpiar-centa.ts    npm run datos:limpiar
 │       │       └── cargar-centa.ts     npm run datos:cargar
+│       ├── comun/              (nuevo en 2-END — módulo compartido entre partes)
+│       │   └── normalizar.ts       colapsarEspacios y normalizarNombre (clave de comparación de nombres: sin tildes, mayúsculas, espacios colapsados)
 │       ├── clima/              (vacío, para Parte 3)
 │       ├── siembra/            (vacío, para Parte 4)
 │       ├── estimacion/         (vacío, para Parte 5)
@@ -105,6 +110,10 @@ Nota sobre el generator de Prisma (desde 1-A): el generator prisma-client está 
 Nota sobre datos de viabilidad (CENTA): CENTA no expone API pública. Se descartó Django/web scraping en vivo como parte del stack de producción. Decisión (definida antes de 2-A, feat/2-a-modelos-viabilidad): los datos se obtienen de la herramienta de consulta del mapa de CENTA, exportando un CSV por capa (potencial de maíz, frijol y sorgo/maicillo, y riesgo de sequía; todo Morazán, todas las clases) más la tabla de división territorial. Implementado en 2-B (feat/2-b-datos-centa): npm run datos:limpiar valida los exports y genera CSV limpios en backend/data/centa/clean/, y npm run datos:cargar los inserta en MySQL de forma idempotente y dentro de una transacción.
 Nota sobre la conexión a MySQL 8.4 (desde 1-END): MySQL 8.4 crea los usuarios con caching_sha2_password y, sin TLS, el conector MariaDB solo completa la autenticación si se activa allowPublicKeyRetrieval; sin esa opción las conexiones fallan en silencio y Prisma lo reporta como P2039 (pool timeout). La opción se pasa en config/prisma.ts y no como parámetro de DATABASE_URL (esa variable también la lee prisma7.config.ts y el .env no se versiona). No volver a pasar la cadena DATABASE_URL directamente al constructor de PrismaMariaDb sin conservar la opción. Detalle y diagnóstico en 1-END.
 
+Nota sobre normalización de nombres (desde 2-END): colapsarEspacios y normalizarNombre viven en backend/src/comun/normalizar.ts (módulo común, punto de contacto entre partes). viabilidad/datos/utilidades.ts las re-exporta; viabilidad/service.ts y la validación del distrito en el registro las importan desde comun/. Es la única normalización de nombres del proyecto (la clave guardada en distritos.nombre_normalizado y la que se usa para comparar capa, cultivo y distrito): no duplicarla.
+
+Nota sobre vulnerabilidades de dependencias (desde 2-END, A6): npm audit (en backend/) reportó el 28 de octubre de 2026 9 vulnerabilidades (3 moderadas y 6 altas). Con npm audit --omit=dev son 4 (2 moderadas y 2 altas): @prisma/adapter-mariadb (directa) con su dependencia mariadb, y express 5.2.1 con body-parser y qs. El resto es solo de desarrollo según el propio audit (prisma, @prisma/config, deepmerge-ts, mysql2, fast-uri). No se aplicó npm audit fix: modifica package.json y package-lock.json y puede mover versiones fijadas (prisma, @prisma/client y @prisma/adapter-mariadb en 7.10.0, typescript ^5.9). Tampoco se evaluó si las vulnerabilidades son explotables en el uso que hace el proyecto. Nunca usar npm audit fix --force. Decisión de equipo pendiente (ver Pendientes).
+
 Estas tecnologías ya no están sujetas a cambio salvo justificación documentada aquí.
 
 
@@ -116,6 +125,7 @@ Estas tecnologías ya no están sujetas a cambio salvo justificación documentad
 - Dashboard: se adopta la segunda versión mejorada (sidebar responsive, indicadores de sistema vivo, formulario agrupado, reporte de dos niveles, badges de riesgo, timeline vacío).
 - Nota: ambos archivos HTML/CSS fueron creados únicamente para probar y fijar el estilo visual; la implementación real se hará en componentes Angular (el sidebar, por ejemplo, deberá pasar del "checkbox hack" en CSS puro a manejo de estado por componente).
 - Cambio (1-A): en la implementación Angular del registro, la etiqueta "Municipio (Morazán)" pasa a "Distrito (Morazán)" y el campo se envía como "distrito". login_base.html NO se modifica; sigue siendo referencia visual.
+- Cambio (2-END): el registro sigue enviando el campo "distrito" por nombre (sin cambios visuales en login_base.html), pero el servidor lo valida contra el catálogo de los 26 distritos de Morazán y responde 400 si no existe. Si el frontend usa un select (bloque C1, movido a la Parte 3), puede seguir enviando el nombre.
 Colores, tipografía (Plus Jakarta Sans) y jerarquía visual se respetan como referencia.
 
 
@@ -151,8 +161,8 @@ Reglas:
   2-A       feat/2-a-modelos-viabilidad, docs/actualizar-estado-rama-12
   2-B       feat/2-b-datos-centa, docs/actualizar-estado-rama-14
   2-C       feat/2-c-servicio-viabilidad, docs (nombre no registrado)
-  2-D       feat/2-d-endpoint-viabilidad (rechazada), fix (nombre por completar), docs (la de esta actualización)
-  2-END     pendiente (ver Pendientes)
+  2-D       feat/2-d-endpoint-viabilidad (rechazada), fix (nombre por completar), docs/2-d-estado-por-partes
+  2-END     chore/2-end-verificaciones-ajustes, chore/2-end-usuario-distrito-catalogo, docs/2-end-estado ([VERIFICAR] nombre real de la rama docs)
 
 En el árbol de la sección 2 y en las notas de la sección 3, una referencia como "1-A" o "2-B" remite a las ramas de ese punto según este índice.
 
@@ -166,6 +176,7 @@ Desde la raíz del repositorio, en este orden:
 1. Levantar MySQL de desarrollo:
    docker compose up -d db
    Antes de levantarlo, el puerto 3306 del equipo debe estar libre. En Windows, un servicio MySQL instalado (por ejemplo MySQL80 o MySQL96) puede ocuparlo: Docker publica el puerto pero no puede asignarlo, y Prisma termina hablando con el MySQL de Windows. Detenerlo y dejarlo en inicio manual (sc config <servicio> start= demand), desde una consola de administrador, sin borrar datos. Comprobar con docker ps que el contenedor publique 3306.
+   Síntomas de que otro MySQL ocupa el puerto (visto en 2-END): docker ps muestra el contenedor con 3306/tcp y SIN "0.0.0.0:3306->3306/tcp"; netstat -ano | grep :3306 muestra un proceso mysqld.exe; y docker compose exec -T -e MYSQL_PWD=agroalerta db mysql -uagroalerta agroalerta -e "SHOW TABLES;" no lista las tablas que el backend sí usa (el backend, migrate y datos:cargar estaban hablando con el MySQL de Windows). Para identificar el servicio: tasklist //svc //FI "PID eq <pid>" (en Git Bash) y, si devuelve N/D, en PowerShell: Get-Service | Where-Object Name -like "*mysql*". Con la base de Docker, backend/.env debe usar el usuario agroalerta (DATABASE_URL="mysql://agroalerta:agroalerta@127.0.0.1:3306/agroalerta"), no root. Después de liberar el puerto: docker compose down -v, docker compose up -d db y repetir los pasos 4, 5 y 5b.
    Si el contenedor es anterior a docker/mysql-init/grant-shadow.sql (ese script solo corre al crear el volumen por primera vez), prisma migrate dev falla con P3014. Solución: docker compose down -v y docker compose up -d db (borra los datos locales; después se repiten los pasos 5 y 5b).
 
 2. Instalar dependencias del backend:
@@ -198,6 +209,7 @@ Desde la raíz del repositorio, en este orden:
 
 5. Sincronizar el esquema con la base de datos:
    npx prisma migrate dev
+   Desde 2-END, la migración que convierte usuarios.distrito en distrito_id (obligatorio, con FK) no se puede aplicar sobre una base que ya tenga usuarios (Prisma lo advierte en el encabezado de migration.sql): hacer antes docker compose down -v (desde la raíz; borra los datos locales) y repetir los pasos 1, 4, 5 y 5b. Los usuarios de prueba se registran de nuevo.
 
    5b. Cargar los datos de viabilidad (desde 2-B; requiere el paso 5 hecho), dentro de backend/:
    npm run datos:cargar
@@ -219,7 +231,7 @@ Reglas de directorio: todos los comandos docker compose se corren desde la raíz
 
 Después de cada git pull:
 - Si cambió backend/package.json: npm install --legacy-peer-deps (o npm ci --legacy-peer-deps) dentro de backend/.
-- Si cambió backend/prisma/schema.prisma o hay migraciones nuevas: repetir los pasos 4 y 5.
+- Si cambió backend/prisma/schema.prisma o hay migraciones nuevas: repetir los pasos 4 y 5. Excepción 2-END: si la base tiene usuarios creados antes de 2-END, reiniciarla antes (ver el paso 5).
 - Si cambió backend/data/centa/clean/: repetir el 5b.
 - Si cambió backend/.env.example: revisar si hay variables nuevas y agregarlas a tu .env.
 
@@ -238,7 +250,7 @@ A. Siempre (cualquier rama)
 7. Antes del push: que el mensaje de commit sea claro y que git add sea con archivos o rutas concretas (evitar git add . si hay archivos sin seguimiento ajenos a la tarea).
 
 B. Prueba del flujo base (curl, con el backend corriendo)
-Usar un correo y un DUI de 9 dígitos que no existan en tu base. En Windows usar Git Bash (los acentos pueden verse mal en la consola; es un tema de codificación de la terminal y no de la base).
+Usar un correo y un DUI de 9 dígitos que no existan en tu base. En Windows usar Git Bash (los acentos pueden verse mal en la consola; es un tema de codificación de la terminal y no de la base). En Git Bash, si node está definido como alias de winpty (comprobar con "type node"), dentro de $(...) o de un pipe no devuelve nada ("stdout is not a tty") y los tokens quedan vacíos: usar node.exe. Los comandos que usan require('dotenv/config') o require('jsonwebtoken') se corren dentro de backend/.
 1. Registro, debe dar 201 (con EXPONER_TOKEN_VERIFICACION=true trae tokenVerificacion_DEV):
    curl -X POST localhost:3000/auth/registro -H "Content-Type: application/json" -d '{"nombres":"Prueba","apellidos":"Uno","correo":"prueba1@email.com","contrasena":"ClaveSegura123","dui":"123456789","distrito":"Chilanga"}'
 2. Login antes de verificar, debe dar 403:
@@ -250,7 +262,8 @@ Usar un correo y un DUI de 9 dígitos que no existan en tu base. En Windows usar
    curl localhost:3000/auth/yo -H "Authorization: Bearer <token>"
 6. Viabilidad (desde 2-D), con el token del paso 4:
    curl localhost:3000/viabilidad/distritos/1304 -H "Authorization: Bearer <token>"
-   Debe dar 200 con las 4 capas; en maíz, las clases de Chilanga deben sumar 5998.537 ha (2024.138 + 2779.240 + 1195.159). Sin token, 401. Con /distritos/abc o /distritos/0, 400. Con /distritos/9999, 404. Con ?cultivo=maiz, 200 (incluye riesgo_sequia). Con ?capa=potencial_maiz&cultivo=maiz, 400.
+   Debe dar 200 con las 4 capas; en maíz, las clases de Chilanga deben sumar 5998.537 ha (2024.138 + 2779.240 + 1195.159). Sin token, 401. Con /distritos/abc o /distritos/0, 400. Con /distritos/9999, 404. Con ?cultivo=maiz, 200 (incluye riesgo_sequia). Con ?capa=potencial_maiz&cultivo=maiz, 400. Con ?capa=POTENCIAL_MAIZ, 200 (desde 2-END la capa se compara sin distinguir tildes ni mayúsculas).
+7. Catálogo de distritos (desde 2-END), con el registro: distrito "chilanga", "CHILANGA", "Perquín" y "perquin" dan 201 con distrito { id, nombre canónico con tildes, municipio }; "Narnia", vacío, ausente o numérico dan 400 { error: "Datos inválidos", detalles }. Login y GET /auth/yo devuelven el distrito con su municipio, y su id sirve para GET /viabilidad/distritos/:id (200).
 
 C. Según el tipo de cambio
 - Endpoint nuevo o modificado: el caso feliz y cada código de error del contrato { error, detalles } (400 datos inválidos, 401 sin token o token inválido o expirado, 404 no encontrado), una petición con entrada extrema (cadena vacía, valores repetidos, números enormes) y comprobar que los 500 no devuelven error.message al cliente.
@@ -275,7 +288,7 @@ Cada Parte sigue el Mapa_inicial.txt. Bajo cada Punto se listan sus ramas en ord
 Resumen de avance:
   Parte 0   Preparación del repositorio y base común ........ completa
   Parte 1   Autenticación y modelo de Usuario ............... completa en el backend (1-A a 1-END); falta frontend y lo de Pendientes
-  Parte 2   Datos de viabilidad y zonas de Morazán .......... 2-A a 2-D en main; falta 2-END (cierre)
+  Parte 2   Datos de viabilidad y zonas de Morazán .......... 2-A a 2-D en main; 2-END con código en dos ramas [VERIFICAR: mergeadas]; faltan E, F, A2, A4 y el bloque C (movido a la Parte 3)
   Parte 3   Integración climática (Open-Meteo) .............. sin iniciar
   Parte 4   Módulo de Siembra + formulario detallado ........ sin iniciar
   Parte 5   Estimación y Recomendaciones (núcleo EDA) ....... sin iniciar
@@ -1259,7 +1272,180 @@ Puntos de atención para las siguientes ramas:
 2-END — Cierre de la Parte 2
 ----------------------------
 
-Sin ramas todavía. Alcance propuesto en Pendientes (Parte 2).
+Plan: plan de cierre de la Parte 2 del 22 de octubre de 2026 (bloques A a H). Se ejecutó en dos ramas de código y una rama docs. Primera rama: verificaciones (A), módulo común de normalización (B4) y D1. Segunda rama: bloque B (Usuario con catálogo). El bloque C (listado de distritos, coordenadas y eventos) se mueve a la Parte 3 (ver Pendientes). El bloque E (pruebas automatizadas) y el F (datos de referencia) quedan pendientes. El bloque G es la rama docs. D2, D4 y D5 se documentan en la rama docs; D3 y D6 no se tocan (D3 es inofensiva y D6 solo aplica si otro módulo llama directo a consultarViabilidad).
+
+
+Rama chore/2-end-verificaciones-ajustes (Parte 2, cierre: bloques A, B4 y D1)
+Responsable: Smith
+Fecha: 28 de octubre de 2026 (pruebas válidas); trabajo iniciado el 23 de octubre. Fecha de los commits y del merge: [VERIFICAR].
+Commits: 0b9b078 (refactor(comun): mover normalizarNombre y colapsarEspacios a src/comun) y 937ac2a (fix(viabilidad): comparar capa sin distinguir mayusculas ni tildes). Base: main en ee11b93 (merge de docs/2-d-estado-por-partes).
+Estado: [VERIFICAR: mergeada en main].
+
+Contexto: primera de las dos ramas de código del cierre de la Parte 2. Resuelve las verificaciones que no requieren código (bloque A), mueve normalizarNombre a un módulo común (B4, prerrequisito de la segunda rama) y unifica el tratamiento de capa y cultivo en la consulta de viabilidad (D1). No toca schema.prisma, migrations/, auth/, events/, index.ts ni package.json. El trabajo se hizo en un clon nuevo del repositorio, por indicación de Yona.
+
+Qué se hizo:
+- backend/src/comun/normalizar.ts (nuevo): colapsarEspacios y normalizarNombre, movidas sin cambios desde viabilidad/datos/utilidades.ts.
+- backend/src/viabilidad/datos/utilidades.ts: la definición de ambas funciones se reemplazó por export { colapsarEspacios, normalizarNombre } from "../../comun/normalizar". limpiar-centa.ts y cargar-centa.ts no cambiaron.
+- backend/src/viabilidad/service.ts: (B4) el import de normalizarNombre apunta a ../comun/normalizar (antes ./datos/utilidades, que arrastra el código de lectura de archivos del limpiador); (D1) el filtro por capa compara normalizarNombre(c.codigo) con normalizarNombre(capa), igual que el cultivo. Capa y cultivo juntos siguen dando 400.
+- backend/src/viabilidad/datos/cargar-centa.ts: el mensaje de P2039 de reportarError remite a 1-END (fix/prisma-mariadb-rsa-key) y no a "RAMA 10".
+- Verificaciones del bloque A (resultados en "Pruebas realizadas").
+
+Decisiones de diseño:
+- Re-export en utilidades.ts en lugar de editar los imports de limpiar y cargar: el cambio es mínimo y esas dos piezas quedan intactas (se comprobó con md5sum que los CSV limpios no cambian).
+- service.ts importa de comun/ directamente, para que la Parte 1 (auth) pueda importar la misma función sin acoplarse a un archivo de datos.
+- D1: se normaliza la capa igual que el cultivo (opción recomendada en el plan) en lugar de solo documentar la diferencia. Es un cambio de contrato menor y compatible: los códigos exactos (potencial_maiz) siguen funcionando.
+- A6: no se aplicó npm audit fix (ver nota de la sección 3 y Pendientes).
+- No se tocaron D3 (rama "Error de consulta" inalcanzable pero inofensiva) ni D6.
+
+Qué se modificó / eliminó:
+- Modificados: backend/src/viabilidad/datos/utilidades.ts, backend/src/viabilidad/service.ts y backend/src/viabilidad/datos/cargar-centa.ts (una línea).
+- Agregado: backend/src/comun/normalizar.ts.
+- Eliminado: nada (las dos funciones se movieron, no se borraron). Dependencias nuevas: ninguna.
+
+Cumplimiento del plan de cierre (Cierre_Parte2.txt):
+- A1 (auditoría de 1-END contra main): cumplido; no faltaba nada.
+- A2 (conteos de las bases): parcial. Smith confirmado (2/26/4/12/312); faltan Requeno y Pocho.
+- A3 (restricciones de la base): cumplido; el modelo rechaza todo, no hace falta migración.
+- A4 (división territorial contra la ley): NO realizado.
+- A5 (expiración del token): cumplido.
+- A6 (npm audit): hecho y registrado; decisión pendiente.
+- 0.3 (segunda instancia del backend): cumplido.
+- B4 (módulo común): cumplido.
+- D1: cumplido.
+
+Pruebas realizadas (manuales; MySQL 8.4 en Docker con puerto publicado; clon nuevo):
+- Las ejecuciones del 23 y 26 de octubre fueron inválidas (ver Incidencias); los resultados válidos son los del 28 de octubre.
+- A1, grep sobre backend/src: "errores" solo como variable local de validación en registro.routes.ts (el 400 sale como { error: "Datos inválidos", detalles }); "mensaje" solo en respuestas 200 (verificar y reenviar-verificacion); "Error interno del servidor" en los 7 puntos de 500 (auth.middleware, login, perfil, registro x3, viabilidad.routes); error.message solo en viabilidad.routes.ts línea 51, dentro de if (error instanceof ViabilidadError) (mensajes fijos del servicio), y en un console.error de cargar-centa.ts; config/prisma.ts línea 20 con allowPublicKeyRetrieval = NODE_ENV !== "production"; index.ts valida JWT_SECRET y DUI_PEPPER (mínimo 32 caracteres) y sale con código 1 si app.listen falla.
+- A1, curl: registro válido 201 sin hashes con tokenVerificacion_DEV de 64 caracteres; registro inválido 400 { error: "Datos inválidos", detalles: [...] }; registro repetido 409; login sin verificar 403 { error: "Cuenta no verificada", detalles }; verificar 200 { mensaje, usuario }; login con contraseña incorrecta 401 { error: "Credenciales inválidas" }; login válido 200 con token; login con body vacío 400; reenviar-verificacion con correo mal formado 400; GET /auth/yo con token válido 200, sin encabezado 401 "No autorizado", con token alterado 401 "Token inválido" y con token firmado para un id inexistente 401 "El usuario asociado al token ya no existe" (no 404).
+- 0.3: dentro de backend/, con la primera instancia viva, la segunda imprime "No se pudo iniciar el backend en el puerto 3000: Error: listen EADDRINUSE" y NO imprime "Backend corriendo".
+- A3, con transacción y ROLLBACK: duplicar (distrito, clase) en areas_clase, ERROR 1062 (areas_clase_distrito_id_clase_id_key); duplicar nombre_normalizado, 1062 (distritos_nombre_normalizado_key); distrito con municipio inexistente, 1452 (distritos_municipio_id_fkey); área con distrito inexistente, 1452 (areas_clase_distrito_id_fkey); área con clase inexistente, 1452 (areas_clase_clase_id_fkey); borrar un distrito con áreas, 1451; borrar una clase con áreas, 1451. Conteos 26 distritos y 312 áreas antes, después y tras el ROLLBACK. Las claves foráneas son ON DELETE RESTRICT ON UPDATE CASCADE.
+- A5: con JWT_EXPIRES_IN=5s y 6 segundos de espera, GET /viabilidad/distritos/1304 dio 401 { error: "Sesión expirada", detalles: "Inicia sesión nuevamente" }. JWT_EXPIRES_IN se restauró a 2h (comprobado con grep).
+- A2: Smith, 2 / 26 / 4 / 12 / 312 en el contenedor de Docker, después de corregir el puerto (ver Incidencias).
+- A6: npm audit, 9 vulnerabilidades (3 moderadas, 6 altas): @prisma/adapter-mariadb (moderada, directa), @prisma/config (alta), body-parser (alta), deepmerge-ts (alta), fast-uri (moderada), mariadb (alta), mysql2 (alta), prisma (alta, directa) y qs (moderada). Con --omit=dev son 4 (2 moderadas y 2 altas): @prisma/adapter-mariadb, body-parser, mariadb y qs. npm ls --omit=dev: @prisma/adapter-mariadb@7.10.0 con mariadb@3.4.5; @prisma/client@7.10.0 con prisma@7.10.0 y mysql2@3.15.3; express@5.2.1 con body-parser@2.3.0 y qs@6.16.0. Advisories visibles en la salida: del conector MariaDB (envío del password en claro a un MitM aun con ssl: true, GHSA-cqhc-2h57-wpxf; transmisión en claro, GHSA-42r5-vhpq-m858; posible inyección SQL con ciertos charsets, GHSA-g5xc-5w98-jfvm; inyección SQL con NO_BACKSLASH_ESCAPES, GHSA-r3rv-jm3r-62q2; inyección SQL por claves de objeto en SET, GHSA-v6pj-gxxw-phfw; lectura de memoria no inicializada con GeoJSON mal formado, GHSA-48qf-xh34-q73r; excepción no controlada con ed25519 y TLS sin configuración, GHSA-cx2f-j9fh-8g68), de mysql2 (degradación a mysql_clear_password, GHSA-3f6p-5ww8-9rcr; DoS por inflate sin límite, GHSA-rgwj-5xj2-c3m3) y de qs (DoS en stringify con arrayFormat comma, GHSA-6pq8-jhm2-2vcw). El plan del 22 de octubre mencionaba 9 vulnerabilidades (1 moderada y 8 altas); la distribución actual es distinta y no se investigó por qué. npm audit fix --dry-run salió cortado por el tail y no se vio qué versiones cambiaría.
+- B4: npx tsc --noEmit sin errores antes y después; npm run datos:limpiar produjo CSV idénticos (md5sum: areas_clase.csv 768e53e6063bd2e0ec288c9e0c45b44a y distritos.csv abba2795b901f985f587895a7dde378e); npm run datos:cargar dos veces seguidas con los mismos conteos (municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312). La línea base de md5 se tomó después de una corrida de datos:limpiar (prueba que el refactor no altera la salida); además git diff --ignore-cr-at-eol no mostró diferencias de contenido en los CSV versionados.
+- D1, 19 comprobaciones sobre GET /viabilidad/distritos, todas OK: 1304 sin filtros 200; sin token 401; abc 400; 0 400; 9999 404; 01304 200; 99999999999999999999 400; 2147483648 404; cultivo=maiz, MAIZ y ma%C3%ADz 200; cultivo=sorgo 404; cultivo= (vacío) 200; capa=riesgo_sequia 200; capa=POTENCIAL_MAIZ y capa=Potencial_Maiz 200; capa=inexistente 404; capa=potencial_maiz&cultivo=maiz 400; capa repetida 400; token alterado 401. Con capa=POTENCIAL_MAIZ la respuesta trae solo potencial_maiz con totalHa 5998.537.
+
+Pruebas NO realizadas:
+- A4 (cotejo con la ley) y A2 de Requeno y Pocho.
+- Concurrencia en verificar, medición de tiempos de login, JWT_SECRET ausente en requireAuth, correo mal formado en login (solo se probó el body vacío).
+- Explotabilidad de las vulnerabilidades de A6 y salida completa de npm audit fix --dry-run.
+- Pruebas automatizadas (bloque E).
+- Repetir las pruebas en el clon de otro integrante.
+
+Qué NO se hizo / qué falta:
+- A4, A2 (Requeno y Pocho), D3, D6, E, F y G (G es la rama docs de este cierre).
+- Ninguna decisión sobre dependencias (A6).
+
+Qué se agregó de más (no pedido originalmente):
+- El cambio de una línea del mensaje de P2039 en cargar-centa.ts (referencia obsoleta a "RAMA 10"). Nada más.
+
+Archivos tocados fuera de su carpeta: ninguno compartido. backend/src/comun/ es una carpeta nueva (punto de contacto entre partes). No se tocaron schema.prisma, migrations/, index.ts, events/, config/, auth/ ni package.json.
+
+Incidencias técnicas durante el desarrollo (de entorno, no del código):
+- En Git Bash de Smith, node es un alias: "node is aliased to `winpty node.exe'". Dentro de $(...) o de un pipe imprime "stdout is not a tty" y no devuelve nada, por lo que DUI, token de verificación, JWT y token firmado quedaban vacíos y las pruebas de A1 y A5 de los días 23 y 26 de octubre eran inválidas (registro 400 por DUI, login 401, /auth/yo 401). Se resolvió usando node.exe.
+- Un MySQL de Windows ocupaba el puerto 3306: el servicio MySQL96 (inicio automático; mysqld.exe, PID 6348; tasklist //svc devolvió N/D y se identificó con Get-Service). El contenedor agroalerta-sv-db tenía 4 semanas, mostraba 3306/tcp sin publicar el puerto y solo tenía las tablas _prisma_migrations y usuarios. backend/.env apuntaba a mysql://root:...@localhost:3306/agroalerta, así que el backend, prisma migrate y datos:cargar hablaban con el MySQL de Windows, y A2 y A3 contra el contenedor daban "Table ... doesn't exist". Solución: net stop MySQL96 y sc config MySQL96 start= demand (consola de administrador), .env con agroalerta:agroalerta@127.0.0.1:3306, docker compose down -v, docker compose up -d db, prisma migrate dev y datos:cargar. Mismo incidente de 2-C y 2-D, con otro nombre de servicio.
+- require('dotenv/config') y require('jsonwebtoken') fallan con "Cannot find module" si node.exe se corre desde la raíz del repo: dotenv y jsonwebtoken viven en backend/node_modules.
+- A6: la redirección de npm audit a un archivo (> /tmp/...) ocultó la salida; el "exit=1" solo indica que hay vulnerabilidades. Se usó 2>&1 con tail y la salida --json.
+- Se borró la rama local con git branch -d después del push y antes del merge; Git advirtió "not yet merged to HEAD". No se perdió nada: los commits estaban en origin/chore/2-end-verificaciones-ajustes y se recuperó con git checkout de la rama (crea el seguimiento remoto).
+- Con core.autocrlf=true (Windows), datos:limpiar reescribe los CSV limpios y git status los marca como modificados (git ls-files --eol: i/lf w/lf; git diff --ignore-cr-at-eol sin diferencias). No se incluyeron en ningún commit; se descartan con git restore.
+
+Puntos de atención para las siguientes ramas:
+- backend/src/comun/normalizar.ts es la única normalización de nombres: la validación del distrito en el registro (segunda rama) y cualquier comparación futura la importan de ahí.
+- Para que un token firmado a mano o cualquier script con dotenv funcione, correrlo dentro de backend/.
+- Si el backend "funciona" pero docker compose exec no ve las tablas, revisar el puerto 3306 antes de sospechar del código (sección 7, paso 1).
+- La decisión sobre las vulnerabilidades de A6 queda en Pendientes.
+
+
+Rama chore/2-end-usuario-distrito-catalogo (Parte 2, cierre: bloque B, Usuario con el catálogo)
+Responsable: Smith
+Fecha: 30 de octubre de 2026. Merge: [VERIFICAR].
+Commit: 1a3ab72 (feat(auth): Usuario.distrito pasa a clave foranea de Distrito (catalogo CENTA)). Un solo commit, porque el schema y el código tienen que cambiar juntos.
+Estado: [VERIFICAR: mergeada en main].
+
+Contexto: segunda rama de código del cierre. Depende de chore/2-end-verificaciones-ajustes (usa comun/normalizar.ts). Cierra el pendiente de 1-A (feat/auth-registro-usuario) "validar el distrito contra el catálogo" y el de 1-D (feature/parte-1d-perfil-usuario) "municipio derivado en /auth/yo". El equipo aceptó B1, B2 y B3 del plan. El bloque C (listado de distritos, coordenadas, eventos) NO se incluye: se mueve a la Parte 3.
+
+Qué se hizo:
+- backend/prisma/schema.prisma: en Usuario, la columna de texto distrito se reemplazó por distritoId Int (@map("distrito_id")) y la relación distrito Distrito con FK a Distrito.id; en Distrito se agregó la relación inversa usuarios Usuario[]. No se declaró onDelete: se aplica el valor por defecto de Prisma (ON DELETE RESTRICT ON UPDATE CASCADE).
+- Migración 20261030231036 (la carpeta quedó sin sufijo de nombre): ALTER TABLE usuarios DROP COLUMN distrito, ADD COLUMN distrito_id INTEGER NOT NULL; y ADD CONSTRAINT usuarios_distrito_id_fkey FOREIGN KEY (distrito_id) REFERENCES distritos(id) ON DELETE RESTRICT ON UPDATE CASCADE. Solo toca la tabla usuarios. El encabezado de migration.sql advierte que la columna obligatoria no se puede agregar a una tabla con filas.
+- backend/src/auth/distrito.select.ts (nuevo): SELECT_DISTRITO = { select: { id, nombre, municipio: { select: { id, nombre } } } }, compartido por registro, login y GET /auth/yo.
+- backend/src/auth/registro.service.ts: importa normalizarNombre (de ../comun/normalizar) y SELECT_DISTRITO; RegistroError acepta un tercer parámetro opcional detalles (string[]); registrarUsuario busca el distrito con prisma.distrito.findUnique({ where: { nombreNormalizado: normalizarNombre(datos.distrito) } }) ANTES de calcular el hash argon2 y, si no existe, lanza RegistroError(400, "Datos inválidos", ["distrito debe ser uno de los 26 distritos de Morazán"]); el create guarda distritoId y el select devuelve distrito: SELECT_DISTRITO; el payload de AgricultorRegistrado lleva distrito: usuario.distrito.nombre y distritoId: usuario.distrito.id.
+- backend/src/auth/registro.routes.ts: se reemplazó el TODO de la Parte 2 por un comentario (la existencia se valida en registrarUsuario); el catch de POST /registro devuelve { error, detalles } cuando el RegistroError trae detalles, y { error } en los demás casos (el catch de /verificar/:token no cambia).
+- backend/src/auth/login.routes.ts y perfil.routes.ts: el select pide distrito: SELECT_DISTRITO (el cuerpo de respuesta no cambia salvo que distrito ahora es objeto); perfil.routes.ts actualiza el comentario del contrato.
+- backend/src/events/types.ts: AgricultorRegistradoPayload agrega distritoId: number (se conserva distrito: string).
+
+Decisiones de diseño:
+- B1: clave foránea a Distrito (y no solo validar el texto): permite derivar el municipio y unir con viabilidad sin comparar cadenas.
+- B2 opción (i): reiniciar las bases de desarrollo (docker compose down -v, migrate dev, datos:cargar). Se eligió porque la migración no se puede aplicar a una tabla con filas y porque aún no hay despliegue; borra los usuarios de prueba de los cuatro integrantes.
+- B3: el body del registro conserva el campo "distrito" por nombre; el servidor lo resuelve con normalizarNombre contra nombreNormalizado. Si no existe: 400 { error: "Datos inválidos", detalles } (no 404, porque es un dato inválido de entrada).
+- La búsqueda del distrito va antes de argon2.hash para no pagar el costo del hash con datos inválidos.
+- Las respuestas de registro, login y GET /auth/yo devuelven distrito anidado { id, nombre, municipio: { id, nombre } }; es una forma distinta de la de viabilidad (distrito y municipio como hermanos): se aceptó por ser el contrato más simple para el perfil. El frontend aún no consume nada, así que este era el momento barato para cambiarlo.
+- distritoId en el evento: cambio aditivo (se mantiene el nombre) y sin listeners todavía; es lo más barato de hacer ahora y evita que las Partes 3 a 5 comparen texto.
+- Bloque C movido a la Parte 3, con el motivo: C1 porque el frontend aún no consume el catálogo (el campo de texto con validación del servidor basta); C2 porque las columnas x e y de los exports de CENTA no están interpretadas y es el primer pendiente de 3-A; C3 porque conviene definir los eventos antes de empezar 3-A.
+
+Qué se modificó / eliminó:
+- Modificados: schema.prisma, registro.service.ts, registro.routes.ts, login.routes.ts, perfil.routes.ts, events/types.ts. Agregados: la migración 20261030231036 y auth/distrito.select.ts.
+- Eliminado: la columna usuarios.distrito (texto) y el TODO de registro.routes.ts. Dependencias nuevas: ninguna.
+
+Cumplimiento del bloque B del plan:
+- B1, B2 y B3 (decisiones): cumplidas. B2: base de Smith reiniciada; las de los demás [VERIFICAR] tras el merge.
+- B4: hecho en chore/2-end-verificaciones-ajustes.
+- B5: schema.prisma y migración, registro.service.ts y registro.routes.ts, login.routes.ts (distrito como objeto), perfil.routes.ts (distrito y municipio derivado) y events/types.ts (distritoId): cumplido.
+- B6 (pruebas mínimas): cumplido (ver abajo).
+- B7 (documentar que Usuario.distrito ya no es texto libre): cumplido en esta documentación.
+
+Pruebas realizadas (manuales, 30 de octubre de 2026; base recreada con docker compose down -v, migrate dev y datos:cargar):
+- 11 registros válidos, 201 con el nombre canónico: "Chilanga", "CHILANGA", "chilanga" y "  chilanga  " dan distrito 1304 Chilanga en Morazán Sur (municipio id 2); "Perquín", "perquin" y "PERQUÍN" dan 1316 Perquín en Morazán Norte (municipio id 1); "San Simón" y "san simon" dan 1321 San Simón; "Delicias de Concepción" y "delicias   de concepcion" dan 1305. Los acentos se enviaron como \uXXXX para no depender de la consola.
+- Inválidos, 400 { error: "Datos inválidos", detalles }: "Narnia" y "Chilanga Norte" con "distrito debe ser uno de los 26 distritos de Morazán"; cadena vacía, campo ausente y valor numérico con "distrito inválido".
+- Flujo con un usuario: registro 201; registro repetido 409; login sin verificar 403; verificar; login 200 con distrito { id 1304, nombre, municipio { id 2, nombre "Morazán Sur" } } y sin hashes; GET /auth/yo 200 con el mismo distrito, verificado true y fechaRegistro; GET /viabilidad/distritos/1304 (id tomado de /auth/yo) 200.
+- Base de datos: SHOW COLUMNS FROM usuarios sin la columna distrito y con distrito_id int NOT NULL (clave MUL); el JOIN de usuarios con distritos y municipios devuelve distrito y municipio correctos; un INSERT con distrito_id 999999 (dentro de una transacción con ROLLBACK) da ERROR 1452 (usuarios_distrito_id_fkey).
+- npm run datos:cargar: municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312.
+- npx tsc --noEmit sin errores. npx prisma migrate dev después de aplicar: "Already in sync, no schema change or pending migration was found." Revisado el SQL de la migración: solo toca usuarios.
+
+Pruebas NO realizadas:
+- Aplicar la migración sobre una base con usuarios (Prisma advierte que no es posible; no se probó el fallo) y la alternativa de dos pasos (B2 opción ii).
+- El contenido del evento emitido (no hay listeners; el tipo lo valida tsc y el registro respondió 201).
+- Concurrencia, pruebas automatizadas, repetir las pruebas en el clon de otro integrante.
+- Reenviar-verificacion y verificar no se repitieron: su código no cambió.
+
+Qué NO se hizo / qué falta:
+- Bloque C completo (movido a la Parte 3). Reinicio de las bases de Requeno y Pocho (se hace tras el merge). Pruebas automatizadas del catálogo en el registro. Edición de perfil.
+
+Qué se agregó de más (no pedido originalmente):
+- distritoId en el payload de AgricultorRegistrado (el plan solo pedía evaluarlo) y el archivo distrito.select.ts para no repetir el select en tres routers.
+
+Archivos tocados fuera de su carpeta: backend/prisma/schema.prisma, backend/prisma/migrations/ y backend/src/events/types.ts (puntos de contacto entre partes). auth/ es la carpeta de la Parte 1. No se tocaron index.ts, config/, package.json ni viabilidad/.
+
+Incidencias técnicas durante el desarrollo:
+- La carpeta de la migración quedó como 20261030231036, sin el sufijo de nombre previsto (usuario_distrito_fk). Es solo cosmético; no se renombró porque la base ya la tiene registrada con ese nombre.
+- Los CSV limpios y migration_lock.toml aparecieron como modificados en git status por el fin de línea de Windows (core.autocrlf=true); no entraron en el commit.
+
+Puntos de atención para las siguientes ramas:
+- Tras el merge, CADA integrante debe reiniciar su base: git pull origin main, docker compose down -v (desde la raíz), docker compose up -d db y, desde backend/, npx prisma generate, npx prisma migrate dev y npm run datos:cargar. Sin el reinicio la migración falla a medias (MySQL no tiene DDL transaccional). Los usuarios de prueba se registran de nuevo.
+- Usuario.distrito dejó de ser texto: en el cliente Prisma, usuario.distrito es la relación y usuario.distritoId la FK. Cualquier código que lo use como cadena debe actualizarse (hoy no queda ninguno en main).
+- Contrato para el frontend (Parte 6): distrito como objeto en registro, login y GET /auth/yo; el registro sigue recibiendo el nombre y responde 400 con detalles si no es uno de los 26 distritos.
+- 4-A (siembra) y 5 (estimación): usar Usuario.distritoId para consultar viabilidad y clima, sin comparar texto. Ambas agregan modelos al final de schema.prisma: conservar ambos bloques y regenerar la migración sobre main actualizado.
+- Eventos futuros (SiembraRegistrada, ActualizacionMeteorologica, CondicionClimaticaActualizada): definirlos antes de 3-A (C3, movido a la Parte 3); AgricultorRegistrado ya incluye distritoId.
+
+
+Rama docs/2-end-estado (docs; [VERIFICAR] nombre real)
+Responsable: Smith
+Fecha: 30 de octubre de 2026
+Se modificaron: Estado_del_Proyecto.txt (encabezado, secciones base 1, 2, 3, 4, 6, 7, 8 y 9, sección 2-END, Propuestas y Pendientes) e Info_Datos_CENTA.md (estado y secciones 6, 8, 9 y 11).
+
+Qué se hizo:
+- Esta sección y la de las dos ramas de código del cierre de la Parte 2.
+- D2 (forma de respuesta definitiva de la consulta de viabilidad): se documentó en Info_Datos_CENTA.md (sección 9) la forma real verificada con el distrito 1304, con notas para el frontend. Falta que el equipo confirme las decisiones de 2-D (ver Pendientes).
+- D4 (alias "sorgo"): CENTA lo llama sorgo y el proyecto maicillo; el endpoint no lo acepta (404 "Cultivo no encontrado"); si algún día se acepta, va en viabilidad.routes.ts como mapa de alias. Registrado en Info_Datos_CENTA.md.
+- D5 (revisión de la documentación de 2-C): verificado por lectura de la sección de feat/2-c-servicio-viabilidad (2-C) que registra: porcentaje sobre la suma de áreas del distrito en esa capa; manzanas = ha / HA_POR_MANZANA definido solo en constantes.ts; redondeos (1 decimal en porcentajes y 2 en manzanas, solo en la salida); e inclusión de riesgo_sequia al filtrar por cultivo (decisión heredada, "por confirmar"). Que los errores que no son ViabilidadError salen como 500 genérico quedó comprobado en 2-END (viabilidad.routes.ts, líneas 47 a 56).
+- Se actualizaron las secciones base (estado de avance, árbol de archivos con comun/ y distrito.select.ts, nota de normalización y de dependencias, pasos para clonar con el diagnóstico del puerto 3306 y el reinicio de base de 2-END, pruebas básicas con node.exe y el catálogo) y las listas de Propuestas y Pendientes.
+
+Qué se eliminó de lo ya documentado: de Pendientes, los puntos cumplidos en 2-END (verificación de 1-END, pruebas de restricciones, relación de Usuario.distrito con el catálogo y municipio en /auth/yo); de Propuestas, mover normalizarNombre a un módulo común. Lo demás de las secciones de ramas anteriores no se modificó.
+
+Cumplimiento: documentación al día hasta 2-END. Lo pendiente del cierre está en Pendientes.
+
+Puntos de atención para las siguientes ramas:
+- Quien mergee primero actualiza las marcas [VERIFICAR] de fechas y estado de las ramas del cierre.
+- Estado_del_Proyecto.txt lo edita una sola persona por rama docs.
 
 ============================================================
 PARTES 3 A 7
@@ -1275,13 +1461,13 @@ Sin ramas todavía. Ver Mapa_inicial.txt para el alcance de cada una y Pendiente
 Mejoras que no son requisito de la base funcional. Solo se atienden si queda tiempo, según la estrategia de la sección 5.
 
 Arquitectura y backend
-- Definir temprano un contrato de eventos (nombres y payload) para evitar desalineaciones entre módulos. Ya existen events/bus.ts y events/types.ts con AgricultorRegistrado (1-A); faltan SiembraRegistrada, ActualizacionMeteorologica y CondicionClimaticaActualizada. Conviene definirlos antes de empezar la Parte 3. events/types.ts es archivo compartido: coordinar antes de tocarlo.
+- Definir temprano un contrato de eventos (nombres y payload) para evitar desalineaciones entre módulos. Ya existen events/bus.ts y events/types.ts con AgricultorRegistrado (1-A); faltan SiembraRegistrada, ActualizacionMeteorologica y CondicionClimaticaActualizada. Conviene definirlos antes de empezar la Parte 3. events/types.ts es archivo compartido: coordinar antes de tocarlo. Desde 2-END, AgricultorRegistrado incluye también distritoId.
 - Hacer que GET /health verifique también la conexión a la base (consulta trivial tipo SELECT 1) y responda 503 si falla, para detectar problemas como el P2039 sin esperar a la primera operación de negocio. Hoy /health solo confirma que Express levantó.
 - Unificar la forma de las respuestas exitosas de /auth (hoy: {token, usuario}, {mensaje, usuario}, {success, usuario} y objeto directo) antes de que el frontend las consuma (Parte 6). Los errores ya están unificados en { error, detalles }.
-- Mover normalizarNombre a un módulo común (por ejemplo src/comun/), porque service.ts de viabilidad lo importa desde viabilidad/datos/utilidades.ts, que también trae código de lectura de archivos del limpiador. Lo usarán el seed, el servicio de viabilidad y la futura validación de Usuario.distrito.
 - Alias "sorgo" para el parámetro cultivo del endpoint de viabilidad (mapa de alias en viabilidad.routes.ts), si el equipo decide aceptarlo.
 - Definir un script de seed de datos de prueba (usuario, siembra de ejemplo) una vez existan los modelos de la Parte 4.
 - Conseguir un set de rendimientos promedio de referencia desde el inicio de la Parte 3 o 5, para poder probar la estimación con datos realistas (la zonificación de CENTA ya está cargada).
+- Imprimir al arrancar el host, el puerto y el nombre de la base a la que se conecta el backend (sin credenciales), para detectar de inmediato un MySQL ajeno ocupando el 3306 (en 2-END el backend funcionaba contra el MySQL de Windows sin ningún aviso).
 
 Seguridad
 - Validar el dígito verificador del DUI en el registro (hoy solo se valida el formato de 9 dígitos).
@@ -1300,6 +1486,7 @@ Proceso del equipo
 - Agregar a package.json un script "typecheck" (tsc --noEmit) para la comprobación A.2 de la sección 8, sin dependencias nuevas.
 - Un script de prueba rápida del flujo (registro, verificación, login, /auth/yo y viabilidad) que automatice el bloque B de la sección 8, sin dependencias nuevas.
 - Plantilla de Pull Request (.github/pull_request_template.md) con la lista de la sección 8, para que cada PR declare qué se probó y qué no.
+- Un .gitattributes (por ejemplo "backend/data/centa/clean/*.csv text eol=lf") para que Windows no marque como modificados los CSV limpios ni migration_lock.toml por el fin de línea (core.autocrlf=true). No probado.
 
 
 
@@ -1309,23 +1496,28 @@ Proceso del equipo
 Organizados por Parte. Cuando un pendiente se cumple, se quita de aquí y queda registrado en la sección de la rama que lo resolvió.
 
 PARTE 1 — Autenticación y puntos abiertos
-- Verificar en main los cambios de fix/prisma-mariadb-rsa-key (1-END): el fix de 2-D encontró que el manejo del error de app.listen no estaba en index.ts aunque 1-END lo documenta. Comprobar también la validación de JWT_SECRET y DUI_PEPPER al arrancar, el parseo de DATABASE_URL con allowPublicKeyRetrieval en config/prisma.ts, el contrato { error, detalles } en los routers de /auth y que GET /auth/yo responda 401 para un usuario inexistente. Corregir lo que falte en una rama fix.
 - Rate limiting y cooldown en /auth (registro, login, reenviar-verificacion y yo) antes del despliegue. Login es el más crítico (fuerza bruta).
 - Envío real de correo (Nodemailer + SMTP). Al integrarlo, retirar el flag EXPONER_TOKEN_VERIFICACION y el campo tokenVerificacion_DEV de POST /auth/registro y POST /auth/reenviar-verificacion. Mientras tanto, EXPONER_TOKEN_VERIFICACION=true en .env.example es solo para desarrollo: con el flag activo, el reenvío revela qué correos existen y están pendientes. Debe ser false o no existir en cualquier entorno real.
 - Confirmar el soporte de la clave allowScripts de package.json en la versión de npm del equipo y reaprobar al subir prisma o argon2.
 
-PARTE 2 — Cierre (2-END) y viabilidad
-Se propone una rama de cierre de la Parte 2 (2-END) antes de seguir con la Parte 3, para resolver:
-- Confirmar las decisiones de 2-D que quedaron como "por confirmar": ruta /viabilidad/distritos/:id, requireAuth, no aceptar el alias "sorgo", inclusión de riesgo_sequia al filtrar por cultivo, 400 con capa y cultivo juntos, y la forma de la respuesta ("nombre" en cada clase y "clases" por capa). Si se confirman, marcar la sección 9 de Info_Datos_CENTA.md como definitiva.
-- Verificar que Smith, Requeno y Pocho hayan corrido tras los merges git pull, npx prisma generate, npx prisma migrate dev y npm run datos:cargar, y que sus bases queden con 312 filas en areas_clase.
-- Comparar contra la respuesta real del endpoint los ejemplos de Chilanga (maíz y sequía); ya coincidieron en 2-C y 2-D, falta repetirlo en otros distritos y capas.
-- Probar las restricciones únicas y claves foráneas de las tablas de viabilidad con inserciones inválidas (no se hizo en 2-A ni en 2-B).
-- Validar o relacionar Usuario.distrito (hoy texto libre) con el catálogo de distritos: definir quién y cuándo; toca registro.routes.ts y el modelo Usuario, y exige una migración que convierta los distritos ya guardados. Debe usar la misma normalización que el seed (normalizarNombre de src/viabilidad/datos/utilidades.ts).
-- GET /auth/yo: incluir el municipio derivado ahora que el catálogo existe.
+PARTE 2 — Cierre (2-END, lo que queda) y viabilidad
+El código del cierre está en chore/2-end-verificaciones-ajustes y chore/2-end-usuario-distrito-catalogo (ver 2-END). Quedan:
+- Confirmar con el equipo las decisiones de 2-D que quedaron "por confirmar": ruta /viabilidad/distritos/:id, requireAuth, no aceptar el alias "sorgo", inclusión de riesgo_sequia al filtrar por cultivo, 400 con capa y cultivo juntos, y la forma de la respuesta ("nombre" en cada clase y "clases" por capa). La forma vigente quedó documentada en Info_Datos_CENTA.md (sección 9); si el equipo confirma, quitar de esa sección la marca de pendiente de confirmación.
+- A2: confirmar las bases de Requeno y Pocho (Smith confirmado, 2 / 26 / 4 / 12 / 312). Después del reinicio de base de 2-END (docker compose down -v, migrate dev, datos:cargar), cada uno pega el resultado de: docker compose exec -T -e MYSQL_PWD=agroalerta db mysql -uagroalerta agroalerta -e "SELECT (SELECT COUNT(*) FROM municipios) m,(SELECT COUNT(*) FROM distritos) d,(SELECT COUNT(*) FROM capas) c,(SELECT COUNT(*) FROM clases_capa) cl,(SELECT COUNT(*) FROM areas_clase) a;". Si da "Table ... doesn't exist", revisar que docker ps muestre 0.0.0.0:3306->3306/tcp (sección 7, paso 1).
+- A4: confrontar la división territorial (26 distritos; 11 en Morazán Norte y 15 en Morazán Sur) con el texto de la Ley Especial de Reestructuración Municipal y documentar fuente y fecha de consulta.
+- Confirmar que los cuatro integrantes reiniciaron su base después del merge de chore/2-end-usuario-distrito-catalogo y volvieron a registrar sus usuarios de prueba.
+- Comparar contra la respuesta real del endpoint los ejemplos de otros distritos y capas (Chilanga, 1304, ya coincide en 2-C, 2-D y 2-END).
+- Bloque E (pruebas automatizadas): el equipo debe decidir el ejecutor (node:test con ts-node como devDependency, o Jest o Vitest), la separación de app y listen en index.ts y una base de pruebas separada (por ejemplo agroalerta_test). Si se pospone, anotar la decisión con fecha: [COMPLETAR]. Detalle del alcance en TRANSVERSAL.
+- Bloque F (datos de referencia que no están en CENTA): asignar responsable y fecha, aunque los datos aún no estén. Bloquean 3-B, 4-C y 5-B. El dashboard_base.html usa valores de ejemplo (45 qq/mz, +5 %, 180-220 mm, $1,900, $2,970) que no son datos reales. F1: rendimiento estándar por cultivo (maíz, frijol, maicillo) en qq/mz y si varía con la clase de potencial. F2: precipitación de referencia del invierno, umbrales para sequía, exceso o invierno aceptable, y ventanas de primera y postrera. F3: precios promedio de insumos y dosis por manzana (semilla en libras, abonos en quintales, plaguicidas), jornales, alquiler, maquinaria y riego. F4: precio de venta por quintal. Cada valor lleva fuente y fecha, como los de CENTA; si algún dato no se consigue, declararlo como supuesto y no presentarlo como dato oficial. Fuentes candidatas (no consultadas): guías técnicas de CENTA para maíz, frijol y sorgo, y publicaciones de precios del MAG.
 - Mantener ESPERADO (cargar-centa.ts) y capas.config.ts en sincronía al agregar una capa o cambiar la división territorial.
 - Temporadas (primera y postrera): diferidas a la Parte 3.
-- Rendimientos de referencia (qq/mz) y rango de precipitación (Parte 3-B y 5-B): no están en el mapa de CENTA; hay que conseguirlos de otra fuente.
 - Las recomendaciones basadas en CENTA deben redactarse como referencia distrital citando a CENTA, no como veredicto sobre la parcela.
+
+PARTE 3 — Prerrequisitos (movidos desde el cierre de la Parte 2, bloque C)
+- C1, listado de distritos para el frontend: hoy el frontend no tiene cómo obtener los 26. El registro ocurre antes de iniciar sesión, así que un listado para ese formulario no puede exigir requireAuth. Opciones: (a) endpoint público de solo lectura con id, nombre y municipio (datos no sensibles); (b) mantener el campo de texto y validar solo en el servidor (es lo que hay desde 2-END); (c) listado protegido para el dashboard y texto en el registro. Pasar el campo a un select cambia login_base.html, que las reglas del proyecto fijan como diseño: decidirlo explícitamente. Toda ruta nueva sigue el contrato { error, detalles }. Motivo de moverlo: el frontend aún no consume el catálogo.
+- C2, coordenadas por distrito: la Parte 3-A (Open-Meteo por zona) necesita latitud y longitud; el modelo Distrito no las tiene y tampoco están en los CSV limpios. Los exports de CENTA traen columnas x e y que el proyecto ignora; no se sabe qué representan ni en qué sistema de coordenadas están, y hay que revisarlo antes de usarlas. Si no sirven, definir otra fuente (centroide oficial o cartográfico) y documentarla. Implica columnas nuevas en Distrito, una migración, columnas nuevas en distritos.csv y ajustar el seed (ESPERADO y validaciones). Primer pendiente de 3-A.
+- C3, contrato de eventos: events/types.ts define AgricultorRegistrado (con distritoId desde 2-END); faltan SiembraRegistrada, ActualizacionMeteorologica y CondicionClimaticaActualizada. Definir nombres y payload antes de empezar 3-A. Archivo compartido: una sola persona, solo agregar.
+- Necesita además (bloque F): umbrales y ventanas de temporada (F2).
 
 PARTE 4 — Formulario de siembra (requisito de Mapa_inicial.txt, Parte 4-B)
 Cuando se cree el formulario de siembra (o registro de cultivo), debe ser más detallado y ajustado a la propuesta real. Estos campos y la lógica de estimación de costos deben quedar documentados y resueltos en la rama del formulario / módulo de estimación.
@@ -1354,11 +1546,13 @@ Requerimiento adicional de lógica:
 - Mostrar al usuario: "Se estima que invirtió / invertirá aproximadamente $##" como referencia antes de que introduzca su propio valor.
 - La tabla de datos de viabilidad CENTA (que figuraba aquí como pendiente) ya quedó definida y cargada en 2-A y 2-B.
 - Las partes 4-A y 5 agregan modelos al final de schema.prisma: mismo riesgo de conflicto en ese archivo y en migrations/ (quien mergee segundo regenera su migración sobre main).
+- Desde 2-END el distrito del agricultor está en Usuario.distritoId (FK a Distrito): 4-A y 5 deben usarlo para consultar viabilidad y clima, sin comparar texto.
 
 PARTE 6 — Frontend
 - Configurar CORS en Express (permitiendo el encabezado Authorization) e integrar el login en Angular: formulario, almacenamiento del token (memoria, sessionStorage o localStorage, cada uno con compromisos frente a XSS), interceptor HTTP y route guard.
 - Contrato de error de /auth y /viabilidad: { error, detalles } (detalles: string o lista de strings). GET /auth/yo no devuelve 404: un usuario inexistente es 401. El endpoint de viabilidad puede dar 400, 401 y 404.
 - Los porcentajes y las manzanas de la viabilidad ya vienen redondeados desde el servidor: no recalcularlos en el cliente.
+- Contrato de /auth desde 2-END: en registro, login y GET /auth/yo, "distrito" es un objeto { id, nombre, municipio: { id, nombre } } (antes texto). El registro sigue recibiendo "distrito" como nombre y responde 400 { error: "Datos inválidos", detalles } si no es uno de los 26 distritos de Morazán.
 
 PARTE 7 — Despliegue
 - TLS hacia MySQL en producción: config/prisma.ts activa allowPublicKeyRetrieval solo fuera de producción, así que sin TLS la autenticación con MySQL 8.4 fallaría allí igual que el P2039 de 1-END.
@@ -1366,7 +1560,8 @@ PARTE 7 — Despliegue
 - CORS y rate limiting deben cubrir todos los endpoints, incluidos /auth/yo y /viabilidad.
 
 TRANSVERSAL — Pruebas y documentación
-- Pruebas automatizadas (Jest + supertest): requieren aprobación del equipo para agregar dependencias. Alcance pendiente: /auth/registro (201, 400, 409 y emisión del evento), verificar (200, 400, 404, 410), reenviar-verificacion, /auth/login (200, 400, 401, 403), requireAuth (401 sin token, expirado e inválido; 200), GET /auth/yo (200 y 401), limpiar-centa.ts y utilidades.ts (conversión de números, validaciones), cargar-centa.ts contra una base de prueba (carga, segunda corrida sin duplicados, reversión ante filas ajenas, rechazo de CSV inválidos) y el servicio y endpoint de viabilidad (incluido el error de id fuera de rango).
-- Pruebas manuales nunca realizadas, que las pruebas automatizadas deberían cubrir: concurrencia al verificar un token, expiración de JWT, medición de tiempos de login con correo existente e inexistente, body vacío o correo mal formado en login, JWT_SECRET ausente en requireAuth, carga con una base no vacía y dos cargas simultáneas.
-- Completar los campos abiertos del historial: feat/1-b-login-auth-guards (1-B): marcas [VERIFICAR] (varias fueron confirmadas en fix/prisma-mariadb-rsa-key, 1-END, y deben limpiarse) e "Incidencias" sin llenar; feat/2-a-modelos-viabilidad (2-A): nombre exacto de la carpeta de la migración add_viabilidad e incidencias; feat/2-b-datos-centa (2-B): otras incidencias; 2-C: nombre y responsable de la rama docs; 2-D: responsable, fecha y motivo del rechazo de la feat, nombre de la rama fix y de la rama docs.
+- Pruebas automatizadas (Jest + supertest): requieren aprobación del equipo para agregar dependencias. Alcance pendiente: /auth/registro (201, 400, 409 y emisión del evento), distrito del catálogo con distintas mayúsculas y tildes, inexistente y ausente (400), verificar (200, 400, 404, 410), reenviar-verificacion, /auth/login (200, 400, 401, 403), requireAuth (401 sin token, expirado e inválido; 200), GET /auth/yo (200 y 401), limpiar-centa.ts y utilidades.ts (conversión de números, validaciones), cargar-centa.ts contra una base de prueba (carga, segunda corrida sin duplicados, reversión ante filas ajenas, rechazo de CSV inválidos) y el servicio y endpoint de viabilidad (incluido el error de id fuera de rango) y la capa sin distinguir mayúsculas.
+- Pruebas manuales nunca realizadas, que las pruebas automatizadas deberían cubrir: concurrencia al verificar un token, medición de tiempos de login con correo existente e inexistente, correo mal formado en login (el body vacío se probó en 2-END), JWT_SECRET ausente en requireAuth, carga con una base no vacía, dos cargas simultáneas y aplicar la migración de 2-END sobre una base con usuarios (se espera que falle; no se probó). Probadas en 2-END: expiración de JWT (401 "Sesión expirada") y body vacío en login (400).
+- Vulnerabilidades de dependencias (npm audit, 2-END, A6): 9 en total (3 moderadas, 6 altas); 4 en producción (@prisma/adapter-mariadb con mariadb, y express con body-parser y qs). El equipo debe decidir si se actualizan y cómo: el arreglo toca package.json y package-lock.json y puede mover versiones fijadas (prisma, @prisma/client y @prisma/adapter-mariadb en 7.10.0; no subir a Prisma 8). Pasos propuestos: correr npm audit fix --dry-run y guardar la salida COMPLETA (en 2-END salió cortada), revisar qué versiones cambiaría, evaluar si las vulnerabilidades son explotables en el uso del proyecto (varias dependen de opciones de conexión como TLS o charsets) y registrar la decisión. No usar npm audit fix --force.
+- Completar los campos abiertos del historial: feat/1-b-login-auth-guards (1-B): marcas [VERIFICAR] (varias fueron confirmadas en fix/prisma-mariadb-rsa-key, 1-END, y deben limpiarse) e "Incidencias" sin llenar; feat/2-a-modelos-viabilidad (2-A): nombre exacto de la carpeta de la migración add_viabilidad e incidencias; feat/2-b-datos-centa (2-B): otras incidencias; 2-C: nombre y responsable de la rama docs; 2-D: responsable, fecha y motivo del rechazo de la feat, nombre de la rama fix y de la rama docs. 2-END: fechas y estado de merge de chore/2-end-verificaciones-ajustes y de chore/2-end-usuario-distrito-catalogo, nombre real de la rama docs de 2-END y, en Pendientes (Parte 2), la fecha de la decisión sobre el bloque E.
 - Mantener esta convención: una sola persona edita Estado_del_Proyecto.txt por rama docs; cada punto se documenta bajo su Parte-Punto.
