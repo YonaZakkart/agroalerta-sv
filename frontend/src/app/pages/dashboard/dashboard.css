@@ -208,6 +208,16 @@
   color: var(--text-muted);
 }
 
+.estimacion {
+  margin-top: 1.5rem;
+}
+
+.vacio span {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+}
+
 .alerta .btn-primary {
   margin-top: 0.75rem;
 }
