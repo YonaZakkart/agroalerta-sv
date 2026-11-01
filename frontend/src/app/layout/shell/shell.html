@@ -35,10 +35,26 @@
         <i class="fa-solid fa-bars"></i>
       </button>
       <h1>Monitoreo de Cultivos</h1>
-      <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+      <div class="usuario">
+        @if (perfil()) {
+        <span class="usuario-nombre">{{ nombreCorto() }}</span>
+        <div class="avatar" aria-hidden="true">{{ iniciales() }}</div>
+        } @else {
+        <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+        }
+        <button type="button" class="icon-btn" aria-label="Cerrar sesión" title="Cerrar sesión"
+          (click)="cerrarSesion()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
     </header>
 
     <main class="content">
+      @if (errorPerfil()) {
+      <p class="alerta alerta-aviso" role="status">
+        No se pudo cargar tu perfil. Recarga la página; si persiste, verifica que el backend esté en ejecución
+      </p>
+      }
       <router-outlet />
     </main>
   </div>
