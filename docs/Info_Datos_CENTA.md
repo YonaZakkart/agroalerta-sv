@@ -1,6 +1,6 @@
 # AgroAlerta Morazán — Parte 2: datos de viabilidad (CENTA)
 
-Estado (actualizado el 22 de octubre de 2026): 2-A implementado en feat/2-a-modelos-viabilidad, 2-B en feat/2-b-datos-centa, 2-C en feat/2-c-servicio-viabilidad y 2-D en feat/2-d-endpoint-viabilidad (rechazada) y su fix posterior; todos en main. Falta el cierre de la Parte 2 (2-END). La sección 9 describe la forma real de la respuesta, pendiente de confirmar como definitiva.
+Estado (actualizado el 30 de octubre de 2026): 2-A implementado en feat/2-a-modelos-viabilidad, 2-B en feat/2-b-datos-centa, 2-C en feat/2-c-servicio-viabilidad y 2-D en feat/2-d-endpoint-viabilidad (rechazada) y su fix posterior; todos en main. El cierre (2-END) agregó el módulo común src/comun/normalizar.ts (normalizarNombre y colapsarEspacios), la comparación de `capa` sin distinguir tildes ni mayúsculas y Usuario.distritoId como clave foránea a Distrito. La sección 9 describe la forma real de la respuesta; su confirmación como definitiva por el equipo sigue [VERIFICAR] (sección 11).
 Fecha del documento original: 6 de octubre de 2026. Responsable: Yona (2-A y 2-B). 2-C fue implementado por Requeno; el detalle está en Estado_del_Proyecto.txt (historial por Partes y Puntos).
 
 ---
@@ -106,7 +106,7 @@ Migración sugerida: `add_viabilidad`. Después de mergear: cada integrante corr
 
 Implementado en feat/2-a-modelos-viabilidad (2-A, migración add_viabilidad). Diferencias respecto a esta propuesta: nombreNormalizado quedó obligatoria y única (no opcional) y tipo es el enum TipoCapa.
 
-El campo `distrito` de Usuario sigue siendo texto libre. Validarlo contra este catálogo (o pasarlo a FK) queda pendiente de decisión (sección 11).
+Desde 2-END (chore/2-end-usuario-distrito-catalogo), Usuario tiene `distritoId` (clave foránea a Distrito) en lugar del texto libre `distrito`. El registro sigue recibiendo el nombre y lo resuelve con `normalizarNombre` contra `nombreNormalizado` (400 si no existe); registro, login y GET /auth/yo devuelven el distrito como objeto { id, nombre, municipio { id, nombre } }.
 
 ## 7. Script de limpieza (2-B)
 
@@ -177,17 +177,18 @@ Implementado en backend/src/viabilidad/datos/: capas.config.ts, utilidades.ts (a
 - Tolerancias: |km2 x 100 - ha| <= 1 ha por fila; diferencia del área total de un distrito entre capas <= 5 ha (observada: 1.100 ha). Más de 3 decimales en un área se rechaza. Sin ningún error de validación no se escribe nada.
 - Carga: upsert dentro de una transacción; si las tablas quedan con una cantidad de filas distinta de ESPERADO (2 municipios, 26 distritos, 4 capas, 12 clases, 312 áreas), se revierte. No se conectó prisma db seed.
 - Controles verificados con los datos reales: 78, 76, 74 y 46 filas leídas; 38 clases completadas con 0 ha (frijol 2, maicillo 4, sequía 32); Chilanga en maíz suma 5998.537 ha; fecha_extraccion guardada sin desfase de zona horaria.
+- Desde 2-END, colapsarEspacios y normalizarNombre viven en backend/src/comun/normalizar.ts; utilidades.ts las re-exporta, así que los imports de limpiar-centa.ts y cargar-centa.ts no cambiaron (los CSV limpios resultaron idénticos, comprobado con md5sum).
 
 ## 9. Contrato de la consulta de viabilidad (2-C servicio, 2-D endpoint)
 
-Estado: implementado. La forma de la respuesta de esta sección es la que devuelve hoy el servicio (feat/2-c-servicio-viabilidad, 2-C) y la que expone el endpoint (2-D). Sustituye a la propuesta original, que usaba `distribucion` y `clase`; sigue pendiente de confirmar como definitiva (ver sección 11).
+Estado: implementado. La forma de la respuesta de esta sección es la que devuelve hoy el servicio (feat/2-c-servicio-viabilidad, 2-C) y la que expone el endpoint (2-D); se verificó de nuevo con el distrito 1304 en el cierre (2-END). Sustituye a la propuesta original, que usaba `distribucion` y `clase`. Su confirmación como definitiva por el equipo sigue [VERIFICAR] (ver sección 11).
 
 ### Endpoint
 
 - `GET /viabilidad/distritos/:id`, protegido con `requireAuth` (encabezado `Authorization: Bearer <token>`).
-- Parámetros opcionales (no se pueden usar juntos): `capa` (código exacto, por ejemplo `potencial_maiz`) o `cultivo` (se compara sin tildes ni mayúsculas, así `maiz` encuentra "Maíz"). Una cadena vacía se trata como ausente. Si se repiten (`?capa=a&capa=b`) responde 400.
+- Parámetros opcionales (no se pueden usar juntos): `capa` (código de la capa, por ejemplo `potencial_maiz`; desde 2-END se compara sin tildes ni mayúsculas, así `POTENCIAL_MAIZ` también funciona) o `cultivo` (se compara sin tildes ni mayúsculas, así `maiz` encuentra "Maíz"). Una cadena vacía se trata como ausente. Si se repiten (`?capa=a&capa=b`) responde 400.
 - Al filtrar por cultivo se incluye también `riesgo_sequia`, que aplica a todos los cultivos.
-- El alias `sorgo` no se acepta: responde 404 "Cultivo no encontrado" (el cultivo se llama Maicillo). Si el equipo lo acepta, el alias va en `viabilidad.routes.ts`, no en el servicio.
+- El alias `sorgo` no se acepta: responde 404 "Cultivo no encontrado" (el cultivo se llama Maicillo). Si el equipo lo acepta, el alias va en `viabilidad.routes.ts`, no en el servicio. CENTA llama "sorgo" a la capa que el proyecto llama maicillo.
 - El id debe ser un entero positivo dentro del rango seguro. `1304` y `01304` dan 200.
 
 ### Reglas de interpretación
@@ -199,6 +200,14 @@ Estado: implementado. La forma de la respuesta de esta sección es la que devuel
 - La unidad es el distrito, no la parcela. La recomendación debe redactarse como referencia distrital ("el 34 % del distrito tiene potencial bajo para maíz"), no como veredicto sobre el terreno del agricultor. Citar a CENTA como fuente en la interfaz.
 - Manzanas solo para mostrar: `mz = ha / 0.7` (`HA_POR_MANZANA` en `backend/src/viabilidad/constantes.ts`, único lugar de la conversión), redondeadas a 2 decimales. Los cálculos internos son siempre en hectáreas (milésimas de hectárea enteras, sin error de coma flotante).
 - El frontend no debe recalcular porcentajes ni manzanas: ya vienen redondeados.
+
+### Forma de la respuesta y notas para el frontend (2-END)
+
+Campos: `distrito` { id, nombre }; `municipio` { id, nombre }; `fuente`; `fechaExtraccion`; `capas[]` con `codigo`, `nombre`, `tipo`, `cultivo` (null en riesgo_sequia), `totalHa`, `totalMz`, `claseDominante` { valor, nombre, porcentaje } y `clases[]` { valor, nombre, areaHa, areaMz, porcentaje }.
+- El JSON no conserva ceros finales (2779.24, no 2779.240): el frontend formatea al mostrar (3 decimales en ha y 2 en mz).
+- Los porcentajes redondeados pueden sumar 99.9 o 100.1.
+- `totalHa` puede diferir en milésimas entre capas del mismo distrito (Chilanga: 5998.537 en maíz y 5998.538 en sequía) por el redondeo de CENTA; no tiene consecuencia.
+- Verificación con el distrito 1304: 2024.138 + 2779.24 + 1195.159 = 5998.537 ha (maíz) y 2104.254 + 3092.186 + 802.098 = 5998.538 ha (sequía); porcentajes y manzanas (ha / 0.7) coinciden con el cálculo manual; la respuesta no incluye campos sensibles.
 
 ### Errores (contrato de /auth ya unificado: `{ error, detalles }`)
 
@@ -250,11 +259,12 @@ Temporadas: el servicio y el endpoint no las cubren por ahora (decisión 11).
 
 ## 11. Pendientes y decisiones abiertas
 
-- Confirmar como definitivas las decisiones de 2-D: ruta `/viabilidad/distritos/:id`, `requireAuth`, no aceptar el alias `sorgo`, incluir `riesgo_sequia` al filtrar por cultivo, 400 con `capa` y `cultivo` juntos, y la forma de la respuesta de la sección 9 (`nombre` en cada clase y `clases` por capa). Se resuelve en el cierre de la Parte 2 (2-END).
-- Validar o relacionar `Usuario.distrito` (hoy texto libre) con el catálogo. Quién lo hace y cuándo: por definir; toca archivos de la Parte 1 (`registro.routes.ts` y el modelo) y exige una migración para los distritos ya guardados. Debe reutilizar `normalizarNombre`.
+- Confirmar como definitivas las decisiones de 2-D: ruta `/viabilidad/distritos/:id`, `requireAuth`, no aceptar el alias `sorgo`, incluir `riesgo_sequia` al filtrar por cultivo, 400 con `capa` y `cultivo` juntos, y la forma de la respuesta de la sección 9 (`nombre` en cada clase y `clases` por capa). Se propuso resolverlo en 2-END; la confirmación del equipo no quedó registrada [VERIFICAR]. Mientras tanto la forma vigente es la de la sección 9.
+- Resuelto en 2-END (chore/2-end-usuario-distrito-catalogo): Usuario.distrito pasó a `distritoId` (clave foránea a Distrito) y el registro lo valida con `normalizarNombre` (ahora en src/comun/normalizar.ts).
 - Fuente oficial de la división territorial: hoy coincide con publicaciones secundarias; opcionalmente confrontarla con el texto de la Ley Especial de Reestructuración Municipal.
 - Capas futuras (caña, vainilla, banano, elevación, temperatura, humedad): evaluar cuando se vean sus datos.
 - Pruebas automatizadas del limpiador (conversión de números, validaciones), del seed, del servicio y del endpoint: pendientes de aprobación de dependencias; las validaciones del script y las pruebas manuales hacen de control mientras tanto.
 - Temporadas: diferidas hasta la API meteorológica (Parte 3).
 - Rendimientos de referencia (qq/mz) y rango de precipitación (para la Parte 3-B): no están en este mapa; hay que conseguirlos de otra fuente.
+- Coordenadas por distrito (necesarias para 3-A): las columnas `x` e `y` de los exports de CENTA se ignoran y no se sabe qué representan ni en qué sistema de coordenadas están; revisarlas antes de usarlas o definir otra fuente (ver Pendientes de la Parte 3 en Estado_del_Proyecto.txt).
 - Documentar en Estado_del_Proyecto.txt, al cerrar cada punto, los cambios de la sección 3.
