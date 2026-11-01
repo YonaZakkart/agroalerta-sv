@@ -2,9 +2,10 @@ import { DecimalPipe, LowerCasePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, filter, switchMap, tap } from 'rxjs';
+import { DistritosService } from '../../core/distritos.service';
 import { PerfilService } from '../../core/perfil.service';
 import { ViabilidadService } from '../../core/viabilidad.service';
-import { CULTIVOS, Cultivo, RespuestaViabilidad, TipoCapa } from '../../core/models';
+import { CULTIVOS, Cultivo, Distrito, RespuestaViabilidad, TipoCapa } from '../../core/models';
 
 const CLAVE_CULTIVO = 'agroalerta_cultivo';
 
@@ -33,6 +34,7 @@ function leerCultivo(): Cultivo {
 })
 export class Dashboard {
   private readonly viabilidad = inject(ViabilidadService);
+  private readonly catalogo = inject(DistritosService);
 
   protected readonly perfil = inject(PerfilService).perfil;
   protected readonly cultivos = CULTIVOS;
@@ -44,13 +46,31 @@ export class Dashboard {
 
   protected readonly capas = computed(() => this.datos()?.capas ?? []);
 
-  // Se dispara cuando llega el perfil (de ahí sale el id del distrito), cambia el cultivo o se reintenta.
+  // El distrito consultado es el elegido en el selector o, si no hay, el del perfil. Solo vive en memoria.
+  protected readonly distritos = signal<Distrito[]>([]);
+  private readonly distritoElegidoId = signal<number | null>(null);
+
+  protected readonly distritoActual = computed<Distrito | null>(() => {
+    const id = this.distritoElegidoId();
+    const elegido = id === null ? undefined : this.distritos().find((d) => d.id === id);
+    return elegido ?? this.perfil()?.distrito ?? null;
+  });
+
+  protected readonly esOtroDistrito = computed(() => {
+    const propio = this.perfil()?.distrito.id;
+    const actual = this.distritoActual()?.id;
+    return propio !== undefined && actual !== undefined && propio !== actual;
+  });
+
+  // Se dispara cuando llega el perfil, cambia el distrito o el cultivo, o se reintenta.
   private readonly peticion = computed<Peticion | null>(() => {
-    const p = this.perfil();
-    return p ? { distritoId: p.distrito.id, cultivo: this.cultivo(), intento: this.intento() } : null;
+    const d = this.distritoActual();
+    return d ? { distritoId: d.id, cultivo: this.cultivo(), intento: this.intento() } : null;
   });
 
   constructor() {
+    // Si el catálogo falla, simplemente no se ofrece el selector y se sigue con el distrito del perfil.
+    this.catalogo.listar().subscribe({ next: (lista) => this.distritos.set(lista), error: () => { } });
     toObservable(this.peticion)
       .pipe(
         filter((p): p is Peticion => p !== null),
@@ -86,6 +106,16 @@ export class Dashboard {
 
   protected reintentar(): void {
     this.intento.update((n) => n + 1);
+  }
+
+  protected cambiarDistrito(evento: Event): void {
+    const id = Number((evento.target as HTMLSelectElement).value);
+    // Si vuelve a elegir el propio, se limpia la selección para no repetir la consulta.
+    this.distritoElegidoId.set(id === this.perfil()?.distrito.id ? null : id);
+  }
+
+  protected volverAMiDistrito(): void {
+    this.distritoElegidoId.set(null);
   }
 
   /** En potencial, valor mayor es mejor; en riesgo, valor mayor es peor. El color depende del tipo, no del número. */

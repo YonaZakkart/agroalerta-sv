@@ -3,15 +3,15 @@
     <div class="kpi-icon"><i class="fa-solid fa-map-location-dot"></i></div>
     <div>
       <h3>Distrito</h3>
-      <p>{{ perfil()?.distrito.nombre ?? '—' }}</p>
-      <span>Tu zona de referencia</span>
+      <p>{{ distritoActual()?.nombre ?? '—' }}</p>
+      <span>{{ esOtroDistrito() ? 'Consultando otro distrito' : 'Tu zona de referencia' }}</span>
     </div>
   </div>
   <div class="kpi">
     <div class="kpi-icon"><i class="fa-solid fa-location-dot"></i></div>
     <div>
       <h3>Municipio</h3>
-      <p>{{ perfil()?.distrito.municipio.nombre ?? '—' }}</p>
+      <p>{{ distritoActual()?.municipio.nombre ?? '—' }}</p>
       <span>Morazán, El Salvador</span>
     </div>
   </div>
@@ -25,7 +25,23 @@
   </div>
 </section>
 
-<h2 class="titulo-seccion">Viabilidad de cultivo en tu distrito</h2>
+<h2 class="titulo-seccion">Viabilidad de cultivo en {{ distritoActual()?.nombre ?? 'tu distrito' }}</h2>
+
+@if (distritos().length > 0) {
+<div class="form-group">
+  <label for="distrito">Distrito a consultar</label>
+  <select id="distrito" name="distrito" (change)="cambiarDistrito($event)">
+    @for (d of distritos(); track d.id) {
+    <option [value]="d.id" [selected]="d.id === distritoActual()?.id">{{ d.nombre }}</option>
+    }
+  </select>
+  @if (esOtroDistrito()) {
+  <button type="button" class="enlace" (click)="volverAMiDistrito()">
+    Volver a mi distrito ({{ perfil()?.distrito?.nombre }})
+  </button>
+  }
+</div>
+}
 
 <div class="selector" role="radiogroup" aria-label="Cultivo">
   @for (c of cultivos; track c.valor) {

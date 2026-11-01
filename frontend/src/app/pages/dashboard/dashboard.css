@@ -93,6 +93,18 @@
   margin-bottom: 0.75rem;
 }
 
+.enlace {
+  margin-top: 0.4rem;
+  padding: 0;
+  min-height: 44px;
+  background: none;
+  border: 0;
+  color: var(--primary-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .selector {
   display: flex;
   gap: 0.5rem;
