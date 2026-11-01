@@ -153,6 +153,29 @@ a.nav-item:hover {
   color: var(--primary-dark);
 }
 
+.avatar {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.usuario-nombre {
+  display: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+@media (min-width: 600px) {
+  .usuario-nombre {
+    display: inline;
+  }
+}
+
 .content {
   padding: 1.25rem 1rem;
   max-width: 1400px;

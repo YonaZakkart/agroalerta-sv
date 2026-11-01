@@ -1,9 +1,118 @@
-<section class="card">
+<section class="kpis" aria-label="Resumen de zona">
+  <div class="kpi">
+    <div class="kpi-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+    <div>
+      <h3>Distrito</h3>
+      <p>{{ distritoActual()?.nombre ?? '—' }}</p>
+      <span>{{ esOtroDistrito() ? 'Consultando otro distrito' : 'Tu zona de referencia' }}</span>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon"><i class="fa-solid fa-location-dot"></i></div>
+    <div>
+      <h3>Municipio</h3>
+      <p>{{ distritoActual()?.municipio.nombre ?? '—' }}</p>
+      <span>Morazán, El Salvador</span>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon"><i class="fa-solid fa-database"></i></div>
+    <div>
+      <h3>Fuente</h3>
+      <p>{{ datos()?.fuente ?? 'CENTA' }}</p>
+      <span>{{ datos()?.fechaExtraccion ? 'Extracción ' + datos()?.fechaExtraccion : 'Viabilidad de cultivo' }}</span>
+    </div>
+  </div>
+</section>
+
+<h2 class="titulo-seccion">Viabilidad de cultivo en {{ distritoActual()?.nombre ?? 'tu distrito' }}</h2>
+
+@if (distritos().length > 0) {
+<div class="form-group">
+  <label for="distrito">Distrito a consultar</label>
+  <select id="distrito" name="distrito" (change)="cambiarDistrito($event)">
+    @for (d of distritos(); track d.id) {
+    <option [value]="d.id" [selected]="d.id === distritoActual()?.id">{{ d.nombre }}</option>
+    }
+  </select>
+  @if (esOtroDistrito()) {
+  <button type="button" class="enlace" (click)="volverAMiDistrito()">
+    Volver a mi distrito ({{ perfil()?.distrito?.nombre }})
+  </button>
+  }
+</div>
+}
+
+<div class="selector" role="radiogroup" aria-label="Cultivo">
+  @for (c of cultivos; track c.valor) {
+  <button type="button" role="radio" [attr.aria-checked]="c.valor === cultivo()" [class.activo]="c.valor === cultivo()"
+    (click)="elegir(c.valor)">
+    {{ c.etiqueta }}
+  </button>
+  }
+</div>
+
+@if (error()) {
+<div class="alerta alerta-error" role="alert">
+  <p>No se pudo cargar la viabilidad de cultivo.</p>
+  <button type="button" class="btn-primary" (click)="reintentar()">Reintentar</button>
+</div>
+} @else if (cargando()) {
+<p class="vacio" role="status">Cargando viabilidad...</p>
+} @else {
+<div class="capas">
+  @for (capa of capas(); track capa.codigo) {
+  <section class="card">
+    <div class="card-header">
+      <h2>
+        <i [class]="capa.tipo === 'POTENCIAL' ? 'fa-solid fa-seedling' : 'fa-solid fa-sun-plant-wilt'"></i>
+        {{ capa.nombre }}
+      </h2>
+    </div>
+    <div class="card-body">
+      @if (capa.claseDominante; as d) {
+      <p class="predomina">
+        Predomina: <strong>{{ d.nombre | lowercase }}</strong>
+        ({{ d.porcentaje | number: '1.1-1' }} % del distrito)
+      </p>
+      }
+
+      <div class="barra" role="img" [attr.aria-label]="'Distribución de ' + capa.nombre">
+        @for (cl of capa.clases; track cl.valor) {
+        @if (cl.porcentaje > 0) {
+        <span class="seg" [attr.data-nivel]="nivel(capa.tipo, cl.valor)" [style.width.%]="cl.porcentaje"></span>
+        }
+        }
+      </div>
+
+      <ul class="leyenda">
+        @for (cl of capa.clases; track cl.valor) {
+        <li>
+          <span class="punto" [attr.data-nivel]="nivel(capa.tipo, cl.valor)"></span>
+          <span class="ln">{{ cl.nombre }}</span>
+          <span class="lp">{{ cl.porcentaje | number: '1.1-1' }} %</span>
+          <span class="la">{{ cl.areaMz | number: '1.0-0' }} mz</span>
+        </li>
+        }
+      </ul>
+    </div>
+  </section>
+  }
+</div>
+<p class="nota">
+  Referencia distrital de CENTA{{ datos()?.fechaExtraccion ? ' (extracción ' + datos()?.fechaExtraccion + ')' : '' }}.
+  Describe el distrito completo, no tu parcela.
+</p>
+}
+
+<section class="card estimacion" aria-label="Estimación de siembra">
   <div class="card-header">
-    <h2><i class="fa-solid fa-seedling"></i> Panel principal</h2>
+    <h2><i class="fa-solid fa-calculator"></i> Estimación de siembra</h2>
   </div>
   <div class="card-body vacio">
-    <i class="fa-solid fa-folder-open"></i>
-    <p>Aquí se mostrará la viabilidad de cultivo del distrito y la estimación de siembra.</p>
+    <i class="fa-solid fa-hourglass-half"></i>
+    <p>Aún no disponible</p>
+    <span>La proyección de rendimiento e ingresos y las recomendaciones se activarán cuando exista el registro de
+      siembra y el monitoreo del clima</span>
   </div>
 </section>
