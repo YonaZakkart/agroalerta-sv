@@ -1,7 +1,7 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B).
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
@@ -89,6 +89,7 @@ agroalerta-sv/
   6-A   feat/6-a-endpoint-distritos, feat/6-a-auth-login-registro, fix/6-a-styles-duplicado     [Yona]
   6-B   feat/6-b-layout-dashboard    [Yona]
   docs  docs/6-b-estado-hito1   [Yona] (la de esta actualización)
+  3-0c  docs/3-0c-umbrales-temporadas   [Smith]
 
 ============================================================
 PARTE 6 — Frontend (adelantado por el Mapa v2)
@@ -468,6 +469,53 @@ Puntos de atención para las siguientes ramas:
 - Info_Datos_CENTA.md todavía menciona las coordenadas como pendientes; actualizar en la rama docs.
 
 
+3-0c — Umbrales de lluvia y temporadas
+--------------------------------------
+
+Rama docs/3-0c-umbrales-temporadas (Parte 3, Punto 0c del Mapa v2: Umbrales y temporadas; solo documentación)
+Responsable: Smith
+Fecha: 2 de noviembre de 2026
+
+Contexto: 3-B (clasificación de la condición climática) necesita rangos de lluvia para sequía, exceso e invierno aceptable, y las ventanas de primera y postrera (F2 del Mapa v2, sección 5). Esta rama no escribe código: busca fuentes, decide qué se puede afirmar con respaldo y qué es supuesto, y fija el contrato de entrada y salida para 3-B. Las fuentes se consultaron en la web el 2 de noviembre de 2026.
+
+Qué se hizo:
+- docs/Info_Datos_Clima.md (nuevo): tipos de valor (OFICIAL_MARN, SECUNDARIA, SUPUESTO); bandas de sequía por días secos consecutivos del MARN (débil hasta 10; moderada 11 a 15; fuerte 16 a 20; severa más de 21); regla de clasificación con acumulado de 30 días frente a la norma; reglas de guarda; propuesta de cómo obtener la normal por distrito; ventanas de primera y postrera; contrato de entradas y salida para 3-B; fuentes; decisiones abiertas y limitaciones.
+- Valores propuestos como SUPUESTO: día seco con menos de 1 mm; SEQUIA con DSC de 11 o más o razón de 30 días menor a 0.60; EXCESO con razón de 1.50 o más; no evaluar si la normal de 30 días es menor a 20 mm; ventanas operativas primera 01-05 a 30-06 (ciclo hasta 30-09) y postrera 01-08 a 30-09 (ciclo hasta 31-01).
+
+Decisiones de diseño:
+- Lo que no tiene cifra publicada se declara SUPUESTO con su justificación, no se presenta como dato oficial (regla de la sección 5 del Mapa v2).
+- La normal se calcularía con el archivo histórico de Open-Meteo y se compararía con el dato actual de la misma fuente, para cancelar el sesgo del modelo. Es una propuesta que 3-A debe validar.
+- No se calibran umbrales con 2026, año de El Niño y de sequías fuertes.
+- No se usó ningún valor de ejemplo de dashboard_base.html (regla 7 del Mapa v2).
+
+Qué se modificó: Estado_Proyecto_Pt2.txt (encabezado, índice, esta sección y Pendientes). Qué se eliminó: nada. Qué se agregó: docs/Info_Datos_Clima.md. Dependencias nuevas: ninguna. No se tocó código.
+
+Cumplimiento del punto 3-0c (Mapa v2):
+- Documento con rangos de lluvia para sequía, exceso o invierno aceptable: PARCIAL. Hay respaldo institucional solo para las bandas por días secos consecutivos; los cortes por porcentaje de la norma son supuestos.
+- Ventanas de primera y postrera: PARCIAL. Vienen de prensa que cita al gremio CAMPO y de GEOGLAM; no de una guía técnica de CENTA.
+- Se agregó de más el contrato de 3-B y la propuesta de origen de la normal.
+
+Pruebas realizadas: no aplica (documentación). Se releyó el documento contra las fuentes consultadas.
+NO realizadas: lectura de los informes técnicos originales del MARN (solo se leyeron sus resúmenes en prensa, y el informe de inicio de época lluviosa, que no trae las cifras de umbrales); verificación con un agrónomo o con CENTA; cálculo de una normal real con datos de Open-Meteo; revisión de los términos de uso de Open-Meteo.
+
+Qué NO se hizo / qué falta:
+- Cifras de requerimiento hídrico por etapa de maíz y frijol (los boletines agrometeorológicos del MARN las traen en figuras; no se extrajeron).
+- Guía técnica de CENTA con época de siembra y requerimiento de agua.
+- Límite inferior de la categoría "débil" de sequía y el criterio de "día seco".
+- Confirmación de los supuestos con el equipo.
+
+Archivos tocados fuera de su carpeta (puntos de contacto entre partes): Estado_Proyecto_Pt2.txt (una sola persona a la vez). No se tocaron events/types.ts, schema.prisma ni código.
+
+Incidencias técnicas: ninguna de código. Varias fuentes son prensa y no se pudieron contrastar contra el documento original del MARN.
+
+Puntos de atención para las siguientes ramas:
+- 3-B: usar las constantes de Info_Datos_Clima.md con su tipo y fuente; no dejar valores sueltos en la función. La función es pura y no consulta la base.
+- 3-0a/3-C: la decisión abierta de una cuarta salida "sin evaluación" cambia el payload de CondicionClimaticaActualizada. events/types.ts: una sola persona, solo agregar.
+- 3-A: confirmar con la documentación oficial de Open-Meteo términos de uso, atribución, período histórico y parámetros diarios antes de fijar el contrato.
+- 4-B y 5-C: una siembra fuera de ventana avisa, no se rechaza.
+- Recomendaciones: la sequía meteorológica no equivale a pérdida de cultivo; redactarlo así.
+
+
 ============================================================
 PROPUESTAS (opcionales)
 ============================================================
@@ -498,12 +546,15 @@ PARTE 6 — Frontend
 - Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
 
 PARTE 3 y siguientes
-- 3-0: eventos faltantes (3-0a) y umbrales de lluvia (3-0c). Las coordenadas (3-0b) ya están resueltas.
+- 3-0a: eventos faltantes. Las coordenadas (3-0b) y el documento de umbrales y temporadas (3-0c) ya están hechos; 3-0c es parcial (ver abajo).
+- F2 parcial: confirmar o corregir los SUPUESTOS de Info_Datos_Clima.md (día seco, cortes de sequía y exceso, guarda de 20 mm, ventanas de primera y postrera) con CENTA, un agrónomo o datos reales; conseguir los umbrales de inicio de época lluviosa y el límite inferior de la sequía débil del MARN; extraer los requerimientos hídricos por etapa del boletín agrometeorológico del MARN.
+- Decidir si CondicionClimaticaActualizada admite una cuarta salida "sin evaluación" (época seca).
 - Verificar con una segunda fuente los 15 distritos que tienen una sola fuente de coordenadas.
 - Mostrar la atribución a GeoNames en la aplicación (6-D o 7-D).
-- Datos de referencia fuera de CENTA (rendimientos, umbrales, precios, precio de venta): conseguirlos desde ya, bloquean 3-B, 4-C y 5-B.
+- Datos de referencia fuera de CENTA (rendimientos, precios, precio de venta): conseguirlos desde ya, bloquean 4-C y 5-B. Umbrales de lluvia y temporadas: ver F2 parcial; 3-B puede avanzar con los supuestos declarados.
 - Parte 4: decidir si el formulario de siembra usa el distrito registrado o permite elegir otro.
 
 TRANSVERSAL
 - Copiar las secciones base de Pt1 a este archivo (posteriormente).
+- Info_Datos_Clima.md (3-0c) debe agregarse a la estructura de archivos de la sección 1 (docs/) en la próxima actualización de las secciones base.
 - Completar los campos abiertos: fecha y pruebas de feat/6-a-auth-login-registro y feat/6-a-endpoint-distritos; estado de merge de feat/6-b-layout-dashboard y de fix/6-a-styles-duplicado. Dato para Pt1: la carpeta de la migración de 2-A es 20261004212446_add_viabilidad.
