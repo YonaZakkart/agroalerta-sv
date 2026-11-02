@@ -5,7 +5,7 @@ Documento de los datos de ubicación de los 26 distritos de Morazán. Los usa el
 
 ## 1. Qué es una coordenada en este proyecto
 
-Un punto representativo por distrito: la ubicación de su **cabecera** (el asentamiento principal), en grados decimales, sistema WGS84 (EPSG:4326). No es el centroide del polígono distrital ni sirve para medir áreas.
+Un punto representativo por distrito: la ubicación de la localidad con el nombre del distrito (en la práctica, su asentamiento principal), en grados decimales, sistema WGS84 (EPSG:4326). No es el centroide del polígono distrital ni sirve para medir áreas.
 
 Open-Meteo trabaja con celdas de varios kilómetros, así que una diferencia de pocos cientos de metros entre un punto y otro no cambia el resultado. Por eso no se buscó cartografía oficial de límites.
 
@@ -18,7 +18,7 @@ Las columnas `x` e `y` de los exports de CENTA vienen vacías en los CSV crudos 
 - **Fuente principal:** GeoNames, archivo `SV.txt` de https://download.geonames.org/export/dump/SV.zip. Licencia CC BY 4.0 (exige atribución).
 - **Fecha de consulta:** descarga del 1 de noviembre de 2026 (21:57, hora de El Salvador). La columna `fecha_consulta` del CSV puede decir 2026-11-02 porque el script usa hora UTC.
 - **Tipo de dato:** de terceros, no oficial (no proviene de una institución del Estado). Se documenta como dato publicado y contrastado, no como dato oficial.
-- **Contraste:** infobox de Wikipedia (coordenadas redondeadas al minuto de arco, unos 2 km) para los distritos donde se encontró.
+- **Contraste:** infobox de Wikipedia (coordenadas redondeadas al minuto de arco, unos 2 km) para los distritos donde se encontró. No es una verificación independiente: es probable que Wikipedia y GeoNames compartan el mismo origen, por lo que una coincidencia confirma que no hay un error de transcripción, no que el punto sea exacto
 - **Complemento manual:** Yamabal se tomó de OpenStreetMap (ver sección 6).
 
 ## 4. Método
@@ -62,6 +62,7 @@ Formato: grados decimales, 5 decimales (GeoNames). "Contraste" indica si el valo
 | 1326 | Yoloaiquín | 13.76667 | -88.15000 | 3582817 | solo GeoNames |
 
 Resumen del contraste: 10 distritos coinciden con Wikipedia; 15 tienen una sola fuente (GeoNames); Yamabal se resolvió aparte.
+Las coincidencias con Wikipedia no son contraste independiente (ver sección 3)
 
 ## 6. Casos especiales
 
@@ -101,9 +102,10 @@ Aplicadas en `limpiar-centa.ts` (función `leerCoordenadas`) y repetidas en `car
 
 ## 9. Precisión y limitaciones
 
-- Precisión de GeoNames: 5 decimales (unos 1.1 m en teoría), pero la ubicación de la localidad es aproximada; el error práctico es de cientos de metros a pocos kilómetros. Wikipedia está redondeada al minuto (unos 2 km).
+- Precisión real: 23 de los 26 puntos son múltiplos exactos de 1 minuto de arco (por ejemplo 13.91667 = 13°55'), es decir, una resolución de unos 1.8 km, aunque se escriban con 5 decimales. Solo Corinto, San Francisco Gotera y Yamabal tienen precisión mayor. El error práctico es de hasta pocos kilómetros.
 - Quince distritos tienen una sola fuente. Si alguno resulta mal ubicado, se corrige en `coordenadas_distritos.csv` y se vuelve a correr `datos:limpiar` y `datos:cargar`.
 - Es un punto por distrito: distritos grandes pueden tener clima distinto entre su cabecera y sus cantones.
+- Los 26 puntos caen en 11 celdas de 0.1°, con hasta 6 distritos por celda. Varios distritos pueden recibir el mismo dato de Open-Meteo; 3-A debe tenerlo en cuenta (por ejemplo, agrupando consultas por celda).
 
 ## 10. Atribución
 
