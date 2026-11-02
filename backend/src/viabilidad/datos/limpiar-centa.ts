@@ -29,6 +29,33 @@ const CODIGO_DISTRITO_MAX = 1326;
 const TOLERANCIA_KM2_HA = 1; // |km² × 100 − ha| permitido, en hectáreas
 const FORMATO_ENTERO = /^\d+$/;
 
+export const DIR_REFERENCIA = resolve(__dirname, "../../../data/referencia");
+export const ARCHIVO_COORDENADAS = "coordenadas_distritos.csv";
+
+// Límites de cordura: mínimo y máximo de los 26 puntos más un margen de unos 0.05°.
+const LATITUD_MIN = 13.55;
+const LATITUD_MAX = 14.02;
+const LONGITUD_MIN = -88.30;
+const LONGITUD_MAX = -87.90;
+const FORMATO_COORDENADA = /^-?\d{1,3}\.\d{4,6}$/;
+
+export interface Coordenada {
+  latitud: string;
+  longitud: string;
+}
+
+/** Devuelve el motivo del error o null si la coordenada es válida y cae en el rango de Morazán. */
+export function errorDeCoordenada(latitud: string, longitud: string): string | null {
+  if (!FORMATO_COORDENADA.test(latitud)) return `latitud "${latitud}" no es un decimal con 4 a 6 decimales`;
+  if (!FORMATO_COORDENADA.test(longitud)) return `longitud "${longitud}" no es un decimal con 4 a 6 decimales`;
+  const lat = Number(latitud);
+  const lon = Number(longitud);
+  if (lat < LATITUD_MIN || lat > LATITUD_MAX || lon < LONGITUD_MIN || lon > LONGITUD_MAX) {
+    return `(${latitud}, ${longitud}) cae fuera del rango razonable de Morazán`;
+  }
+  return null;
+}
+
 
 // Paso 1: fuente.json
 
@@ -324,6 +351,64 @@ export function armarDistritos(
   return distritos;
 }
 
+/** Lee coordenadas_distritos.csv y exige una coordenada válida por cada distrito del catálogo. */
+export function leerCoordenadas(
+  reporte: Reporte,
+  distritos: readonly Distrito[],
+  dirReferencia: string = DIR_REFERENCIA,
+): Map<number, Coordenada> {
+  const resultado = new Map<number, Coordenada>();
+  const tabla = leerCsv(join(dirReferencia, ARCHIVO_COORDENADAS), ",", reporte);
+  if (tabla === null) return resultado;
+  if (!exigirColumnas(tabla, ["id_distrito", "distrito", "latitud", "longitud", "fuente", "fecha_consulta"], reporte)) {
+    return resultado;
+  }
+
+  const nombrePorId = new Map(distritos.map((d) => [d.id, d.nombre]));
+  const puntoDe = new Map<string, number>();
+
+  for (const fila of tabla.filas) {
+    const falla = (mensaje: string): void => reporte.error(`${ubicacion(tabla, fila)}: ${mensaje}`);
+    const idTexto = celda(fila, "id_distrito").trim();
+    const id = Number(idTexto);
+    const nombre = nombrePorId.get(id);
+
+    if (!FORMATO_ENTERO.test(idTexto) || nombre === undefined) {
+      falla(`id_distrito "${idTexto}" no es un distrito del catálogo`);
+      continue;
+    }
+    if (resultado.has(id)) {
+      falla(`id_distrito ${id} repetido`);
+      continue;
+    }
+    if (normalizarNombre(celda(fila, "distrito")) !== normalizarNombre(nombre)) {
+      falla(`el nombre "${celda(fila, "distrito")}" no coincide con el catálogo ("${nombre}")`);
+    }
+
+    const latitud = celda(fila, "latitud").trim();
+    const longitud = celda(fila, "longitud").trim();
+    const motivo = errorDeCoordenada(latitud, longitud);
+    if (motivo !== null) {
+      falla(motivo);
+      continue;
+    }
+    if (celda(fila, "fuente").trim() === "") falla("falta la fuente");
+    if (!fechaValida(celda(fila, "fecha_consulta").trim())) falla("fecha_consulta debe ser AAAA-MM-DD");
+
+    const clave = `${Number(latitud)}|${Number(longitud)}`;
+    const otro = puntoDe.get(clave);
+    if (otro !== undefined) falla(`mismo punto que el distrito ${otro}`);
+    puntoDe.set(clave, id);
+
+    resultado.set(id, { latitud, longitud });
+  }
+
+  for (const d of distritos) {
+    if (!resultado.has(d.id)) reporte.error(`falta la coordenada del distrito ${d.id} (${d.nombre})`);
+  }
+  return resultado;
+}
+
 // ---------------------------------------------------------------------------
 // Pasos 8 y 9: completar clases ausentes y verificar totales entre capas
 // ---------------------------------------------------------------------------
@@ -423,6 +508,7 @@ export const ARCHIVO_AREAS_LIMPIO = "areas_clase.csv";
 export interface ResultadoLimpieza {
   fuente: Fuente | null;
   distritos: Distrito[];
+  coordenadas: Map<number, Coordenada>;
   capas: { codigo: string; filasLeidas: number }[];
   filas: FilaLimpia[];
   completadas: Completada[];
@@ -435,12 +521,15 @@ export function limpiar(reporte: Reporte, dirRaw: string = DIR_RAW): ResultadoLi
   const capas = leerCapas(reporte, dirRaw);
   const division = leerDivision(reporte, dirRaw);
   const distritos = division === null ? [] : armarDistritos(division, capas, reporte);
+  const coordenadas = leerCoordenadas(reporte, distritos);
   const { filas, completadas } = completarClases(distritos, capas);
   const diferenciaMaximaHa = verificarTotales(distritos, capas, reporte);
 
   return {
     fuente,
     distritos,
+    coordenadas,
+
     capas: capas.map((c) => ({ codigo: c.capa.codigo, filasLeidas: c.filasLeidas })),
     filas,
     completadas,
@@ -462,14 +551,18 @@ export function escribirLimpios(resultado: ResultadoLimpieza, dirClean: string =
   const rutaDistritos = join(dirClean, ARCHIVO_DISTRITOS_LIMPIO);
   const rutaAreas = join(dirClean, ARCHIVO_AREAS_LIMPIO);
 
-  writeFileSync(
+   writeFileSync(
     rutaDistritos,
     textoCsv(
-      ["id_distrito", "distrito", "municipio"],
-      resultado.distritos.map((d) => [String(d.id), d.nombre, d.municipio]),
+      ["id_distrito", "distrito", "municipio", "latitud", "longitud"],
+      resultado.distritos.map((d) => {
+        const c = resultado.coordenadas.get(d.id);
+        return [String(d.id), d.nombre, d.municipio, c?.latitud ?? "", c?.longitud ?? ""];
+      }),
     ),
     "utf8",
   );
+
   writeFileSync(
     rutaAreas,
     textoCsv(

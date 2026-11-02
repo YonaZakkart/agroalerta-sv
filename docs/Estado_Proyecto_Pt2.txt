@@ -388,6 +388,85 @@ Puntos de atención para las siguientes ramas:
 - Para la demo, EXPONER_TOKEN_VERIFICACION=true es necesario para que el registro ofrezca "Simular verificación"; debe declararse como simulación.
 - models.ts, app.routes.ts, app.config.ts y styles.css siguen siendo compartidos del frontend: una persona a la vez.
 
+============================================================
+PARTE 3 — Integración climática (Open-Meteo) + eventos
+============================================================
+
+3-0b — Coordenadas por distrito
+-------------------------------
+
+Rama feat/3-0b-coordenadas (Parte 3, Punto 0b del Mapa v2: Coordenadas)
+Responsable: Requeno
+Fecha: 1 de noviembre de 2026
+
+Contexto: el cliente de Open-Meteo (3-A) necesita una latitud y una longitud por distrito, y esa fue la pregunta abierta de 2-END: las columnas x e y de los exports de CENTA vienen vacías en los CSV crudos y no se sabe qué sistema de coordenadas tendrían, así que no sirven. Esta rama define otra fuente, agrega las columnas a la base y valida los datos. No toca la lógica de viabilidad ni los eventos.
+
+Decisión de fuente: GeoNames (archivo SV.txt, licencia CC BY 4.0), filtrado por Morazán (admin1 08) para evitar los homónimos (San Carlos, San Fernando, San Isidro, Sociedad, San Francisco Gotera existen también en otros departamentos). Punto representativo = cabecera del distrito. No se usó centroide del polígono distrital porque no se consiguió cartografía oficial y la diferencia es pequeña frente a las celdas de Open-Meteo. Detalle, tabla de valores y contraste en docs/Info_Datos_Coordenadas.md.
+
+Qué se hizo:
+- schema.prisma: el modelo Distrito agrega latitud y longitud (Decimal(9,6), opcionales).
+- Migración 20261102032958_add_coordenadas_distrito (dos columnas nuevas en distritos).
+- backend/data/referencia/coordenadas_distritos.csv: una fila por distrito, con fuente, fecha y nota.
+- limpiar-centa.ts: lee y valida coordenadas, las integra al resultado de limpiar() y las escribe en distritos.csv.
+- cargar-centa.ts: exige y valida latitud y longitud y las guarda en el upsert de distritos.
+- data/centa/clean/distritos.csv: regenerado con las dos columnas nuevas.
+- docs/Info_Datos_Coordenadas.md: documenta fuente, método, valores, casos especiales, contrato, validaciones, precisión y atribución.
+
+Decisiones de diseño:
+- Columnas opcionales en la base: la tabla ya tiene 26 filas y una columna obligatoria sin valor por defecto rompería la migración en la base de cada compañero. La carga exige que las 26 coordenadas vengan llenas; 3-A debe tratar null como error.
+- Archivo de entrada separado (data/referencia/) y no dentro de data/centa/raw/: las coordenadas no son datos de CENTA.
+- El script que rellenó el CSV a partir de GeoNames NO se versiona: el CSV es la fuente de verdad.
+- Los empates no se resuelven automáticamente; se dejan para revisión manual.
+- Límites de cordura para Morazán: latitud 13.55–14.02 y longitud -88.30–-87.90, con un margen aproximado de 0.05°; no son límites oficiales del departamento.
+
+Casos especiales:
+- El Rosario: tres localidades con ese nombre en Morazán; se eligió la 3586008 por ser la más cercana al punto de Wikipedia (0.007°).
+- Yamabal: GeoNames y Wikipedia dan el mismo punto que para Sensembra. Se eligió el centro de la huella de la Iglesia de Yamabal en OpenStreetMap: 13.664228, -88.172484. Consulta del 1 de noviembre de 2026 realizada con asistencia de Copilot.
+
+Qué se modificó: prisma/schema.prisma, src/viabilidad/datos/limpiar-centa.ts, src/viabilidad/datos/cargar-centa.ts y data/centa/clean/distritos.csv.
+Qué se eliminó: nada.
+Qué se agregó: migración 20261102032958_add_coordenadas_distrito, data/referencia/coordenadas_distritos.csv y docs/Info_Datos_Coordenadas.md.
+Dependencias nuevas: ninguna.
+
+Cumplimiento del punto 3-0b (Mapa v2):
+- Revisar qué contienen x e y y en qué sistema están: cumplido (vienen vacías, no sirven).
+- Definir otra fuente y documentarla: cumplido (GeoNames, con contraste en Wikipedia donde fue posible).
+- Columnas latitud y longitud en Distrito: cumplido, opcionales.
+- Migración: cumplido.
+- CSV limpios con las columnas nuevas: cumplido.
+- Seed (carga) actualizado: cumplido; los conteos de ESPERADO no cambian (26 distritos).
+- Validación de rango razonable de Morazán: cumplido.
+- Registrar fuente y fecha de consulta: cumplido, por dato en el CSV.
+
+Pruebas realizadas (manuales):
+- `npx tsc --noEmit`: pasó.
+- `npx prisma generate` y `npx prisma migrate status`: no se ejecutaron en esta validación.
+- `npm run datos:limpiar` con las 26 coordenadas: pasó y escribió distritos.csv con las columnas nuevas.
+- `npm run datos:cargar`: terminó con municipios 2, distritos 26, capas 4, clases_capa 12 y areas_clase 312.
+- Consulta en MySQL: devolvió 26 distritos con latitud y longitud; Yamabal quedó en 13.664228, -88.172484.
+- Casos de error probados: latitud fuera de rango (15.00000) y coma decimal; ambos fueron rechazados. No se probaron fila repetida ni mismo punto para dos distritos.
+- GET /viabilidad/distritos/1304: respondió HTTP 200 con Chilanga, Morazán Sur y las cuatro capas. No se pudo comparar contra una respuesta anterior a la rama.
+- No se agregaron pruebas automatizadas; tampoco se hizo verificación independiente de los 15 distritos con una sola fuente.
+
+Qué NO se hizo / qué falta:
+- Verificar con una segunda fuente 15 distritos: Cacaopera, Corinto, Chilanga, Delicias de Concepción, Jocoaitique, Lolotiquillo, Meanguera, Osicala, Perquín, San Carlos, San Fernando, San Francisco Gotera, San Isidro, Sociedad y Yoloaiquín.
+- Mostrar la atribución a GeoNames en la interfaz (pendiente para 6-D o 7-D).
+- No se usó centroide ni cartografía oficial.
+- El endpoint y el cliente que usan las coordenadas corresponden a 3-A y 3-D.
+
+Qué se agregó de más: nada fuera del alcance.
+
+Archivos tocados fuera de su carpeta (puntos de contacto entre partes): schema.prisma y prisma/migrations/ (compartidos con 3-B, 4-A y otros). limpiar-centa.ts y cargar-centa.ts pertenecen a la Parte 2.
+
+Incidencias técnicas:
+- Prisma 7 no regenera el cliente al migrar: hay que correr npx prisma generate después de la migración, o tsc puede marcar latitud y longitud como propiedades desconocidas.
+
+Puntos de atención para las siguientes ramas:
+- 3-A: latitud y longitud llegan como Prisma.Decimal | null; convertir con Number() y tratar null como error. Open-Meteo trabaja con celdas de varios kilómetros: no esperar diferencias entre distritos muy cercanos.
+- 3-B: su migración debe crearse DESPUÉS de mergear esta, sobre main actualizado (migraciones en secuencia).
+- Quien mergee después de esta rama debe correr: git pull, npm install --legacy-peer-deps, npx prisma generate, npx prisma migrate dev y npm run datos:cargar.
+- Info_Datos_CENTA.md todavía menciona las coordenadas como pendientes; actualizar en la rama docs.
+
 
 ============================================================
 PROPUESTAS (opcionales)
@@ -419,7 +498,9 @@ PARTE 6 — Frontend
 - Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
 
 PARTE 3 y siguientes
-- 3-0: eventos faltantes, coordenadas por distrito (las columnas x e y de los exports de CENTA vienen vacías, no sirven) y umbrales de lluvia.
+- 3-0: eventos faltantes (3-0a) y umbrales de lluvia (3-0c). Las coordenadas (3-0b) ya están resueltas.
+- Verificar con una segunda fuente los 15 distritos que tienen una sola fuente de coordenadas.
+- Mostrar la atribución a GeoNames en la aplicación (6-D o 7-D).
 - Datos de referencia fuera de CENTA (rendimientos, umbrales, precios, precio de venta): conseguirlos desde ya, bloquean 3-B, 4-C y 5-B.
 - Parte 4: decidir si el formulario de siembra usa el distrito registrado o permite elegir otro.
 

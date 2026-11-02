@@ -5,7 +5,7 @@
 import { join } from "path";
 import { prisma } from "../../config/prisma";
 import { CAPAS } from "./capas.config";
-import { ARCHIVO_AREAS_LIMPIO, ARCHIVO_DISTRITOS_LIMPIO, DIR_CLEAN, leerFuente, type Fuente } from "./limpiar-centa";
+import { ARCHIVO_AREAS_LIMPIO, ARCHIVO_DISTRITOS_LIMPIO, DIR_CLEAN, errorDeCoordenada, leerFuente, type Fuente } from "./limpiar-centa";
 import { Reporte, celda, exigirColumnas, leerCsv, normalizarNombre, parsearNumero, ubicacion } from "./utilidades";
 
 // Cantidades esperadas. Si se agrega una capa o cambia la división territorial, se actualizan a propósito.
@@ -18,6 +18,8 @@ interface DistritoLimpio {
     nombre: string;
     municipio: string;
     nombreNormalizado: string;
+    latitud: string;
+    longitud: string;
 }
 
 interface AreaLimpia {
@@ -31,7 +33,7 @@ interface AreaLimpia {
 
 function leerDistritosLimpios(reporte: Reporte, dirClean: string): DistritoLimpio[] {
     const tabla = leerCsv(join(dirClean, ARCHIVO_DISTRITOS_LIMPIO), ",", reporte);
-    if (tabla === null || !exigirColumnas(tabla, ["id_distrito", "distrito", "municipio"], reporte)) return [];
+    if (tabla === null || !exigirColumnas(tabla, ["id_distrito", "distrito", "municipio", "latitud", "longitud"], reporte)) return [];
 
     const distritos: DistritoLimpio[] = [];
     const ids = new Set<number>();
@@ -44,6 +46,10 @@ function leerDistritosLimpios(reporte: Reporte, dirClean: string): DistritoLimpi
         const idTexto = celda(fila, "id_distrito").trim();
         const nombre = celda(fila, "distrito").trim();
         const municipio = celda(fila, "municipio").trim();
+        const latitud = celda(fila, "latitud").trim();
+        const longitud = celda(fila, "longitud").trim();
+        const motivoCoordenada = errorDeCoordenada(latitud, longitud);
+        if (motivoCoordenada !== null) falla(motivoCoordenada);
 
         if (!FORMATO_ENTERO.test(idTexto)) falla(`id_distrito "${idTexto}" no es un entero`);
         if (nombre === "" || nombre.length > LARGO_MAXIMO_NOMBRE) falla(`distrito "${nombre}" vacío o de más de ${LARGO_MAXIMO_NOMBRE} caracteres`);
@@ -57,7 +63,7 @@ function leerDistritosLimpios(reporte: Reporte, dirClean: string): DistritoLimpi
         if (reporte.errores.length === erroresAntes) {
             ids.add(id);
             claves.add(nombreNormalizado);
-            distritos.push({ id, nombre, municipio, nombreNormalizado });
+            distritos.push({ id, nombre, municipio, nombreNormalizado, latitud, longitud });
         }
     }
     return distritos;
@@ -144,8 +150,8 @@ async function cargar(distritos: readonly DistritoLimpio[], areas: readonly Area
                 if (municipioId === undefined) throw new Error(`municipio "${d.municipio}" sin id (no debería ocurrir)`);
                 await tx.distrito.upsert({
                     where: { id: d.id },
-                    update: { nombre: d.nombre, nombreNormalizado: d.nombreNormalizado, municipioId },
-                    create: { id: d.id, nombre: d.nombre, nombreNormalizado: d.nombreNormalizado, municipioId },
+                    update: { nombre: d.nombre, nombreNormalizado: d.nombreNormalizado, municipioId, latitud: d.latitud, longitud: d.longitud },
+                    create: { id: d.id, nombre: d.nombre, nombreNormalizado: d.nombreNormalizado, municipioId, latitud: d.latitud, longitud: d.longitud },
                 });
             }
 
