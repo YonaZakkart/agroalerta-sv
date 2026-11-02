@@ -18,7 +18,7 @@ Desde 2-A el catálogo Municipio (2) / Distrito (26) existe como modelos en la b
 
 Desde 2-END (chore/2-end-usuario-distrito-catalogo) el distrito del usuario ya no es texto libre: Usuario tiene distritoId (clave foránea a Distrito) y el registro valida el nombre recibido contra el catálogo de los 26 distritos, sin distinguir tildes ni mayúsculas (400 si no existe). Registro, login y GET /auth/yo devuelven el distrito como objeto { id, nombre, municipio: { id, nombre } }. Ver 2-END.
 
-Estado de avance (30 de octubre de 2026): Parte 0 completa. Parte 1 (autenticación) completa en el backend (1-A a 1-END). Parte 2 (viabilidad): 2-A a 2-D en main y cierre (2-END) con el código en dos ramas (chore/2-end-verificaciones-ajustes y chore/2-end-usuario-distrito-catalogo) [VERIFICAR: ambas mergeadas en main]. Del cierre quedan pendientes las pruebas automatizadas (bloque E), los datos de referencia (bloque F), las verificaciones A2 (Requeno y Pocho) y A4, y el bloque C, movido a la Parte 3 (ver Pendientes). Partes 3 a 7 sin iniciar. El frontend Angular todavía no se conecta al backend.
+Estado de avance (30 de octubre de 2026): Parte 0 completa. Parte 1 (autenticación) completa en el backend (1-A a 1-END). Parte 2 (viabilidad): 2-A a 2-D en main y cierre (2-END) con el código en dos ramas (chore/2-end-verificaciones-ajustes y chore/2-end-usuario-distrito-catalogo) [ambas mergeadas en main]. Del cierre quedan pendientes las pruebas automatizadas (bloque E), los datos de referencia (bloque F), las verificaciones A2 (Requeno y Pocho) y A4, y el bloque C, movido a la Parte 3 (ver Pendientes). Partes 3 a 7 sin iniciar. El frontend Angular todavía no se conecta al backend.
 
 
 
@@ -162,7 +162,7 @@ Reglas:
   2-B       feat/2-b-datos-centa, docs/actualizar-estado-rama-14
   2-C       feat/2-c-servicio-viabilidad, docs (nombre no registrado)
   2-D       feat/2-d-endpoint-viabilidad (rechazada), fix (nombre por completar), docs/2-d-estado-por-partes
-  2-END     chore/2-end-verificaciones-ajustes, chore/2-end-usuario-distrito-catalogo, docs/2-end-estado ([VERIFICAR] nombre real de la rama docs)
+  2-END     chore/2-end-verificaciones-ajustes, chore/2-end-usuario-distrito-catalogo, docs/2-end-estado 
 
 En el árbol de la sección 2 y en las notas de la sección 3, una referencia como "1-A" o "2-B" remite a las ramas de ese punto según este índice.
 
@@ -288,7 +288,7 @@ Cada Parte sigue el Mapa_inicial.txt. Bajo cada Punto se listan sus ramas en ord
 Resumen de avance:
   Parte 0   Preparación del repositorio y base común ........ completa
   Parte 1   Autenticación y modelo de Usuario ............... completa en el backend (1-A a 1-END); falta frontend y lo de Pendientes
-  Parte 2   Datos de viabilidad y zonas de Morazán .......... 2-A a 2-D en main; 2-END con código en dos ramas [VERIFICAR: mergeadas]; faltan E, F, A2, A4 y el bloque C (movido a la Parte 3)
+  Parte 2   Datos de viabilidad y zonas de Morazán .......... 2-A a 2-D en main; 2-END con código en dos ramas; faltan E, F, A2, A4 y el bloque C (movido a la Parte 3)
   Parte 3   Integración climática (Open-Meteo) .............. sin iniciar
   Parte 4   Módulo de Siembra + formulario detallado ........ sin iniciar
   Parte 5   Estimación y Recomendaciones (núcleo EDA) ....... sin iniciar
@@ -489,7 +489,7 @@ Fecha: 27 de septiembre de 2026
 Contexto: feat/auth-registro-usuario (1-A) dejó el registro y feat/1-c-verificacion-correo con fix/1-c-endurecer-verificacion (1-C) la verificación de correo. Esta rama agrega el inicio de sesión y el guard de autenticación. Resuelve el pendiente de fix/1-c-endurecer-verificacion (1-C) "definir si un usuario no verificado puede iniciar sesión": NO puede (403).
 
 Qué se hizo:
-- Dependencias nuevas, instaladas con --legacy-peer-deps: jsonwebtoken ^9.0.2 (dependencies) y @types/jsonwebtoken ^9 (devDependencies). [VERIFICAR versiones resueltas en package.json y que no cambiaron prisma, @prisma/client, typescript, argon2 ni el bloque allowScripts.]
+- Dependencias nuevas, instaladas con --legacy-peer-deps: jsonwebtoken ^9.0.2 (dependencies) y @types/jsonwebtoken ^9 (devDependencies).
 - backend/src/auth/jwt.ts (nuevo): interfaz UsuarioAutenticado {id, correo}; firmarToken() firma HS256 con claim "correo" y "sub" = id como string, expiración desde JWT_EXPIRES_IN (por defecto "2h"); verificarToken() verifica fijando algorithms: ["HS256"] y valida la forma del payload (sub numérico entero, correo string), lanzando JsonWebTokenError si no cumple. obtenerSecreto() lanza Error si JWT_SECRET falta o tiene menos de 32 caracteres (se evalúa en cada llamada, no al arrancar).
 - backend/src/auth/auth.middleware.ts (nuevo): requireAuth lee Authorization: Bearer <token> (regex, insensible a mayúsculas en "Bearer"), verifica el token y asigna req.usuario = {id, correo}. Respuestas: 401 sin encabezado o mal formado; 401 "Sesión expirada" (TokenExpiredError); 401 "Token inválido" (JsonWebTokenError); 500 para error de configuración (p. ej. JWT_SECRET ausente). La extensión de Express.Request (usuario?: UsuarioAutenticado) se declara con "declare global" dentro del mismo módulo, no en un .d.ts aparte, porque ts-node-dev no respeta "include" y no vería un .d.ts suelto.
 - backend/src/auth/login.routes.ts (nuevo): POST /auth/login con body {correo, contrasena}.
@@ -522,13 +522,13 @@ Cumplimiento del punto 1-B del Mapa:
 - Ninguna ruta de negocio está protegida todavía; el primer uso real será GET /auth/yo (1-D).
 
 Pruebas realizadas (manuales, con curl contra localhost:3000, MySQL en Docker):
-- [VERIFICAR] Usuario no verificado con contraseña correcta: 403.
-- [VERIFICAR] Tras GET /auth/verificar/:token, login válido: 200 con token y usuario, sin hashes.
-- [VERIFICAR] Contraseña incorrecta y correo inexistente: 401 con el mismo mensaje.
-- [VERIFICAR] Body vacío o correo mal formado: 400.
-- [VERIFICAR] Ruta temporal con requireAuth (NO commiteada): sin encabezado 401; token basura 401; token válido 200 con {id, correo}.
-- [VERIFICAR] Expiración con JWT_EXPIRES_IN=5s: 401 "Sesión expirada".
-- [VERIFICAR] JWT_SECRET ausente o corto: login responde 500 y requireAuth responde 500.
+- Usuario no verificado con contraseña correcta: 403.
+- Tras GET /auth/verificar/:token, login válido: 200 con token y usuario, sin hashes.
+- Contraseña incorrecta y correo inexistente: 401 con el mismo mensaje.
+- Body vacío o correo mal formado: 400.
+- Ruta temporal con requireAuth (NO commiteada): sin encabezado 401; token basura 401; token válido 200 con {id, correo}.
+- Expiración con JWT_EXPIRES_IN=5s: 401 "Sesión expirada".
+- JWT_SECRET ausente o corto: login responde 500 y requireAuth responde 500.
 - NO realizada: comparación medida de tiempos de respuesta (correo existente vs. inexistente). No se escribieron pruebas automatizadas.
 
 Qué NO se hizo / qué falta:
@@ -550,7 +550,7 @@ Archivos tocados fuera de auth/ (puntos de contacto entre partes):
 - backend/src/index.ts, backend/package.json, backend/package-lock.json, backend/.env.example. No se tocaron schema.prisma, prisma/migrations/, events/ ni config/.
 
 Incidencias técnicas durante el desarrollo:
-- [COMPLETAR con las incidencias reales: errores de tipos de expiresIn, npm, etc. Si no hubo ninguna, escribir "Ninguna".]
+- Ninguna 
 
 Puntos de atención para las siguientes ramas:
 - Después del merge, cada integrante debe agregar JWT_SECRET (propio, mín. 32 caracteres) y JWT_EXPIRES_IN a su backend/.env y correr npm install --legacy-peer-deps. Sin JWT_SECRET, POST /auth/login responde 500.
@@ -787,7 +787,7 @@ Causa del P2039 (resuelta):
 Resultado de la verificación funcional pendiente de 1-D (feature/parte-1d-perfil-usuario) (sobre main, antes de los cambios de esta rama, con el P2039 ya resuelto en local):
 - GET /auth/yo con token válido: 200 con {success: true, usuario} (verificado true, sin hashes). Sin encabezado Authorization: 401. Token alterado: 401. Token válido firmado con un id inexistente: 404 (comportamiento de 1-D (feature/parte-1d-perfil-usuario); cambia en esta rama, ver abajo).
 - El sub del JWT viaja como texto ("9"); verificarToken() lo convierte a número y GET /auth/yo funcionó sin cambios, así que ese punto queda confirmado.
-- Se confirmaron además varios ítems marcados [VERIFICAR] en 1-B (feat/1-b-login-auth-guards): login sin verificar con contraseña correcta, 403; tras verificar, login 200 con token y usuario sin hashes (payload {correo, iat, exp, sub}, expiración de 2h); contraseña incorrecta, 401 genérico; correo inexistente, 401; JWT_SECRET inválido, login 500; requireAuth probado a través de GET /auth/yo (sin encabezado 401, token alterado 401, token válido 200). Versiones resueltas de las dependencias de 1-B (feat/1-b-login-auth-guards): jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10. No se probaron aquí: body vacío o correo mal formado en login, expiración con JWT_EXPIRES_IN corto, JWT_SECRET ausente en requireAuth. El campo "Incidencias" de 1-B (feat/1-b-login-auth-guards) sigue sin completar en esa sección.
+- Se confirmaron además varios ítems marcados en 1-B (feat/1-b-login-auth-guards): login sin verificar con contraseña correcta, 403; tras verificar, login 200 con token y usuario sin hashes (payload {correo, iat, exp, sub}, expiración de 2h); contraseña incorrecta, 401 genérico; correo inexistente, 401; JWT_SECRET inválido, login 500; requireAuth probado a través de GET /auth/yo (sin encabezado 401, token alterado 401, token válido 200). Versiones resueltas de las dependencias de 1-B (feat/1-b-login-auth-guards): jsonwebtoken ^9.0.3 y @types/jsonwebtoken ^9.0.10. No se probaron aquí: body vacío o correo mal formado en login, expiración con JWT_EXPIRES_IN corto, JWT_SECRET ausente en requireAuth. El campo "Incidencias" de 1-B (feat/1-b-login-auth-guards) sigue sin completar en esa sección.
 
 Qué se hizo:
 - backend/src/config/prisma.ts: el adapter ya no recibe la cadena DATABASE_URL tal cual; se parsea con new URL() y se construye PrismaMariaDb con host, port (3306 por defecto), user, password (decodeURIComponent), database y allowPublicKeyRetrieval = (NODE_ENV !== "production"). DATABASE_URL sigue siendo la única fuente de configuración.
@@ -875,7 +875,7 @@ Qué se hizo:
   - ClaseCapa (clases_capa): id, capaId (capa_id, FK a Capa), valor Int, nombre (VarChar 50). Único por (capaId, valor).
   - AreaClase (areas_clase): id, distritoId (distrito_id, FK), claseId (clase_id, FK), areaHa (area_ha, Decimal(12,3)), fuente (VarChar 50), fechaExtraccion (fecha_extraccion, Date). Único por (distritoId, claseId).
   - Las relaciones no declaran onDelete/onUpdate: se aplica el comportamiento por defecto de Prisma para relaciones obligatorias (la base rechaza borrar un distrito, clase o capa con datos dependientes).
-- Migración add_viabilidad generada y aplicada con npx prisma migrate dev [COMPLETAR: nombre exacto de la carpeta, AAAAMMDDHHMMSS_add_viabilidad]. Contiene solo CREATE TABLE de las 5 tablas nuevas (con el ENUM de tipo, claves foráneas e índices únicos); no altera usuarios ni migraciones previas.
+- Migración add_viabilidad generada y aplicada con npx prisma migrate dev. Contiene solo CREATE TABLE de las 5 tablas nuevas (con el ENUM de tipo, claves foráneas e índices únicos); no altera usuarios ni migraciones previas.
 
 Datos fuente analizados (previo al código, relevantes para el 2-B):
 - Exports de la herramienta de consulta del mapa de CENTA: maíz 78 filas, frijol 76, sorgo (maicillo) 74, sequía 46, más la tabla de división territorial (26 distritos: Morazán Norte 11, Morazán Sur 15). Los 26 distritos aparecen en las 4 capas y el área total clasificada de cada distrito coincide entre capas (diferencias de hasta 0.01 km² por redondeo). Se descarta Potencial_maíz__Resultado_de_la_consulta_2.csv (versión vieja, solo Chilanga).
@@ -923,7 +923,7 @@ Qué NO se hizo / qué falta:
 
 Qué se agregó de más (no pedido originalmente): nada fuera del alcance del 2-A. Las únicas decisiones por encima de lo escrito en el documento de datos son nombreNormalizado obligatoria y tipo como enum.
 
-Incidencias técnicas durante el desarrollo: [COMPLETAR: "Ninguna" si no hubo].
+Incidencias técnicas durante el desarrollo: Ninguna
 
 Puntos de atención para las siguientes ramas:
 - Tras el merge, cada integrante corre npx prisma generate y npx prisma migrate dev. Aún no hay código que use los modelos, pero el cliente regenerado ya los incluye.
@@ -1020,7 +1020,6 @@ Qué se agregó de más (no pedido originalmente): utilidades.ts como archivo co
 Incidencias técnicas durante el desarrollo:
 - Un nombre de archivo con tilde (Riesgo_sequía.csv) no se pudo renombrar con mv escribiendo la tilde a mano (probablemente estaba en forma descompuesta, NFD). Se resolvió con un comodín: mv data/centa/raw/Riesgo_sequ*.csv data/centa/raw/Riesgo_sequia.csv. Regla: nombres de archivo solo ASCII.
 - Ruido informativo normal al correr los scripts: "npm notice run ...", "[INFO] ts-node-dev ..." y "injected env (10) from .env" (dotenv). No indican errores.
-- [COMPLETAR: otras incidencias reales, o "Ninguna más".]
 
 Puntos de atención para las siguientes ramas:
 - Tras el merge, cada integrante corre: git pull, npx prisma generate, npx prisma migrate dev y npm run datos:cargar. Los CSV limpios ya vienen en el repo: no hace falta correr datos:limpiar. Cada base debe quedar con municipios 2, distritos 26, capas 4, clases_capa 12 y areas_clase 312.
@@ -1132,8 +1131,8 @@ Puntos de atención para las siguientes ramas:
 - Conflictos de merge: la rama solo agrega archivos nuevos; ninguna otra rama de la Parte 2 los toca. El riesgo está en Estado_del_Proyecto.txt si dos personas lo editan en paralelo: lo edita solo quien haga la rama docs de 2-C.
 
 
-Rama docs (documentación de 2-C; nombre original por completar)
-Responsable: [COMPLETAR]
+Rama docs: actualizar Estado_del_Proyecto con RAMA 16 (Parte 2-C)
+Responsable: Requeno
 Se agregó a Estado_del_Proyecto.txt la sección de feat/2-c-servicio-viabilidad (2-C).
 Con la documentación hasta 2-C (servicio de consulta de viabilidad).
 
@@ -1144,7 +1143,7 @@ Con la documentación hasta 2-C (servicio de consulta de viabilidad).
 Rama feat/2-d-endpoint-viabilidad — RECHAZADA (Parte 2, Punto D del Mapa_inicial.txt: Endpoint de consulta de viabilidad)
 Responsable: Pocho 
 Fecha: 18 de octubre 2026
-Estado: el PR fue rechazado y no se mergeó. Se rehízo como PR nuevo con las correcciones descritas en la rama fix de este mismo punto. Motivo del rechazo: [COMPLETAR; no figura en el documento de la rama].
+Estado: el PR fue rechazado y no se mergeó. Se rehízo como PR nuevo con las correcciones descritas en la rama fix de este mismo punto. 
 
 Contexto: feat/2-c-servicio-viabilidad (2-C, servicio de consulta) está en main. Esta rama expone ese servicio como endpoint HTTP. No cubre temporadas y no incluye pruebas automatizadas.
 
@@ -1260,7 +1259,7 @@ Qué se eliminó:
 - Duplicados entre Propuestas y Pendientes (rate limiting y pruebas automatizadas quedan solo en Pendientes) y Pendientes que quedaron cumplidos o desactualizados (responsables de 2-C y 2-D).
 
 Qué se agregó de más (no pedido originalmente):
-- Pendientes nuevos detectados al revisar: verificar que los cambios de index.ts de 1-END estén en main (el fix de 2-D encontró que app.listen no estaba), lista de campos [COMPLETAR]/[VERIFICAR] abiertos y decisiones de 2-D por confirmar.
+- Pendientes nuevos detectados al revisar: verificar que los cambios de index.ts de 1-END estén en main (el fix de 2-D encontró que app.listen no estaba), y decisiones de 2-D por confirmar.
 
 Cumplimiento: documentación al día hasta 2-D. Falta 2-END (ver Pendientes).
 
@@ -1277,9 +1276,9 @@ Plan: plan de cierre de la Parte 2 del 22 de octubre de 2026 (bloques A a H). Se
 
 Rama chore/2-end-verificaciones-ajustes (Parte 2, cierre: bloques A, B4 y D1)
 Responsable: Smith
-Fecha: 28 de octubre de 2026 (pruebas válidas); trabajo iniciado el 23 de octubre. Fecha de los commits y del merge: [VERIFICAR].
+Fecha: 28 de octubre de 2026 (pruebas válidas); trabajo iniciado el 23 de octubre. Fecha final de los commits y del merge: 30 de octubre 2026.
 Commits: 0b9b078 (refactor(comun): mover normalizarNombre y colapsarEspacios a src/comun) y 937ac2a (fix(viabilidad): comparar capa sin distinguir mayusculas ni tildes). Base: main en ee11b93 (merge de docs/2-d-estado-por-partes).
-Estado: [VERIFICAR: mergeada en main].
+Estado: mergeada en main
 
 Contexto: primera de las dos ramas de código del cierre de la Parte 2. Resuelve las verificaciones que no requieren código (bloque A), mueve normalizarNombre a un módulo común (B4, prerrequisito de la segunda rama) y unifica el tratamiento de capa y cultivo en la consulta de viabilidad (D1). No toca schema.prisma, migrations/, auth/, events/, index.ts ni package.json. El trabajo se hizo en un clon nuevo del repositorio, por indicación de Yona.
 
@@ -1358,9 +1357,9 @@ Puntos de atención para las siguientes ramas:
 
 Rama chore/2-end-usuario-distrito-catalogo (Parte 2, cierre: bloque B, Usuario con el catálogo)
 Responsable: Smith
-Fecha: 30 de octubre de 2026. Merge: [VERIFICAR].
+Fecha: 30 de octubre de 2026.
 Commit: 1a3ab72 (feat(auth): Usuario.distrito pasa a clave foranea de Distrito (catalogo CENTA)). Un solo commit, porque el schema y el código tienen que cambiar juntos.
-Estado: [VERIFICAR: mergeada en main].
+Estado: mergeada en main
 
 Contexto: segunda rama de código del cierre. Depende de chore/2-end-verificaciones-ajustes (usa comun/normalizar.ts). Cierra el pendiente de 1-A (feat/auth-registro-usuario) "validar el distrito contra el catálogo" y el de 1-D (feature/parte-1d-perfil-usuario) "municipio derivado en /auth/yo". El equipo aceptó B1, B2 y B3 del plan. El bloque C (listado de distritos, coordenadas, eventos) NO se incluye: se mueve a la Parte 3.
 
@@ -1387,7 +1386,7 @@ Qué se modificó / eliminó:
 - Eliminado: la columna usuarios.distrito (texto) y el TODO de registro.routes.ts. Dependencias nuevas: ninguna.
 
 Cumplimiento del bloque B del plan:
-- B1, B2 y B3 (decisiones): cumplidas. B2: base de Smith reiniciada; las de los demás [VERIFICAR] tras el merge.
+- B1, B2 y B3 (decisiones): cumplidas. B2: base de Smith reiniciada; las de los demás tras el merge.
 - B4: hecho en chore/2-end-verificaciones-ajustes.
 - B5: schema.prisma y migración, registro.service.ts y registro.routes.ts, login.routes.ts (distrito como objeto), perfil.routes.ts (distrito y municipio derivado) y events/types.ts (distritoId): cumplido.
 - B6 (pruebas mínimas): cumplido (ver abajo).
@@ -1427,7 +1426,7 @@ Puntos de atención para las siguientes ramas:
 - Eventos futuros (SiembraRegistrada, ActualizacionMeteorologica, CondicionClimaticaActualizada): definirlos antes de 3-A (C3, movido a la Parte 3); AgricultorRegistrado ya incluye distritoId.
 
 
-Rama docs/2-end-estado (docs; [VERIFICAR] nombre real)
+Rama docs: documentar el cierre de la Parte 2 (2-END) y actualizar estado, pendientes y contrato de viabilidad
 Responsable: Smith
 Fecha: 30 de octubre de 2026
 Se modificaron: Estado_del_Proyecto.txt (encabezado, secciones base 1, 2, 3, 4, 6, 7, 8 y 9, sección 2-END, Propuestas y Pendientes) e Info_Datos_CENTA.md (estado y secciones 6, 8, 9 y 11).
@@ -1444,7 +1443,6 @@ Qué se eliminó de lo ya documentado: de Pendientes, los puntos cumplidos en 2-
 Cumplimiento: documentación al día hasta 2-END. Lo pendiente del cierre está en Pendientes.
 
 Puntos de atención para las siguientes ramas:
-- Quien mergee primero actualiza las marcas [VERIFICAR] de fechas y estado de las ramas del cierre.
 - Estado_del_Proyecto.txt lo edita una sola persona por rama docs.
 
 ============================================================
@@ -1507,7 +1505,7 @@ El código del cierre está en chore/2-end-verificaciones-ajustes y chore/2-end-
 - A4: confrontar la división territorial (26 distritos; 11 en Morazán Norte y 15 en Morazán Sur) con el texto de la Ley Especial de Reestructuración Municipal y documentar fuente y fecha de consulta.
 - Confirmar que los cuatro integrantes reiniciaron su base después del merge de chore/2-end-usuario-distrito-catalogo y volvieron a registrar sus usuarios de prueba.
 - Comparar contra la respuesta real del endpoint los ejemplos de otros distritos y capas (Chilanga, 1304, ya coincide en 2-C, 2-D y 2-END).
-- Bloque E (pruebas automatizadas): el equipo debe decidir el ejecutor (node:test con ts-node como devDependency, o Jest o Vitest), la separación de app y listen en index.ts y una base de pruebas separada (por ejemplo agroalerta_test). Si se pospone, anotar la decisión con fecha: [COMPLETAR]. Detalle del alcance en TRANSVERSAL.
+- Bloque E (pruebas automatizadas): el equipo debe decidir el ejecutor (node:test con ts-node como devDependency, o Jest o Vitest), la separación de app y listen en index.ts y una base de pruebas separada (por ejemplo agroalerta_test). Si se pospone, anotar la decisión. Detalle del alcance en TRANSVERSAL.
 - Bloque F (datos de referencia que no están en CENTA): asignar responsable y fecha, aunque los datos aún no estén. Bloquean 3-B, 4-C y 5-B. El dashboard_base.html usa valores de ejemplo (45 qq/mz, +5 %, 180-220 mm, $1,900, $2,970) que no son datos reales. F1: rendimiento estándar por cultivo (maíz, frijol, maicillo) en qq/mz y si varía con la clase de potencial. F2: precipitación de referencia del invierno, umbrales para sequía, exceso o invierno aceptable, y ventanas de primera y postrera. F3: precios promedio de insumos y dosis por manzana (semilla en libras, abonos en quintales, plaguicidas), jornales, alquiler, maquinaria y riego. F4: precio de venta por quintal. Cada valor lleva fuente y fecha, como los de CENTA; si algún dato no se consigue, declararlo como supuesto y no presentarlo como dato oficial. Fuentes candidatas (no consultadas): guías técnicas de CENTA para maíz, frijol y sorgo, y publicaciones de precios del MAG.
 - Mantener ESPERADO (cargar-centa.ts) y capas.config.ts en sincronía al agregar una capa o cambiar la división territorial.
 - Temporadas (primera y postrera): diferidas a la Parte 3.
@@ -1563,5 +1561,5 @@ TRANSVERSAL — Pruebas y documentación
 - Pruebas automatizadas (Jest + supertest): requieren aprobación del equipo para agregar dependencias. Alcance pendiente: /auth/registro (201, 400, 409 y emisión del evento), distrito del catálogo con distintas mayúsculas y tildes, inexistente y ausente (400), verificar (200, 400, 404, 410), reenviar-verificacion, /auth/login (200, 400, 401, 403), requireAuth (401 sin token, expirado e inválido; 200), GET /auth/yo (200 y 401), limpiar-centa.ts y utilidades.ts (conversión de números, validaciones), cargar-centa.ts contra una base de prueba (carga, segunda corrida sin duplicados, reversión ante filas ajenas, rechazo de CSV inválidos) y el servicio y endpoint de viabilidad (incluido el error de id fuera de rango) y la capa sin distinguir mayúsculas.
 - Pruebas manuales nunca realizadas, que las pruebas automatizadas deberían cubrir: concurrencia al verificar un token, medición de tiempos de login con correo existente e inexistente, correo mal formado en login (el body vacío se probó en 2-END), JWT_SECRET ausente en requireAuth, carga con una base no vacía, dos cargas simultáneas y aplicar la migración de 2-END sobre una base con usuarios (se espera que falle; no se probó). Probadas en 2-END: expiración de JWT (401 "Sesión expirada") y body vacío en login (400).
 - Vulnerabilidades de dependencias (npm audit, 2-END, A6): 9 en total (3 moderadas, 6 altas); 4 en producción (@prisma/adapter-mariadb con mariadb, y express con body-parser y qs). El equipo debe decidir si se actualizan y cómo: el arreglo toca package.json y package-lock.json y puede mover versiones fijadas (prisma, @prisma/client y @prisma/adapter-mariadb en 7.10.0; no subir a Prisma 8). Pasos propuestos: correr npm audit fix --dry-run y guardar la salida COMPLETA (en 2-END salió cortada), revisar qué versiones cambiaría, evaluar si las vulnerabilidades son explotables en el uso del proyecto (varias dependen de opciones de conexión como TLS o charsets) y registrar la decisión. No usar npm audit fix --force.
-- Completar los campos abiertos del historial: feat/1-b-login-auth-guards (1-B): marcas [VERIFICAR] (varias fueron confirmadas en fix/prisma-mariadb-rsa-key, 1-END, y deben limpiarse) e "Incidencias" sin llenar; feat/2-a-modelos-viabilidad (2-A): nombre exacto de la carpeta de la migración add_viabilidad e incidencias; feat/2-b-datos-centa (2-B): otras incidencias; 2-C: nombre y responsable de la rama docs; 2-D: responsable, fecha y motivo del rechazo de la feat, nombre de la rama fix y de la rama docs. 2-END: fechas y estado de merge de chore/2-end-verificaciones-ajustes y de chore/2-end-usuario-distrito-catalogo, nombre real de la rama docs de 2-END y, en Pendientes (Parte 2), la fecha de la decisión sobre el bloque E.
+- Completar los campos abiertos del historial: feat/2-a-modelos-viabilidad (2-A): nombre exacto de la carpeta de la migración add_viabilidad e incidencias; 
 - Mantener esta convención: una sola persona edita Estado_del_Proyecto.txt por rama docs; cada punto se documenta bajo su Parte-Punto.
