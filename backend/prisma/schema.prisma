@@ -52,6 +52,8 @@ model Distrito {
   nombre            String      @db.VarChar(100)
   nombreNormalizado String      @unique @map("nombre_normalizado") @db.VarChar(100)
   municipioId       Int         @map("municipio_id")
+  latitud           Decimal?    @db.Decimal(9, 6)
+  longitud          Decimal?    @db.Decimal(9, 6)
   municipio         Municipio   @relation(fields: [municipioId], references: [id])
   areas             AreaClase[]
   usuarios          Usuario[]

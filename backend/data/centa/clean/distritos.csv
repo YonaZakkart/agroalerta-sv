@@ -1,27 +1,27 @@
-id_distrito,distrito,municipio
-1301,Arambala,Morazán Norte
-1302,Cacaopera,Morazán Norte
-1303,Corinto,Morazán Norte
-1304,Chilanga,Morazán Sur
-1305,Delicias de Concepción,Morazán Sur
-1306,El Divisadero,Morazán Sur
-1307,El Rosario,Morazán Norte
-1308,Gualococti,Morazán Sur
-1309,Guatajiagua,Morazán Sur
-1310,Joateca,Morazán Norte
-1311,Jocoaitique,Morazán Norte
-1312,Jocoro,Morazán Sur
-1313,Lolotiquillo,Morazán Sur
-1314,Meanguera,Morazán Norte
-1315,Osicala,Morazán Sur
-1316,Perquín,Morazán Norte
-1317,San Carlos,Morazán Sur
-1318,San Fernando,Morazán Norte
-1319,San Francisco Gotera,Morazán Sur
-1320,San Isidro,Morazán Norte
-1321,San Simón,Morazán Sur
-1322,Sensembra,Morazán Sur
-1323,Sociedad,Morazán Sur
-1324,Torola,Morazán Norte
-1325,Yamabal,Morazán Sur
-1326,Yoloaiquín,Morazán Sur
+id_distrito,distrito,municipio,latitud,longitud
+1301,Arambala,Morazán Norte,13.91667,-88.13333
+1302,Cacaopera,Morazán Norte,13.76667,-88.08333
+1303,Corinto,Morazán Norte,13.81083,-87.97139
+1304,Chilanga,Morazán Sur,13.71667,-88.11667
+1305,Delicias de Concepción,Morazán Sur,13.78333,-88.13333
+1306,El Divisadero,Morazán Sur,13.60000,-88.05000
+1307,El Rosario,Morazán Norte,13.86667,-88.21667
+1308,Gualococti,Morazán Sur,13.81667,-88.21667
+1309,Guatajiagua,Morazán Sur,13.66667,-88.20000
+1310,Joateca,Morazán Norte,13.90000,-88.05000
+1311,Jocoaitique,Morazán Norte,13.90000,-88.15000
+1312,Jocoro,Morazán Sur,13.61667,-88.01667
+1313,Lolotiquillo,Morazán Sur,13.73333,-88.08333
+1314,Meanguera,Morazán Norte,13.85000,-88.15000
+1315,Osicala,Morazán Sur,13.80000,-88.15000
+1316,Perquín,Morazán Norte,13.95000,-88.16667
+1317,San Carlos,Morazán Sur,13.65000,-88.10000
+1318,San Fernando,Morazán Norte,13.96667,-88.20000
+1319,San Francisco Gotera,Morazán Sur,13.69408,-88.10407
+1320,San Isidro,Morazán Norte,13.85000,-88.23333
+1321,San Simón,Morazán Sur,13.83333,-88.23333
+1322,Sensembra,Morazán Sur,13.66667,-88.16667
+1323,Sociedad,Morazán Sur,13.70000,-88.01667
+1324,Torola,Morazán Norte,13.91667,-88.23333
+1325,Yamabal,Morazán Sur,13.664228,-88.172484
+1326,Yoloaiquín,Morazán Sur,13.76667,-88.15000
