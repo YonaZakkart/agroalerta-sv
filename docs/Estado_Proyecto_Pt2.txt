@@ -1,7 +1,7 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026.
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
@@ -10,6 +10,85 @@ Primera versión: 31 de octubre de 2026.
 - Las secciones base (tecnologías, convención de ramas, pasos de clonado, pruebas básicas) se copian desde Pt1 en la rama docs. Hasta entonces, rigen las de Pt1.
 - Se mantienen las reglas de Pt1: historial por Parte y Punto, lo ya documentado de cada rama no se reescribe, y al final siempre van Propuestas y Pendientes.
 - Cambio de mapa (documentado según reglas del proyecto): Mapa v2 adelanta el frontend (6-0, 6-A, 6-B = Hito 1) y agrega 3-0 como preparación de la Parte 3.
+- Desde el cierre del Hito 1 este archivo incluye la estructura de archivos actualizada (sección 1), que sustituye al árbol de la sección 2 de Pt1. Las demás secciones base siguen rigiéndose por Pt1.
+
+============================================================
+1. ESTRUCTURA DE ARCHIVOS (actualizada al cierre del Hito 1)
+============================================================
+No se versionan: .env, node_modules/, dist/, .angular/ y backend/src/generated/.
+
+agroalerta-sv/
+├── README.md                          (reescrito en el cierre del Hito 1)
+├── .gitignore
+├── docker-compose.yml                 MySQL 8.4 de desarrollo
+├── docker/
+│   └── mysql-init/grant-shadow.sql    privilegios para la shadow database de Prisma
+├── docs/
+│   ├── Propuesta_Inicial.txt
+│   ├── Mapa_inicial.txt               Partes 0 a 2 (histórico)
+│   ├── Mapa_v2.txt                    mapa vigente desde la Parte 3
+│   ├── Estado_del_Proyecto.txt        historial hasta la Parte 2 (Pt1, cerrado)
+│   ├── Estado_Proyecto_Pt2.txt        este archivo
+│   └── Info_Datos_CENTA.md            contrato de los datos de viabilidad
+├── backend/
+│   ├── package.json, package-lock.json, tsconfig.json
+│   ├── prisma7.config.ts              configuración del CLI de Prisma (fuera de src/)
+│   ├── .env.example                   plantilla; DUI_PEPPER y JWT_SECRET vacíos y obligatorios
+│   ├── data/centa/
+│   │   ├── raw/                       exports crudos de CENTA, division_territorial_morazan.csv y fuente.json
+│   │   └── clean/                     distritos.csv (26) y areas_clase.csv (312), generados por datos:limpiar
+│   ├── prisma/
+│   │   ├── schema.prisma              Usuario, Municipio, Distrito, Capa, ClaseCapa, AreaClase, enum TipoCapa
+│   │   └── migrations/                add_usuarios, add_verificacion_correo, add_viabilidad (20261004212446),
+│   │                                  20261030231036 (Usuario.distrito_id con FK) y migration_lock.toml
+│   └── src/
+│       ├── index.ts                   Express; valida JWT_SECRET y DUI_PEPPER; monta /auth, /viabilidad y /distritos
+│       ├── auth/                      registro.routes/service, login.routes, perfil.routes, jwt, auth.middleware, distrito.select
+│       ├── viabilidad/
+│       │   ├── constantes.ts          HA_POR_MANZANA
+│       │   ├── service.ts             consultarViabilidad() y ViabilidadError
+│       │   ├── viabilidad.routes.ts   GET /viabilidad/distritos/:id (requireAuth)
+│       │   ├── distritos.routes.ts    GET /distritos público (nuevo en 6-A)
+│       │   └── datos/                 capas.config, utilidades, limpiar-centa, cargar-centa
+│       ├── comun/normalizar.ts        normalizarNombre y colapsarEspacios (única normalización de nombres)
+│       ├── events/                    bus.ts y types.ts
+│       ├── config/prisma.ts           cliente Prisma compartido
+│       ├── generated/                 cliente Prisma generado (no versionado)
+│       └── clima/, siembra/, estimacion/   vacíos (Partes 3, 4 y 5)
+└── frontend/                          Angular 22
+    ├── package.json, package-lock.json, angular.json, tsconfig.json, tsconfig.app.json, tsconfig.spec.json
+    ├── proxy.conf.json                /api -> localhost:3000 con pathRewrite (solo desarrollo; nuevo en 6-A)
+    ├── .prettierrc, .editorconfig, README.md (generado por Angular CLI)
+    ├── public/                        favicon
+    └── src/
+        ├── index.html, styles.css     variables CSS, formularios y alertas globales
+        ├── main.ts, main.server.ts, server.ts   arranque; el SSR no se usa con RenderMode.Client
+        └── app/
+            ├── app.ts, app.html, app.css, app.spec.ts
+            ├── app.config.ts          HttpClient con fetch e interceptor
+            ├── app.config.server.ts, app.routes.server.ts   RenderMode.Client en "**"
+            ├── app.routes.ts          /login, /registro y área protegida (Shell + authGuard)
+            ├── core/
+            │   ├── api.config.ts      API_URL = '/api'
+            │   ├── models.ts          contratos TypeScript del backend
+            │   ├── auth.service.ts, auth.interceptor.ts, auth.guard.ts
+            │   ├── errores.ts         mensajesDeError()
+            │   ├── distritos.service.ts   GET /distritos
+            │   ├── perfil.service.ts      GET /auth/yo (nuevo en 6-B)
+            │   └── viabilidad.service.ts  GET /viabilidad/distritos/:id (nuevo en 6-B)
+            ├── layout/
+            │   ├── auth-shell/        panel de acceso (login y registro)
+            │   └── shell/             sidebar, encabezado con usuario y cierre de sesión
+            └── pages/
+                ├── login/
+                ├── registro/
+                └── dashboard/         KPI, selectores de cultivo y distrito, viabilidad y panel de estimación vacío
+
+Índice de ramas de Pt2 (orden cronológico):
+  6-0   feat/6-0-base-angular   [Yona]
+  6-A   feat/6-a-endpoint-distritos, feat/6-a-auth-login-registro, fix/6-a-styles-duplicado     [Yona]
+  6-B   feat/6-b-layout-dashboard    [Yona]
+  docs  docs/6-b-estado-hito1   [Yona] (la de esta actualización)
 
 ============================================================
 PARTE 6 — Frontend (adelantado por el Mapa v2)
@@ -55,7 +134,7 @@ Cambios respecto al Mapa v2 (documentados según reglas del proyecto):
 Qué se modificó: app.ts, app.html, app.spec.ts, index.html, styles.css, app.routes.ts.
 Qué se eliminó: el placeholder de bienvenida de Angular (app.html) y la señal title de app.ts.
 Qué se agregó: layout/shell, layout/auth-shell, pages/login, pages/registro, pages/dashboard (cada uno con .ts, .html y .css).
-Dependencias nuevas: ninguna. package.json y package-lock.json no se tocaron [VERIFICAR con git status antes del commit; un npm install previo pudo modificar el lock y debía descartarse].
+Dependencias nuevas: ninguna. package.json y package-lock.json no se tocaron 
 
 Cumplimiento del punto 6-0:
 - Rutas de login, registro y área con layout: cumplido (sin protección).
@@ -95,7 +174,220 @@ Puntos de atención para las siguientes ramas:
 - 6-A: decidir si distrito pasa a select (requiere endpoint público de distritos) o se deja de texto libre.
 - 6-B y siguientes: cada componente usa CSS propio mobile-first (base de móvil, min-width para ampliar). Reutilizar las variables de styles.css y no copiar los colores a mano.
 - Archivos compartidos del frontend (app.routes.ts, app.config.ts, styles.css, package.json): una sola persona a la vez; quien mergee segundo hace pull de main antes de seguir.
-- Hito 1 del Mapa v2: la fecha de presentación sigue sin fijar ([6 de noviembre; mínimo 2 vistas] entre corchetes en el Mapa v2).
+
+
+
+6-A — Login y registro conectados al backend
+--------------------------------------------
+
+Rama feat/6-a-endpoint-distritos (Parte 6, Punto A del Mapa v2: catálogo público de distritos, pendiente C1)
+Responsable: Yona
+Fecha: 31 de Octubre 2026
+
+Contexto: el registro necesita un listado de los 26 distritos antes de que el usuario inicie sesión, así que no puede exigir requireAuth. Esta rama es la parte de backend de 6-A y cierra el pendiente C1 del Mapa v2 (opción "endpoint público de solo lectura" de los Pendientes de la Parte 3 de Pt1).
+
+Qué se hizo:
+- backend/src/viabilidad/distritos.routes.ts (nuevo): exporta distritosRouter con GET /, montado en /distritos. Público (sin requireAuth). Responde 200 { distritos: [{ id, nombre, municipio: { id, nombre } }] }, ordenado por nombreNormalizado (sin tildes) y usando SELECT_DISTRITO. Ante un error responde 500 { error: "Error interno del servidor" } con console.error en el servidor, sin error.message.
+- backend/src/index.ts: import de distritosRouter y app.use("/distritos", distritosRouter).
+
+Decisiones de diseño:
+- Endpoint público porque el registro ocurre antes del login y los datos (nombre de distrito y municipio) no son sensibles.
+- Se reutiliza SELECT_DISTRITO (auth/distrito.select.ts) para que el distrito tenga la misma forma en registro, login, /auth/yo y el catálogo.
+- El registro sigue enviando el distrito por nombre; POST /auth/registro no cambió y el backend sigue validando contra el catálogo (400 si no existe).
+
+Qué se modificó / eliminó: backend/src/index.ts (import y montaje). No se eliminó nada. Dependencias nuevas: ninguna.
+Archivos tocados fuera de su carpeta: backend/src/index.ts (punto de contacto entre partes). No se tocaron schema.prisma, migrations/, events/, config/ ni package.json.
+
+Pruebas realizadas: [ GET /distritos sin token devuelve 200 con 26 distritos y el municipio de cada uno].
+NO realizadas: pruebas automatizadas; rate limiting sobre el endpoint (es público).
+
+Puntos de atención para las siguientes ramas:
+- Cualquier ruta pública nueva sigue el contrato { error, detalles } y no devuelve error.message en los 500.
+- Rate limiting y CORS (Parte 7) deben cubrir también /distritos.
+
+
+Rama feat/6-a-auth-login-registro (Parte 6, Punto A del Mapa v2: Login y registro conectados al backend; frontend, tres commits)
+Responsable: Yona
+Fecha: 31 de Octubre 2026
+
+Contexto: 6-0 dejó la base de Angular sin conexión con el backend y aplazó a 6-A el servicio de autenticación, el interceptor, el guard, la URL del API y los modelos de los contratos. Esta rama los implementa y conecta las pantallas de login y registro. Depende de feat/6-a-endpoint-distritos.
+
+Qué se hizo:
+- core/api.config.ts (nuevo): API_URL = '/api'.
+- proxy.conf.json (nuevo) y angular.json (serve.options.proxyConfig): /api se reenvía a http://localhost:3000 quitando el prefijo (pathRewrite ^/api -> ""), con changeOrigin y secure false. Solo desarrollo.
+- core/models.ts (nuevo contenido): ApiError, Municipio, Distrito, Usuario, RespuestaLogin, RespuestaRegistro (con tokenVerificacion_DEV opcional), RespuestaVerificacion, RespuestaDistritos y DatosRegistro.
+- core/auth.service.ts (nuevo): token en un signal persistido en sessionStorage (clave agroalerta_token), con try/catch por si el almacenamiento no está disponible; login(), registrar(), verificar(), cerrarSesion() y autenticado (computed).
+- core/auth.interceptor.ts (nuevo): agrega Authorization: Bearer <token>. Ante un 401 con sesión activa (excepto en /auth/login y /auth/registro) cierra la sesión y navega a /login?sesion=expirada o ?sesion=invalida, según el mensaje "Sesión expirada" del backend.
+- core/auth.guard.ts (nuevo): deja pasar si hay token y, si no, redirige a /login. Solo comprueba que exista, no que siga vigente.
+- core/errores.ts (nuevo): mensajesDeError() convierte errores HTTP en textos para el usuario (sin conexión, 403 con texto propio, { error, detalles } del backend, 5xx sin cuerpo).
+- core/distritos.service.ts (nuevo): listar() consume GET /distritos.
+- app.config.ts: provideHttpClient(withFetch(), withInterceptors([authInterceptor])).
+- app.routes.ts: canActivate: [authGuard] en el grupo hijo del Shell.
+- app.routes.server.ts: RenderMode.Client en "**".
+- pages/login: formulario reactivo (correo y contraseña), estado de carga, errores en un bloque de alerta y aviso amarillo si llega ?sesion=expirada o ?sesion=invalida. Al entrar navega a /dashboard.
+- pages/registro: formulario reactivo con select de distritos cargado desde el catálogo (con botón de reintento si falla). Tras crear la cuenta pasa a un estado "creada": si el backend devolvió tokenVerificacion_DEV muestra "Simular verificación de correo" (declarado como simulación); si no, indica que el envío de correos no está implementado. Tras verificar, estado "verificada" con enlace a /login. El formulario se limpia al crear la cuenta.
+- styles.css: clases globales .alerta, .alerta-error, .alerta-aviso y .btn-primary:disabled. registro.css: .alerta-ok, .reintentar y .enlace-boton.
+
+Decisiones de diseño y compromisos:
+- Token en sessionStorage: sobrevive a F5 y se pierde al cerrar la pestaña. Compromiso: un XSS podría leerlo. El acceso está aislado en AuthService, así que pasarlo a memoria es un cambio local.
+- Proxy de desarrollo en lugar de CORS. CORS sigue pendiente para el despliegue (Parte 7), que además debe reemplazar el proxy.
+- RenderMode.Client en "**" y no solo en el área protegida (como decía el punto de atención de 6-0): /registro consulta el API al cargarse y el token no existe en el servidor. Consecuencia: la app queda como cliente puro y el SSR de server.ts ya no se usa con las rutas actuales.
+- No hay guard inverso en login y registro: con un token vencido en sessionStorage redirigiría a un dashboard que aún no valida el token. Se evalúa después de 6-B.
+- El interceptor no trata como sesión expirada un 401 en /auth/login ni en /auth/registro.
+- El 403 se traduce a un texto amable: el mensaje del backend menciona un endpoint que un agricultor no entiende.
+- El botón de simular verificación depende de tokenVerificacion_DEV: con EXPONER_TOKEN_VERIFICACION=false desaparece. La pantalla declara que es una simulación (regla de demo del Mapa v2).
+- Validaciones del cliente mínimas (obligatorios, contraseña de 8 o más, DUI de 9 dígitos, Validators.email, que acepta "a@b"). El backend es la autoridad y sus mensajes se muestran tal cual.
+
+Qué se modificó: app.config.ts, app.routes.ts, app.routes.server.ts, angular.json, styles.css, models.ts, y login y registro (ts, html y css). Qué se eliminó: los submit que solo hacían preventDefault y el campo de distrito de texto libre del registro. Dependencias nuevas: ninguna (@angular/forms ya figuraba en package.json).
+
+Cumplimiento del punto 6-A y de lo aplazado de 6-0:
+- URL del API (proxy), servicio de autenticación con almacenamiento del token, interceptor, guard y modelos de contratos: cumplido.
+- Login y registro conectados; distrito por nombre; detalles del 400 visibles; 403 y 409 manejados; verificación simulada declarada: cumplido.
+- Criterio del Mapa v2 para 6-0 "ruta protegida redirige al login e interceptor agrega el encabezado": cumplido; la prueba de punta a punta del 401 se hizo en 6-B.
+- C1 (listado de distritos): cumplido con feat/6-a-endpoint-distritos.
+
+Pruebas realizadas (manuales; backend local con npm run dev, MySQL 8.4 en Docker, frontend con npx ng serve y proxy de desarrollo; 31 de octubre y 1 de noviembre de 2026):
+Rama feat/6-a-endpoint-distritos (backend)
+- npx tsc --noEmit: sin errores.
+- GET /distritos sin token: 200 con 26 distritos y forma { id, nombre, municipio: { id, nombre } }; el primero es Arambala y el último Yoloaiquín; los nombres con tilde (Delicias de Concepción, Perquín, San Simón) se ven correctos.
+
+Rama feat/6-a-auth-login-registro (frontend)
+Paso 1, base HTTP:
+- npx ng build sin errores.
+- http://localhost:4200/api/distritos en el navegador devuelve el JSON del catálogo: el proxy reenvía a localhost:3000 y quita el prefijo /api.
+- http://localhost:4200/dashboard sin sesión redirige a /login (guard).
+- Observación: en la primera visita a /dashboard, la terminal de ng serve imprimió AbortError ("Request for ... was aborted"), justo después de "[vite] optimizer bundling dependencies". Es el optimizador de Vite recargando durante la primera petición; no se repite al recargar.
+
+Paso 2, login (/login):
+1. Formulario vacío: "Ingresa tu correo y tu contraseña."
+2. Credenciales inventadas: "Credenciales inválidas".
+3. Usuario registrado y sin verificar con contraseña correcta: mensaje de cuenta no verificada (403 traducido).
+4. Usuario verificado: redirige a /dashboard con el layout.
+5. DevTools, Session Storage: existe agroalerta_token.
+6. /login?sesion=expirada muestra el aviso amarillo de sesión expirada.
+7. Backend apagado: "El servidor no responde. Verifica que el backend esté en ejecución."; al volver a encenderlo, el login funciona con los mismos datos sin recargar.
+
+Paso 3, registro (/registro):
+1. El selector trae los 26 distritos en orden alfabético, con tildes.
+2. Formulario vacío: mensaje de campos incompletos.
+3. Registro válido: pantalla "Cuenta creada" con el aviso de modo desarrollo y el botón de simular.
+4. El POST a /api/auth/registro envía el nombre del distrito, no un id.
+5. Simular verificación: "Correo verificado correctamente" y enlace a login; el login posterior llega a /dashboard.
+6. Correo repetido y DUI repetido con otro correo: "El correo o el DUI ya están registrados".
+7. Correo mal formado: se muestra el mensaje de validación (del cliente o del backend). [COMPLETAR: cuál de los dos apareció]
+8. Backend apagado con /registro cargado: "No se pudieron cargar los distritos" con Reintentar; con el backend encendido, Reintentar llena el selector sin recargar.
+9. npx ng build sin errores.
+
+Pruebas NO realizadas:
+- El interceptor ante un 401 con sesión activa de punta a punta (redirección a /login?sesion=expirada o invalida): el dashboard aún no hace llamadas protegidas; se prueba en 6-B. Solo se probó que /login muestra el aviso cuando llega ?sesion=.
+- Expiración real del JWT desde el frontend.
+- Registro con EXPONER_TOKEN_VERIFICACION=false (debería desaparecer el botón de simular y quedar solo el aviso de que no hay envío de correo).
+- Teléfono real, Safari/iOS, navegación completa por teclado y lector de pantalla.
+- Pruebas automatizadas de login, registro, servicios, interceptor y guard.
+- Registro o login concurrentes, y la migración 20261030231036 sobre una base con usuarios (fallo esperado; sin cambios en esta rama).
+Pruebas NO realizadas: el interceptor con un 401 real de punta a punta (se cubrió en 6-B); guard inverso; pruebas automatizadas del frontend; prueba en teléfono real.
+
+Qué falta: guard inverso, CORS, envío real de correo, cierre de sesión desde la interfaz (llegó en 6-B), pruebas automatizadas.
+
+Qué se agregó de más (no pedido originalmente): el aviso de sesión expirada o inválida en el login y el reintento de la carga de distritos.
+
+Archivos tocados fuera de su carpeta (puntos de contacto entre partes): app.routes.ts, app.config.ts, app.routes.server.ts, angular.json, styles.css y models.ts. No se tocó package.json.
+
+Incidencias técnicas:
+- "AbortError: Request for ... was aborted" en la terminal de ng serve en la primera visita a /dashboard: es el optimizador de Vite recargando durante la primera petición. No se repite al recargar.
+- styles.css quedó con el bloque "Formularios compartidos" duplicado (idéntico, inofensivo). Se corrigió en fix/6-a-styles-duplicado.
+
+Puntos de atención para las siguientes ramas:
+- El interceptor se prueba de punta a punta cuando el dashboard llame a /auth/yo (hecho en 6-B).
+- 6-B debe agregar el botón de cerrar sesión y decidir si valida el token al arrancar.
+- La migración 20261030231036 falla en bases locales que ya tengan usuarios: hay que vaciar usuarios o hacer docker compose down -v y volver a cargar con datos:cargar.
+- Producción: reemplazar el proxy y configurar CORS (Parte 7).
+
+
+Rama fix/6-a-styles-duplicado (Parte 6, Punto A: limpieza)
+Responsable: Yona
+Fecha: 1 de noviembre de 2026 (mergeada en main)
+
+Contexto: corrige la incidencia de feat/6-a-auth-login-registro.
+Qué se hizo: se eliminó la segunda copia del bloque "Formularios compartidos" de frontend/src/styles.css (unas 70 líneas, sin agregar ninguna).
+Pruebas: grep de los selectores (queda una sola copia), git diff --stat con solo eliminaciones, ng build sin errores y sin cambios visuales en login, registro y dashboard.
+Archivos tocados: frontend/src/styles.css (compartido del frontend). Dependencias nuevas: ninguna.
+
+
+6-B — Layout y dashboard con viabilidad real
+--------------------------------------------
+
+Rama feat/6-b-layout-dashboard (Parte 6, Punto B del Mapa v2: Layout y dashboard; frontend)
+Responsable: Yona
+Fecha: 1 de noviembre de 2026
+Commits (uno por paso): "feat(frontend): modelos y servicios de perfil y viabilidad"; "feat(frontend): shell con usuario desde /auth/yo y cierre de sesion"; "feat(frontend): dashboard con viabilidad de cultivo por distrito"; "feat(frontend): selector para consultar la viabilidad de otro distrito"; "feat(frontend): panel de estimacion en estado vacio (Parte 5 pendiente)".
+
+Contexto: con 6-0 y 6-A el frontend ya tiene rutas, estilos, autenticación e interceptor. Esta rama es la más grande del Hito 1: el encabezado con el usuario real, el cierre de sesión y el dashboard con los datos de viabilidad de CENTA. No toca el backend. Se hizo en una sola rama, con commits por paso, porque casi todo cae en los mismos archivos (shell, dashboard y core/).
+
+Qué se hizo:
+- core/models.ts (solo se agregó): Cultivo, CULTIVOS (maíz, frijol, maicillo), TipoCapa, ClaseViabilidad, CapaViabilidad, RespuestaViabilidad, PerfilUsuario y RespuestaPerfil.
+- core/viabilidad.service.ts (nuevo): consultar(distritoId, cultivo) llama a GET /viabilidad/distritos/:id?cultivo=. El backend incluye riesgo_sequia al filtrar por cultivo.
+- core/perfil.service.ts (nuevo): signal con el perfil, cargar() (GET /auth/yo) y limpiar().
+- Shell (shell.ts reescrito, shell.html y shell.css): carga el perfil al montarse, lo que valida el token al entrar al área protegida. Muestra el nombre corto (desde 600 px), las iniciales en el avatar y un botón de cerrar sesión que limpia token y perfil y navega a /login. Si /auth/yo falla, muestra un aviso y deja el avatar genérico.
+- Dashboard (dashboard.ts, dashboard.html y dashboard.css reescritos):
+  - KPI de distrito, municipio y fuente con la fecha de extracción.
+  - Selector de cultivo de tres botones de ancho completo en móvil. Recuerda el último cultivo elegido en sessionStorage (clave agroalerta_cultivo); por defecto, maíz.
+  - Dos tarjetas por cultivo (potencial y riesgo de sequía) con la clase dominante en texto, una barra apilada por clase y una leyenda con porcentaje y manzanas. Los segmentos de 0 % no aparecen en la barra, pero sí en la leyenda. Estados de carga y de error con reintento.
+  - Nota fija: "Referencia distrital de CENTA... Describe el distrito completo, no tu parcela."
+  - Selector para consultar otro distrito (catálogo de GET /distritos). El municipio sale del propio catálogo. Solo vive en memoria: al recargar vuelve al distrito del perfil. Hay un enlace "Volver a mi distrito".
+  - Panel de estimación en estado vacío ("Aún no disponible"), sin ninguna cifra, fuera del bloque condicional para que se vea siempre.
+
+Decisiones de diseño:
+- Vista por cultivo con selector en lugar de las cuatro capas apiladas: en móvil son dos bloques cortos, coincide con la lectura del agricultor ("¿puedo sembrar maíz aquí y qué riesgo de sequía hay?") y se reutiliza en el formulario de siembra de la Parte 4.
+- Barra apilada con CSS en lugar de un gráfico: sin dependencias nuevas y legible a 375 px.
+- Color según el tipo de capa, no según el número: en POTENCIAL un valor mayor es mejor (verde) y en RIESGO un valor mayor es peor (rojo). La función nivel() asume capas de 3 clases.
+- Los porcentajes y las manzanas no se recalculan en el cliente: se muestran los que entrega el servidor (los porcentajes pueden sumar 99.9 o 100.1). Solo se les da formato.
+- El panel de estimación queda vacío y no como "ejemplo ilustrativo": cumple la regla de demo (ningún 45 qq/mz, +5 %, $1,900 ni $2,970 como dato real).
+- Una sola rama con commits por paso: partirla en varias solo multiplicaba conflictos en archivos compartidos.
+- El selector de distrito es solo de consulta y no modifica Usuario.distritoId.
+
+Qué se modificó / eliminó:
+- Modificados: shell.ts, shell.html, shell.css, dashboard.ts, dashboard.html, dashboard.css y core/models.ts (solo adiciones).
+- Nuevos: core/viabilidad.service.ts y core/perfil.service.ts.
+- Eliminado: el texto provisional "Aquí se mostrará la viabilidad..." del dashboard de 6-0. El avatar genérico del shell queda solo como respaldo mientras no hay perfil.
+- Dependencias nuevas: ninguna.
+
+Cumplimiento del punto 6-B y del Hito 1:
+- Sidebar y encabezado con el usuario desde GET /auth/yo: cumplido.
+- KPI de zona de viabilidad real: cumplido (distrito, municipio y fuente). No se incluyeron los KPI de clima y temporada ni los indicadores de sistema vivo del HTML base: dependen de la Parte 3.
+- Tarjeta de viabilidad del distrito del usuario, con datos reales: cumplido.
+- Panel de estimación vacío hasta la Parte 5: cumplido.
+- Hito 1 (6-0 + 6-A + 6-B): completo en lo técnico. Falta fijar la fecha de presentación (el Hito 1 vence el 6 de noviembre).
+
+Pruebas realizadas (manuales, backend y ng serve, usuario de Chilanga):
+- Shell: nombre e iniciales tras el login; cierre de sesión (token fuera de sessionStorage y /dashboard redirige al login); token alterado, que redirige a /login?sesion=invalida con el aviso; JWT_EXPIRES_IN=5s, que redirige con ?sesion=expirada (cierra el pendiente del interceptor de 6-A; restaurado a 2h); backend caído, que deja el aviso de perfil y el avatar genérico.
+- Dashboard: maíz con 33.7 / 46.3 / 19.9 % y sequía con 35.1 / 51.5 / 13.4 %, con los colores invertidos entre potencial y riesgo; cambio de cultivo; recarga con F5, que mantiene el último cultivo; Arambala con clases de 0 % solo en la leyenda; 375 y 900 px; backend caído con reintento.
+- Selector de distrito: Perquín con municipio Morazán Norte; enlace de regreso; el cultivo se mantiene al cambiar de distrito; F5 vuelve al distrito del perfil; cambios rápidos seguidos (queda el último, sin respuestas viejas pisando las nuevas).
+- Panel de estimación visible con y sin error de viabilidad; búsqueda de los valores de ejemplo del dashboard base sin resultados.
+- npx ng build sin errores ni advertencias de presupuesto de estilos (anyComponentStyle): chunk lazy del dashboard 9.66 kB; total inicial 317.34 kB (88.22 kB estimados de transferencia).
+NO realizadas: pruebas automatizadas; prueba en un teléfono real, en Safari/iOS ni navegación completa por teclado.
+
+Qué NO se hizo / qué falta:
+- Historial, Clima Zonal, Configuración y estimación real (6-C, 6-D y 6-E).
+- Indicadores de sistema vivo y KPI de clima y temporada (dependen de la Parte 3).
+- Guard inverso en login y registro, y validación de la vigencia del token en el guard.
+- Aviso propio del dashboard cuando /auth/yo falla.
+
+Qué se agregó de más (no pedido originalmente): el selector para consultar otro distrito, el aviso de perfil no disponible y la validación del token al entrar al shell.
+
+Archivos tocados fuera de su carpeta: frontend/src/app/core/models.ts (compartido del frontend; solo adiciones). No se tocaron app.routes.ts, app.config.ts, styles.css, package.json ni nada de backend/.
+
+Incidencias técnicas: ninguna de código.
+
+Puntos de atención para las siguientes ramas:
+- 6-E reemplaza el panel vacío y debe consumir PerfilService y el distrito consultado.
+- Parte 4: el formulario de siembra debe decidir si usa el distrito registrado (Usuario.distritoId) o permite elegir otro. Una siembra ocurre en un lugar concreto, por lo que no conviene heredar el distrito que se exploraba en el dashboard.
+- El dashboard depende de que /auth/yo responda: si falla, se queda en "Cargando viabilidad..." mientras el shell muestra su aviso.
+- El guard solo comprueba que exista un token: con uno vencido el dashboard se ve un instante antes de la redirección. Agregar el guard inverso ya no genera bucle (el shell valida el token con /auth/yo), pero es una decisión de equipo.
+- nivel() asume capas de 3 clases: revisar si se agrega una capa con otro número de clases.
+- Para la demo, EXPONER_TOKEN_VERIFICACION=true es necesario para que el registro ofrezca "Simular verificación"; debe declararse como simulación.
+- models.ts, app.routes.ts, app.config.ts y styles.css siguen siendo compartidos del frontend: una persona a la vez.
+
 
 ============================================================
 PROPUESTAS (opcionales)
@@ -103,25 +395,34 @@ PROPUESTAS (opcionales)
 - Revisar y, si procede, aprobar con allowScripts los 4 paquetes del frontend con scripts bloqueados, con acuerdo del equipo, en una rama aparte.
 - Revisión de las vulnerabilidades de npm audit del frontend en una rama aparte, sin npm audit fix automático.
 - Sustituir los CDN de fuente e iconos por recursos locales si la demo llegara a hacerse sin internet.
+- Cargar el perfil una sola vez con un resolver de ruta, en lugar de que el dashboard espere al shell, si más vistas necesitan el perfil.
+- Mover a styles.css los estilos de KPI y del selector segmentado si otra vista los reutiliza (hoy viven en el CSS del dashboard).
+- Decidir si se elimina el SSR (server.ts, main.server.ts y outputMode "server") o se conserva, ahora que toda la app usa RenderMode.Client.
+- Un .gitattributes para evitar que Windows marque como modificados los CSV limpios por el fin de línea (ver Propuestas de Pt1).
 
 ============================================================
 PENDIENTES (obligatorio)
 ============================================================
-PARTE 2 — Cierre (documentación)
-- Rama docs que registre el cierre de la Parte 2 (2-END) en Estado_del_Proyecto.txt (Usuario.distrito como FK, migración 20261030231036, contrato de distrito como objeto, bloque C movido a la Parte 3) y actualice el README, que sigue diciendo que el endpoint de viabilidad no existe.
+PARTE 2 — Cierre
+- Los pendientes de la Parte 2 que no cambian (A2 de Requeno y Pocho, A4, bloque E, bloque F y la confirmación de las decisiones de 2-D) siguen en la sección 11 de Estado_del_Proyecto.txt.
 
 MAPA v2
-- Corregir en Mapa_v2.txt la línea de fecha de presentación entre corchetes, la frase suelta "este cambio debe documentarse..." y "se rebalancea..", y subirlo a docs/.
-- Fijar la fecha de presentación y el mínimo de vistas.
+- Corregir en Mapa_v2.txt la línea de fecha de presentación entre corchetes, la frase suelta "este cambio debe documentarse..." y "se rebalancea..".
 
 PARTE 6 — Frontend
-- 6-A (login y registro conectados), 6-B (dashboard con viabilidad real). Aplazado desde 6-0: servicio de autenticación, interceptor, guard, URL del API (proxy), modelos de contratos.
-- Pasar el área protegida a RenderMode.Client antes del guard.
+- 6-C Historial (depende de 4-D y 5-D), 6-D Clima Zonal y Configuración (depende de 3-D) y 6-E estimación real en el dashboard (depende de 5-D).
+- Indicadores de sistema vivo en el encabezado y KPI de clima y temporada (Hito 2).
+- Decidir el guard inverso en login y registro y si el guard valida la vigencia del token.
+- Aviso propio del dashboard cuando /auth/yo falla.
+- Entradas del sidebar deshabilitadas (Historial, Clima Zonal y Configuración) hasta que existan sus vistas.
+- Despliegue (Parte 7): reemplazar el proxy de desarrollo y configurar CORS con el encabezado Authorization; decidir qué pasa con el SSR.
+- Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
 
 PARTE 3 y siguientes
 - 3-0: eventos faltantes, coordenadas por distrito (las columnas x e y de los exports de CENTA vienen vacías, no sirven) y umbrales de lluvia.
 - Datos de referencia fuera de CENTA (rendimientos, umbrales, precios, precio de venta): conseguirlos desde ya, bloquean 3-B, 4-C y 5-B.
+- Parte 4: decidir si el formulario de siembra usa el distrito registrado o permite elegir otro.
 
 TRANSVERSAL
-- Copiar las secciones base de Pt1 a este archivo. (posteriormente)
-- Pruebas automatizadas del frontend (hoy solo existe la prueba de creación de App).
+- Copiar las secciones base de Pt1 a este archivo (posteriormente).
+- Completar los campos abiertos: fecha y pruebas de feat/6-a-auth-login-registro y feat/6-a-endpoint-distritos; estado de merge de feat/6-b-layout-dashboard y de fix/6-a-styles-duplicado. Dato para Pt1: la carpeta de la migración de 2-A es 20261004212446_add_viabilidad.
