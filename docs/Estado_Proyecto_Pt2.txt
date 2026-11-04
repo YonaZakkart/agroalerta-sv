@@ -1,11 +1,11 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas).
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
-- Estado_del_Proyecto.txt (Pt1) queda cerrado con la Parte 2 y ya no se edita, salvo la rama docs que registre el cierre de la Parte 2 (2-END), que está pendiente.
+- Estado_del_Proyecto.txt (Pt1) queda cerrado con la Parte 2 (2-END documentado) y ya no se edita.
 - Este archivo registra desde el Mapa v2 (docs/Mapa_v2.txt), que sustituye a Mapa_inicial.txt desde la Parte 3.
 - Las secciones base (tecnologías, convención de ramas, pasos de clonado, pruebas básicas) se copian desde Pt1 en la rama docs. Hasta entonces, rigen las de Pt1.
 - Se mantienen las reglas de Pt1: historial por Parte y Punto, lo ya documentado de cada rama no se reescribe, y al final siempre van Propuestas y Pendientes.
@@ -29,18 +29,22 @@ agroalerta-sv/
 │   ├── Mapa_v2.txt                    mapa vigente desde la Parte 3
 │   ├── Estado_del_Proyecto.txt        historial hasta la Parte 2 (Pt1, cerrado)
 │   ├── Estado_Proyecto_Pt2.txt        este archivo
-│   └── Info_Datos_CENTA.md            contrato de los datos de viabilidad
+│   ├── Info_Datos_CENTA.md            contrato de los datos de viabilidad
+│   ├── Info_Datos_Coordenadas.md      coordenadas por distrito (3-0b)
+│   └── Info_Datos_Clima.md            umbrales de lluvia y ventanas de temporada (3-0c)
 ├── backend/
 │   ├── package.json, package-lock.json, tsconfig.json
 │   ├── prisma7.config.ts              configuración del CLI de Prisma (fuera de src/)
 │   ├── .env.example                   plantilla; DUI_PEPPER y JWT_SECRET vacíos y obligatorios
 │   ├── data/centa/
 │   │   ├── raw/                       exports crudos de CENTA, division_territorial_morazan.csv y fuente.json
-│   │   └── clean/                     distritos.csv (26) y areas_clase.csv (312), generados por datos:limpiar
+│   │   └── clean/                     distritos.csv (26, con latitud y longitud desde 3-0b) y areas_clase.csv (312), generados por datos:limpiar
+│   ├── data/referencia/
+│   │   └── coordenadas_distritos.csv  26 coordenadas con fuente y fecha (3-0b)
 │   ├── prisma/
-│   │   ├── schema.prisma              Usuario, Municipio, Distrito, Capa, ClaseCapa, AreaClase, enum TipoCapa
+│   │   ├── schema.prisma              Usuario, Municipio, Distrito, Capa, ClaseCapa, AreaClase, enum TipoCapa; Distrito con latitud y longitud opcionales (3-0b)
 │   │   └── migrations/                add_usuarios, add_verificacion_correo, add_viabilidad (20261004212446),
-│   │                                  20261030231036 (Usuario.distrito_id con FK) y migration_lock.toml
+│   │                                  20261030231036 (Usuario.distrito_id con FK), 20261102032958_add_coordenadas_distrito (3-0b) y migration_lock.toml
 │   └── src/
 │       ├── index.ts                   Express; valida JWT_SECRET y DUI_PEPPER; monta /auth, /viabilidad y /distritos
 │       ├── auth/                      registro.routes/service, login.routes, perfil.routes, jwt, auth.middleware, distrito.select
@@ -51,7 +55,7 @@ agroalerta-sv/
 │       │   ├── distritos.routes.ts    GET /distritos público (nuevo en 6-A)
 │       │   └── datos/                 capas.config, utilidades, limpiar-centa, cargar-centa
 │       ├── comun/normalizar.ts        normalizarNombre y colapsarEspacios (única normalización de nombres)
-│       ├── events/                    bus.ts y types.ts
+│       ├── events/                    bus.ts y types.ts (con los eventos de clima y siembra desde 3-0a)
 │       ├── config/prisma.ts           cliente Prisma compartido
 │       ├── generated/                 cliente Prisma generado (no versionado)
 │       └── clima/, siembra/, estimacion/   vacíos (Partes 3, 4 y 5)
@@ -88,8 +92,10 @@ agroalerta-sv/
   6-0   feat/6-0-base-angular   [Yona]
   6-A   feat/6-a-endpoint-distritos, feat/6-a-auth-login-registro, fix/6-a-styles-duplicado     [Yona]
   6-B   feat/6-b-layout-dashboard    [Yona]
-  docs  docs/6-b-estado-hito1   [Yona] (la de esta actualización)
+  docs  docs/6-b-estado-hito1   [Yona]
+  3-0b  feat/3-0b-coordenadas   [Requeno]
   3-0c  docs/3-0c-umbrales-temporadas   [Smith]
+  3-0a  feat/3-0a-eventos, docs/3-0a-estado   [Pocho]
 
 ============================================================
 PARTE 6 — Frontend (adelantado por el Mapa v2)
@@ -516,6 +522,65 @@ Puntos de atención para las siguientes ramas:
 - Recomendaciones: la sequía meteorológica no equivale a pérdida de cultivo; redactarlo así.
 
 
+3-0a — Eventos de clima y siembra
+---------------------------------
+
+Rama feat/3-0a-eventos (Parte 3, Punto 0a del Mapa v2: Eventos)
+Responsable: Pocho
+Fecha: 3 de noviembre de 2026
+Estado: mergeada en main (PR #33, commit 12788ab). La documentación va en docs/3-0a-estado.
+
+Contexto: el Mapa v2 pide definir, antes de la Parte 3, los nombres y los payloads de los eventos que usarán los módulos de clima, siembra y estimación (pendiente C3 de Pt1). Esta rama solo define los tipos. Nadie emite ni escucha todavía estos eventos.
+
+Qué se hizo:
+- backend/src/events/types.ts: se agregaron tres entradas al objeto EVENTOS (ACTUALIZACION_METEOROLOGICA, CONDICION_CLIMATICA_ACTUALIZADA y SIEMBRA_REGISTRADA) y sus interfaces de payload:
+  - ActualizacionMeteorologicaPayload { distritoId, fecha, precipitacionMm, fuente }
+  - CondicionClimaticaActualizadaPayload { distritoId, condicion, condicionAnterior, precipitacionAcumuladaMm, fecha }
+  - SiembraRegistradaPayload { siembraId, usuarioId, distritoId, cultivo, areaMz, fecha }
+- Tipo CondicionClimatica: "SEQUIA" | "EXCESO_LLUVIA" | "INVIERNO_ACEPTABLE".
+- Los campos siguen los payloads sugeridos en el Mapa v2. AgricultorRegistrado y bus.ts no se tocaron.
+
+Decisiones de diseño:
+- Solo se agregó. No se modificó ni se reordenó lo existente, porque events/types.ts es archivo compartido.
+- fecha es Date, igual que fechaRegistro en AgricultorRegistrado. Los eventos viajan dentro del mismo proceso, así que no hace falta serializarlos.
+- condicionAnterior admite null: la primera vez que se clasifica un distrito no hay condición previa.
+- cultivo es string y no un conjunto de valores, porque todavía no existe el modelo de siembra (4-A).
+- Los nombres de CondicionClimatica quedaron alineados con la documentación: Info_Datos_Clima.md usa EXCESO_LLUVIA y types.ts usa el mismo valor.
+
+Qué se modificó: backend/src/events/types.ts (35 líneas agregadas, 0 eliminadas).
+Qué se eliminó: nada. Qué se agregó: lo descrito arriba. Dependencias nuevas: ninguna. Sin migración ni cambios de base de datos.
+
+Cumplimiento del punto 3-0a (Mapa v2):
+- Nombres y payloads de los tres eventos en events/types.ts, una sola persona y solo agregando: cumplido.
+- Contrato para 3-C (emisión), 4-D (SiembraRegistrada) y 5-A (listeners): definido; los usuarios de los tipos aún no existen.
+
+Pruebas realizadas (manuales):
+- git diff --stat: 1 archivo, 35 inserciones y 0 eliminaciones.
+- npx tsc --noEmit en backend/: sin errores.
+- npm run dev con la rama activa: el backend arranca y GET /health responde {"status":"ok"}.
+NO realizadas: pruebas automatizadas; emisión y escucha de los eventos (aún no hay quien los use).
+
+Qué NO se hizo / qué falta:
+- Emitir ActualizacionMeteorologica y CondicionClimaticaActualizada (3-C) y SiembraRegistrada (4-D).
+- Escucharlos (5-A).
+- Validar los valores de cultivo y de condicion más allá del tipo.
+- Decidir si CondicionClimatica admite una cuarta salida "sin evaluación" (ver Pendientes).
+
+Qué se agregó de más (no pedido originalmente): el tipo CondicionClimatica, para no repetir los tres valores en cada payload.
+
+Archivos tocados fuera de su carpeta (puntos de contacto entre partes): backend/src/events/types.ts. No se tocaron schema.prisma, migrations/, index.ts ni package.json.
+
+Rama docs/3-0a-estado (solo documentación): agrega esta sección y actualiza el encabezado, la sección 0, el índice de ramas, el árbol de archivos de la sección 1 y Pendientes. Además completa omisiones de 3-0b y 3-0c: Info_Datos_Coordenadas.md e Info_Datos_Clima.md, referencia/coordenadas_distritos.csv, la descripción de distritos.csv, la migración 20261102032958_add_coordenadas_distrito y la descripción de schema.prisma. No se tocó código.
+
+Incidencias técnicas:
+- Al probar el arranque apareció EADDRINUSE: había otra copia del backend corriendo en otra terminal. No es del código. Sirvió para comprobar que el manejo de error de listen (fix de 2-D) funciona: la segunda copia aborta con un mensaje claro.
+
+Puntos de atención para las siguientes ramas:
+- 3-B: confirmar la cuarta salida "sin evaluación" y mantener el nombre EXCESO_LLUVIA en todo el contrato.
+- La decisión de una cuarta salida "sin evaluación" cambia el payload de CondicionClimaticaActualizada: decidir antes de 3-B. events/types.ts: una sola persona, solo agregar.
+- 3-C: emitir ActualizacionMeteorologica en cada consulta y CondicionClimaticaActualizada solo cuando cambia la condición (decisión del Mapa v2 "a confirmar").
+- 4-A y 4-D: cuando exista el modelo de siembra, revisar si cultivo debe restringirse a un conjunto de valores.
+
 ============================================================
 PROPUESTAS (opcionales)
 ============================================================
@@ -546,9 +611,10 @@ PARTE 6 — Frontend
 - Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
 
 PARTE 3 y siguientes
-- 3-0a: eventos faltantes. Las coordenadas (3-0b) y el documento de umbrales y temporadas (3-0c) ya están hechos; 3-0c es parcial (ver abajo).
+- 3-0a hecho; 3-0b y 3-0c ya están (3-0c parcial, ver F2).
+- Alinear EXCESO con EXCESO_LLUVIA en Info_Datos_Clima.md (types.ts usa EXCESO_LLUVIA).
 - F2 parcial: confirmar o corregir los SUPUESTOS de Info_Datos_Clima.md (día seco, cortes de sequía y exceso, guarda de 20 mm, ventanas de primera y postrera) con CENTA, un agrónomo o datos reales; conseguir los umbrales de inicio de época lluviosa y el límite inferior de la sequía débil del MARN; extraer los requerimientos hídricos por etapa del boletín agrometeorológico del MARN.
-- Decidir si CondicionClimaticaActualizada admite una cuarta salida "sin evaluación" (época seca).
+- Decidir si CondicionClimaticaActualizada admite una cuarta salida "sin evaluación" (época seca) (decidir antes de 3-B).
 - Verificar con una segunda fuente los 15 distritos que tienen una sola fuente de coordenadas.
 - Mostrar la atribución a GeoNames en la aplicación (6-D o 7-D).
 - Datos de referencia fuera de CENTA (rendimientos, precios, precio de venta): conseguirlos desde ya, bloquean 4-C y 5-B. Umbrales de lluvia y temporadas: ver F2 parcial; 3-B puede avanzar con los supuestos declarados.
@@ -556,5 +622,5 @@ PARTE 3 y siguientes
 
 TRANSVERSAL
 - Copiar las secciones base de Pt1 a este archivo (posteriormente).
-- Info_Datos_Clima.md (3-0c) debe agregarse a la estructura de archivos de la sección 1 (docs/) en la próxima actualización de las secciones base.
+- Info_Datos_CENTA.md aún habla de las coordenadas como pendientes (2-END, bloque "Pendientes"). Ya lo avisa 3-0b, pero sigue sin hacerse.
 - Completar los campos abiertos: fecha y pruebas de feat/6-a-auth-login-registro y feat/6-a-endpoint-distritos; estado de merge de feat/6-b-layout-dashboard y de fix/6-a-styles-duplicado. Dato para Pt1: la carpeta de la migración de 2-A es 20261004212446_add_viabilidad.
