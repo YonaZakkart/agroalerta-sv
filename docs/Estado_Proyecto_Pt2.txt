@@ -624,3 +624,91 @@ TRANSVERSAL
 - Copiar las secciones base de Pt1 a este archivo (posteriormente).
 - Info_Datos_CENTA.md aún habla de las coordenadas como pendientes (2-END, bloque "Pendientes"). Ya lo avisa 3-0b, pero sigue sin hacerse.
 - Completar los campos abiertos: fecha y pruebas de feat/6-a-auth-login-registro y feat/6-a-endpoint-distritos; estado de merge de feat/6-b-layout-dashboard y de fix/6-a-styles-duplicado. Dato para Pt1: la carpeta de la migración de 2-A es 20261004212446_add_viabilidad.
+
+3-A — Cliente de Open-Meteo por distrito
+----------------------------------------
+
+Rama de código: feat/3-a-cliente-open-meteo (Parte 3, Punto A del Mapa v2)
+Rama de documentación: docs/3-a-cliente-open-meteo
+Responsable: [Requeno]
+Fecha: [04/11/2026]
+
+Contexto: 3-A entrega el módulo que consulta la lluvia de Open-Meteo por distrito usando las coordenadas de 3-0b. Su prerrequisito (coordenadas en main) estaba cumplido, y no depende de 3-0a ni de 3-0c. No toca schema.prisma, events/types.ts ni index.ts. Detalle técnico, términos de uso y contrato en docs/Info_Datos_OpenMeteo.md.
+
+Verificación previa de la documentación oficial (consultada el 4 de noviembre de 2026):
+- Uso: plan gratuito solo no comercial (menos de 10.000 llamadas al día, 5.000 por hora, 600 por minuto). Aplica a la cátedra, sin cobro ni anuncios.
+- Licencia CC BY 4.0: exige un enlace de atribución junto a cualquier lugar donde se muestren los datos. El cliente devuelve la atribución en cada resultado; mostrarla en la interfaz queda para 6-D o 7-D.
+- Histórico: API de archivo (ERA5, 0.25°, desde 1940, 5 días de retraso). ERA5-Land no trae precipitación propia, así que la normal usa ERA5.
+- Lluvia reciente: past_days de 0 a 92 en la API de pronóstico. 30 días caben.
+- Varias coordenadas en una petición: la respuesta es una lista (con una sola, un objeto) y las coordenadas devueltas son el centro de celda del modelo, no las pedidas.
+- Error documentado: HTTP 400 con { error: true, reason }.
+- Resultado: sí hay normal (histórico disponible); 3-B puede clasificar solo por días secos si normal30Mm llega null.
+
+Qué se hizo (todo en backend/src/clima/, archivos nuevos):
+- config.ts: URLs, zona horaria America/El_Salvador, ventana de 30 días, tiempos máximos, atribución. Citan la documentación oficial.
+- tipos.ts y errores.ts: tipos del contrato y ErrorOpenMeteo con seis tipos (COORDENADA_INVALIDA, PARAMETRO_INVALIDO, TIMEOUT, RED, HTTP, FORMATO).
+- open-meteo.client.ts: fetch nativo, sin dependencias nuevas. Validación de puntos, construcción de URL, timeout con AbortSignal.timeout, interpretación de la respuesta (lista u objeto, emparejamiento por posición, unidad mm, null conservado) y marca de día incompleto para hoy. UNA petición para los 26 puntos. No reintenta.
+- normales.ts y normales-archivo.ts: normal de 30 días por distrito (funciones puras) y lectura/escritura del JSON versionado.
+- clima-actual.ts: obtenerClimaActual(), punto de entrada para 3-B, 3-C y 3-D: serie diaria + normal30Mm (o null) por distrito en una sola llamada.
+- puntos.ts: lee los puntos de la base, convierte Decimal con toNumber() y trata null como error.
+- index.ts: API pública del módulo.
+- generar-normales.ts (npm run clima:normales): genera backend/data/referencia/normales_lluvia_30d.json con una petición por distrito, pausa entre peticiones y reanudación.
+- probar-open-meteo.ts (npm run clima:probar): prueba manual contra la API real.
+- clima.pruebas.ts (npm run clima:pruebas): 17 pruebas sin red con respuestas de ejemplo.
+- package.json: tres scripts nuevos (clima:pruebas, clima:probar, clima:normales).
+- backend/data/referencia/normales_lluvia_30d.json: Si se genero, y se incluyo en el PR.
+
+Decisiones de diseño:
+- Una sola petición con los 26 puntos reales, sin redondear a celdas de 0.1°. La API admite varias coordenadas, el volumen está muy por debajo del límite y redondear desplazaría cada punto hasta unos 5 km por eje. Los distritos que caen en la misma celda del modelo reciben el mismo dato (limitación del origen).
+- Serie diaria completa + normal (o null), no valores ya resumidos: 3-B deriva diasSecosConsecutivos y acumulado30Mm con una función pura propia (resumirLluvia) y así nadie espera a nadie.
+- El día de hoy llega con completo=false: 3-B debe usar solo días completos. fechaUltimoDiaCompleto marca el fin de la ventana.
+- La normal se guarda en un JSON versionado y no en la base: 3-A no toca schema.prisma y 3-B queda como única migración de la Parte 3.
+- La normal usa ERA5 (25 km) y la lluvia reciente los modelos de pronóstico: posible sesgo entre ambas. Documentado como riesgo; 3-B debe tratarla como referencia.
+- Sin reintentos dentro de 3-A: la tolerancia a fallos y la periodicidad son de 3-D. El cliente distingue TIMEOUT, RED, HTTP (con estado, para detectar 429) y FORMATO.
+
+Qué se modificó: backend/package.json (tres scripts).
+Qué se eliminó: nada.
+Qué se agregó: la carpeta backend/src/clima/ (12 archivos) y, si se generó, data/referencia/normales_lluvia_30d.json.
+Dependencias nuevas: ninguna.
+Archivos fuera de su carpeta: solo package.json, por los scripts.
+
+Cumplimiento de lo pedido para 3-A:
+- Cliente de Open-Meteo por distrito con las coordenadas: cumplido.
+- Fetch nativo, sin dependencias, con timeout y manejo de errores: cumplido.
+- latitud y longitud como Decimal | null, convertidas con Number/toNumber y null como error: cumplido.
+- Revisar términos de uso, atribución y parámetros en la documentación oficial antes de fijar el contrato: cumplido (arriba y en Info_Datos_OpenMeteo.md).
+- Agrupar consultas para no repetir peticiones: cumplido con una sola petición para los 26 puntos.
+- Emisión de eventos: fuera de alcance (3-C).
+
+Pruebas realizadas (manuales, 4 de noviembre de 2026):
+- npx tsc --noEmit: sin errores.
+- npm run clima:pruebas: 17 de 17 pruebas pasan (sin red, con respuestas de ejemplo con la forma documentada).
+- npm run clima:probar -- --distritos=1304,1318: correcto (Chilanga y San Fernando en una sola petición).
+- npm run clima:probar con los 26 distritos: correcto. Una sola petición, 31 días por distrito (30 pasados más hoy), el día de hoy marcado como incompleto, atribución devuelta, y las coordenadas se leyeron de la base. Los 26 puntos caen en 14 celdas distintas del modelo.
+- npm run clima:probar -- --historico=2024-01-01:2024-01-31: correcto. La API aceptó models=era5 y devolvió celdas de 0.25° (ERA5); los 26 distritos caen en 5 celdas distintas.
+- npm run clima:normales (periodo 2001-2020, 7.305 días por distrito): primer intento guardó 12 de 26 distritos y Open-Meteo respondió 429 (límite de uso). Se corrigió generar-normales.ts (pausa de 8 s entre peticiones y reintento con espera de 65 s) y la segunda corrida completó los 14 restantes. Resultado final: 26 de 26 distritos en backend/data/referencia/normales_lluvia_30d.json.
+- Revisión de las normales: 26 distritos, 365 claves cada uno, sin valores nulos, valores coherentes con el clima de El Salvador.
+- NO realizadas: pruebas automáticas contra la API real (no existe un framework de pruebas del proyecto); obtenerClimaActual() con el archivo real de normales solo se probó con datos de ejemplo, no contra la API; los scripts de generación y prueba no se probaron en otro equipo.
+
+Qué NO se hizo / qué falta:
+- Emisión de eventos y orquestación (3-C y 3-D).
+- Clasificación y resumirLluvia (3-B).
+- Mostrar la atribución en la interfaz (6-D o 7-D).
+- No se confirmó cómo cuenta Open-Meteo las peticiones de rango largo del histórico.
+
+Qué se agregó de más: el generador de normales y las pruebas offline. Se incluyeron porque Info_Datos_Clima.md deja a 3-A la validación de la normal y no existía un marco de pruebas.
+
+Incidencias técnicas:
+- Prisma 7 no regenera el cliente al migrar: antes de compilar hay que correr npx prisma generate.
+- Open-Meteo respondió 429 al generar las normales (12 peticiones de 20 años en menos de un minuto). Se corrigió generar-normales.ts: pausa de 8 s entre peticiones y reintento con espera de 65 s (hasta 3 veces); si persiste, se detiene y conserva lo guardado.
+
+Puntos de atención para las siguientes ramas:
+- 3-B: importar de backend/src/clima/index.ts. Solo días con completo=true. Tratar normal30Mm null como "sin normal". Es la única rama que migra schema.prisma.
+- 3-C y 3-D: llamar a obtenerClimaActual(puntos) con los puntos de leerPuntosDistrito(); capturar ErrorOpenMeteo y no reemplazar el último dato bueno por un error. Intervalo de 1 hora o más.
+- 6-D: la atribución viene en ClimaActual.atribucion; debe mostrarse junto a los datos de clima.
+- La normal y la lluvia reciente vienen de modelos distintos (ver decisiones de diseño).
+
+PENDIENTES (cambios a hacer en la sección "PENDIENTES" de este archivo)
+- Agregar: mostrar la atribución a Open-Meteo en la interfaz (6-D o 7-D).
+- Agregar: confirmar cómo cuenta Open-Meteo las peticiones de rango largo si se regenera la normal con otro periodo.
+- Si hubo que ajustar models=era5 al probar, anotarlo aquí.
