@@ -1,7 +1,7 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos).
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
@@ -31,7 +31,8 @@ agroalerta-sv/
 │   ├── Estado_Proyecto_Pt2.txt        este archivo
 │   ├── Info_Datos_CENTA.md            contrato de los datos de viabilidad
 │   ├── Info_Datos_Coordenadas.md      coordenadas por distrito (3-0b)
-│   └── Info_Datos_Clima.md            umbrales de lluvia y ventanas de temporada (3-0c)
+│   ├── Info_Datos_Clima.md            umbrales de lluvia y ventanas de temporada (3-0c)
+│   └── Info_Datos_OpenMeteo.md        cliente de Open-Meteo: términos de uso, contrato y normal de 30 días (3-A)
 ├── backend/
 │   ├── package.json, package-lock.json, tsconfig.json
 │   ├── prisma7.config.ts              configuración del CLI de Prisma (fuera de src/)
@@ -40,11 +41,12 @@ agroalerta-sv/
 │   │   ├── raw/                       exports crudos de CENTA, division_territorial_morazan.csv y fuente.json
 │   │   └── clean/                     distritos.csv (26, con latitud y longitud desde 3-0b) y areas_clase.csv (312), generados por datos:limpiar
 │   ├── data/referencia/
-│   │   └── coordenadas_distritos.csv  26 coordenadas con fuente y fecha (3-0b)
+│   │   ├── coordenadas_distritos.csv  26 coordenadas con fuente y fecha (3-0b)
+│   │   └── normales_lluvia_30d.json   normal de lluvia de 30 días por distrito, 365 claves cada uno (3-A; generado con npm run clima:normales)
 │   ├── prisma/
-│   │   ├── schema.prisma              Usuario, Municipio, Distrito, Capa, ClaseCapa, AreaClase, enum TipoCapa; Distrito con latitud y longitud opcionales (3-0b)
+│   │   ├── schema.prisma              Usuario, Municipio, Distrito, Capa, ClaseCapa, AreaClase, enum TipoCapa; Distrito con latitud y longitud opcionales (3-0b); enums CondicionClima y NivelSequia y modelo CondicionDistrito (3-B)
 │   │   └── migrations/                add_usuarios, add_verificacion_correo, add_viabilidad (20261004212446),
-│   │                                  20261030231036 (Usuario.distrito_id con FK), 20261102032958_add_coordenadas_distrito (3-0b) y migration_lock.toml
+│   │                                  20261030231036 (Usuario.distrito_id con FK), 20261102032958_add_coordenadas_distrito (3-0b), 20261107143412_add_condicion_distrito (3-B) y migration_lock.toml
 │   └── src/
 │       ├── index.ts                   Express; valida JWT_SECRET y DUI_PEPPER; monta /auth, /viabilidad y /distritos
 │       ├── auth/                      registro.routes/service, login.routes, perfil.routes, jwt, auth.middleware, distrito.select
@@ -58,7 +60,9 @@ agroalerta-sv/
 │       ├── events/                    bus.ts y types.ts (con los eventos de clima y siembra desde 3-0a)
 │       ├── config/prisma.ts           cliente Prisma compartido
 │       ├── generated/                 cliente Prisma generado (no versionado)
-│       └── clima/, siembra/, estimacion/   vacíos (Partes 3, 4 y 5)
+│       ├── clima/                     cliente de Open-Meteo y normales (3-A: config, tipos, errores, open-meteo.client, normales, normales-archivo, clima-actual, puntos, generar-normales, probar-open-meteo, clima.pruebas, index);
+│       │                              clasificación (3-B: umbrales, resumen-lluvia, clasificacion, condicion.repo, clasificacion.pruebas, clasificar-probar)
+│       └── siembra/, estimacion/      vacíos (Partes 4 y 5)
 └── frontend/                          Angular 22
     ├── package.json, package-lock.json, angular.json, tsconfig.json, tsconfig.app.json, tsconfig.spec.json
     ├── proxy.conf.json                /api -> localhost:3000 con pathRewrite (solo desarrollo; nuevo en 6-A)
@@ -96,6 +100,8 @@ agroalerta-sv/
   3-0b  feat/3-0b-coordenadas   [Requeno]
   3-0c  docs/3-0c-umbrales-temporadas   [Smith]
   3-0a  feat/3-0a-eventos, docs/3-0a-estado   [Pocho]
+  3-A   feat/3-a-cliente-open-meteo, docs/3-a-cliente-open-meteo   [Requeno]
+  3-B   feat/3-b-clasificacion-clima, docs/3-b-estado   [Smith]
 
 ============================================================
 PARTE 6 — Frontend (adelantado por el Mapa v2)
@@ -581,50 +587,6 @@ Puntos de atención para las siguientes ramas:
 - 3-C: emitir ActualizacionMeteorologica en cada consulta y CondicionClimaticaActualizada solo cuando cambia la condición (decisión del Mapa v2 "a confirmar").
 - 4-A y 4-D: cuando exista el modelo de siembra, revisar si cultivo debe restringirse a un conjunto de valores.
 
-============================================================
-PROPUESTAS (opcionales)
-============================================================
-- Revisar y, si procede, aprobar con allowScripts los 4 paquetes del frontend con scripts bloqueados, con acuerdo del equipo, en una rama aparte.
-- Revisión de las vulnerabilidades de npm audit del frontend en una rama aparte, sin npm audit fix automático.
-- Sustituir los CDN de fuente e iconos por recursos locales si la demo llegara a hacerse sin internet.
-- Cargar el perfil una sola vez con un resolver de ruta, en lugar de que el dashboard espere al shell, si más vistas necesitan el perfil.
-- Mover a styles.css los estilos de KPI y del selector segmentado si otra vista los reutiliza (hoy viven en el CSS del dashboard).
-- Decidir si se elimina el SSR (server.ts, main.server.ts y outputMode "server") o se conserva, ahora que toda la app usa RenderMode.Client.
-- Un .gitattributes para evitar que Windows marque como modificados los CSV limpios por el fin de línea (ver Propuestas de Pt1).
-
-============================================================
-PENDIENTES (obligatorio)
-============================================================
-PARTE 2 — Cierre
-- Los pendientes de la Parte 2 que no cambian (A2 de Requeno y Pocho, A4, bloque E, bloque F y la confirmación de las decisiones de 2-D) siguen en la sección 11 de Estado_del_Proyecto.txt.
-
-MAPA v2
-- Corregir en Mapa_v2.txt la línea de fecha de presentación entre corchetes, la frase suelta "este cambio debe documentarse..." y "se rebalancea..".
-
-PARTE 6 — Frontend
-- 6-C Historial (depende de 4-D y 5-D), 6-D Clima Zonal y Configuración (depende de 3-D) y 6-E estimación real en el dashboard (depende de 5-D).
-- Indicadores de sistema vivo en el encabezado y KPI de clima y temporada (Hito 2).
-- Decidir el guard inverso en login y registro y si el guard valida la vigencia del token.
-- Aviso propio del dashboard cuando /auth/yo falla.
-- Entradas del sidebar deshabilitadas (Historial, Clima Zonal y Configuración) hasta que existan sus vistas.
-- Despliegue (Parte 7): reemplazar el proxy de desarrollo y configurar CORS con el encabezado Authorization; decidir qué pasa con el SSR.
-- Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
-
-PARTE 3 y siguientes
-- 3-0a hecho; 3-0b y 3-0c ya están (3-0c parcial, ver F2).
-- Alinear EXCESO con EXCESO_LLUVIA en Info_Datos_Clima.md (types.ts usa EXCESO_LLUVIA).
-- F2 parcial: confirmar o corregir los SUPUESTOS de Info_Datos_Clima.md (día seco, cortes de sequía y exceso, guarda de 20 mm, ventanas de primera y postrera) con CENTA, un agrónomo o datos reales; conseguir los umbrales de inicio de época lluviosa y el límite inferior de la sequía débil del MARN; extraer los requerimientos hídricos por etapa del boletín agrometeorológico del MARN.
-- Decidir si CondicionClimaticaActualizada admite una cuarta salida "sin evaluación" (época seca) (decidir antes de 3-B).
-- Verificar con una segunda fuente los 15 distritos que tienen una sola fuente de coordenadas.
-- Mostrar la atribución a GeoNames en la aplicación (6-D o 7-D).
-- Datos de referencia fuera de CENTA (rendimientos, precios, precio de venta): conseguirlos desde ya, bloquean 4-C y 5-B. Umbrales de lluvia y temporadas: ver F2 parcial; 3-B puede avanzar con los supuestos declarados.
-- Parte 4: decidir si el formulario de siembra usa el distrito registrado o permite elegir otro.
-
-TRANSVERSAL
-- Copiar las secciones base de Pt1 a este archivo (posteriormente).
-- Info_Datos_CENTA.md aún habla de las coordenadas como pendientes (2-END, bloque "Pendientes"). Ya lo avisa 3-0b, pero sigue sin hacerse.
-- Completar los campos abiertos: fecha y pruebas de feat/6-a-auth-login-registro y feat/6-a-endpoint-distritos; estado de merge de feat/6-b-layout-dashboard y de fix/6-a-styles-duplicado. Dato para Pt1: la carpeta de la migración de 2-A es 20261004212446_add_viabilidad.
-
 3-A — Cliente de Open-Meteo por distrito
 ----------------------------------------
 
@@ -708,7 +670,156 @@ Puntos de atención para las siguientes ramas:
 - 6-D: la atribución viene en ClimaActual.atribucion; debe mostrarse junto a los datos de clima.
 - La normal y la lluvia reciente vienen de modelos distintos (ver decisiones de diseño).
 
-PENDIENTES (cambios a hacer en la sección "PENDIENTES" de este archivo)
-- Agregar: mostrar la atribución a Open-Meteo en la interfaz (6-D o 7-D).
-- Agregar: confirmar cómo cuenta Open-Meteo las peticiones de rango largo si se regenera la normal con otro periodo.
-- Si hubo que ajustar models=era5 al probar, anotarlo aquí.
+3-B — Clasificación de la condición climática
+---------------------------------------------
+
+Rama de código: feat/3-b-clasificacion-clima (Parte 3, Punto B del Mapa v2: Clasificación de la condición climática)
+Rama de documentación: docs/3-b-estado
+Responsable: Smith
+Fecha: 7 de noviembre de 2026
+
+Contexto: 3-B entrega la función pura que decide la condición climática de un distrito (sequía, exceso de lluvia, invierno aceptable) a partir de la serie diaria que devuelve 3-A, con los umbrales de Info_Datos_Clima.md (3-0c), y la tabla donde se guarda la última condición por distrito. Es la única rama de la Parte 3 que migra schema.prisma. No emite eventos (3-C) ni programa la consulta periódica (3-D).
+
+Decisiones tomadas al inicio (las decisiones abiertas de la sección 9 de Info_Datos_Clima.md bloqueaban parte del punto; se avanzó con estos valores por defecto, que se pueden cambiar sin rehacer la rama):
+1. Cuarta salida "sin evaluación": NO se agrega a los tipos. Fuera de la época lluviosa, condicion es null y no se emite evento. Así NO se toca events/types.ts (archivo compartido de 3-0a). condicionAnterior ya admitía null. Pendiente de confirmar con Pocho y el equipo (ver Pendientes).
+2. Nombre EXCESO_LLUVIA (el de events/types.ts). Info_Datos_Clima.md todavía dice EXCESO: la corrección sigue en Pendientes.
+3. Anti-oscilación (decisión 4 de la sección 9): margen de 0.05 sobre razon30. Para salir de SEQUIA hace falta razon30 >= 0.65; para salir de EXCESO_LLUVIA, razon30 < 1.45. Los días secos consecutivos (DSC) no llevan margen.
+4. Datos nulos: un null corta el conteo de DSC (el DSC es una cota inferior) y, si falta algún día de la ventana de 30, acumulado30Mm es null. La clasificación sigue entonces solo con DSC. Nunca se trata null como 0.
+5. DEBIL: el límite inferior no está confirmado por el MARN. El tipo existe, pero la función no lo produce (DSC_DEBIL_MIN = null).
+6. Todos los umbrales marcados SUPUESTO en Info_Datos_Clima.md viven en un solo archivo (umbrales.ts), sin valores sueltos en las funciones.
+
+Qué se hizo:
+- backend/prisma/schema.prisma: en model Distrito se agregó la relación inversa condicion CondicionDistrito?; al final del archivo, bajo el comentario "Parte 3 — Clima (3-B)", se agregaron los enums CondicionClima (SEQUIA, EXCESO_LLUVIA, INVIERNO_ACEPTABLE) y NivelSequia (DEBIL, MODERADA, FUERTE, SEVERA) y el modelo CondicionDistrito (tabla condiciones_distrito): distritoId (PK y FK a Distrito, sin autoincrement), condicion (opcional; null = sin evaluación), nivelSequia (opcional), diasSecosConsecutivos, acumulado30Mm, normal30Mm (Decimal(8,2), opcionales), razon30 (Decimal(6,3), opcional), fechaDatos (Date), actualizadoEn (hora de la última consulta exitosa; alimenta "Datos actualizados hace X min") y condicionDesde (hora del último cambio de condición).
+- Migración 20261107143412_add_condicion_distrito: solo crea la tabla condiciones_distrito y su clave foránea. Tabla nueva: nadie tiene que reiniciar su base.
+- backend/src/clima/umbrales.ts (nuevo): constante UMBRALES con tipo y sección de origen en cada valor. Día seco < 1 mm; DSC 11 moderada, 16 fuerte, 21 severa (OFICIAL_MARN; el día 21 exacto es SUPUESTO); SEQUIA con razon30 < 0.60; EXCESO_LLUVIA con razon30 >= 1.50; normal mínima de 20 mm para calcular la razón; margen 0.05; ventana de 30 días; época evaluable del 01-05 al 15-11 (SUPUESTO: época lluviosa más transición).
+- backend/src/clima/resumen-lluvia.ts (nuevo): resumirLluvia(diario), función pura. Usa solo días con completo=true y toma los últimos 30. Devuelve fecha del último día completo, diasSecosConsecutivos, acumulado30Mm (null si la ventana no está completa o falta un dato; redondeado a 1 decimal sin ruido de coma flotante), diasEnVentana y diasConDato. Recibe la serie de ClimaActual.distritos[i].diario tal cual (tipado estructural).
+- backend/src/clima/clasificacion.ts (nuevo): enEpocaLluviosa(), nivelSequiaPorDias(), clasificar() (función pura, orden SEQUIA, EXCESO_LLUVIA, INVIERNO_ACEPTABLE, con margen anti-oscilación según condicionAnterior) y clasificarLluvia() (conveniencia para 3-C y 3-D: serie diaria + normal30Mm + condición anterior, devuelve resumen y resultado). El resultado trae condicion (null si no se evalúa), nivelSequia (solo por días secos), razon30 (3 decimales), criterios (DIAS_SECOS, DEFICIT_30D, EXCESO_30D) y sinEvaluar (FUERA_DE_EPOCA, SIN_DATOS o null). Sin normal, o con normal menor a 20 mm, clasifica solo con DSC.
+- backend/src/clima/condicion.repo.ts (nuevo): leerCondicion(distritoId) y guardarCondicion({...}), que hace lectura más upsert y devuelve { condicionAnterior, cambio } para que 3-C decida si emite CondicionClimaticaActualizada. condicionDesde solo se actualiza cuando cambia la condición. Entrar a "sin evaluación" (null) no cuenta como cambio. No se llama con SIN_DATOS: se conserva el último dato bueno (Info_Datos_Clima.md, sección 4).
+- backend/src/clima/index.ts: se agregaron las exportaciones de umbrales, resumen-lluvia, clasificacion y condicion.repo. tsc no reportó colisiones de nombres.
+- backend/src/clima/clasificacion.pruebas.ts (nuevo): 24 pruebas sin red.
+- backend/src/clima/clasificar-probar.ts (nuevo): prueba manual contra la API real; sin --guardar no escribe en la base.
+- backend/package.json: scripts clima:pruebas-clasificacion y clima:clasificar. Sin dependencias nuevas.
+
+Decisiones de diseño:
+- Una fila por distrito (última condición), no un historial: es lo que necesitan 3-D y el encabezado "Datos actualizados hace X min". Un historial de condiciones, si se quiere, es una propuesta aparte.
+- La normal y la serie llegan de 3-A; 3-B no consulta la red ni Open-Meteo. La clasificación es función pura y se prueba sin base ni red.
+- guardarCondicion no usa transacción: se asume un solo escritor (el job de 3-D). Si hubiera dos, el último gana.
+- El margen anti-oscilación lee la condición previa de la base (condicionAnterior). Consecuencia: al salir de época se guarda condicion = null y se pierde la condición vigente; al volver la época, condicionAnterior será null.
+- razon30 y acumulado30Mm se guardan para poder explicar la condición en la interfaz y en las recomendaciones (5-C), sin recalcular.
+- Los umbrales siguen siendo SUPUESTOS de Info_Datos_Clima.md. No se ajustaron con los datos de 2026 (año de sequías fuertes; ver sección 6 de ese documento).
+
+Cambios respecto a Info_Datos_Clima.md y al Mapa v2 (documentados según reglas del proyecto):
+- Entrada de la clasificación: se agregó condicionAnterior (opcional, solo para el margen). Salida: se agregaron razon30, criterios y sinEvaluar además de condicion y nivelSequia.
+- Se definió la época evaluable como 01-05 a 15-11 (SUPUESTO), a partir de las secciones 4 y 6 del documento.
+- Decisión 1 de la sección 9 resuelta por defecto: sin cuarta salida (condicion null). Decisión 4 resuelta por defecto: margen 0.05.
+
+Qué se modificó: backend/prisma/schema.prisma (relación inversa en Distrito y bloque nuevo al final), backend/src/clima/index.ts (exportaciones) y backend/package.json (dos scripts).
+Qué se eliminó: nada.
+Qué se agregó: la migración 20261107143412_add_condicion_distrito y seis archivos en backend/src/clima/ (umbrales.ts, resumen-lluvia.ts, clasificacion.ts, condicion.repo.ts, clasificacion.pruebas.ts y clasificar-probar.ts), además de las exportaciones agregadas a index.ts.
+Dependencias nuevas: ninguna.
+
+Cumplimiento del punto 3-B (Mapa v2):
+- Función pura con los umbrales de 3-0c: cumplido (con los SUPUESTOS declarados; DEBIL no se produce).
+- Modelo y migración para guardar la última condición y la hora de actualización por distrito: cumplido.
+- Constantes en un solo archivo, con tipo y fuente: cumplido.
+- Contrato de Info_Datos_Clima.md (sección 7): cumplido, ampliado (ver cambios).
+- Emisión de eventos: fuera de alcance (3-C). Periodicidad y endpoint: fuera de alcance (3-D).
+
+Pruebas realizadas (manuales, 7 de noviembre de 2026, desde backend/, MySQL 8.4 en Docker):
+- npx prisma validate: pasó (después de corregir la línea del schema, ver Incidencias).
+- npx prisma migrate dev --name add_condicion_distrito: aplicó 20261107143412_add_condicion_distrito. npx prisma generate: cliente 7.10.0 generado.
+- npx tsc --noEmit: sin errores.
+- npm run clima:pruebas: las 17 pruebas de 3-A siguen pasando.
+- npm run clima:pruebas-clasificacion: 24 de 24. Cubren fronteras de DSC (10, 11, 15, 16, 20, 21), razon30 en 0.59, 0.60, 1.49 y 1.50, prioridad de SEQUIA sobre EXCESO, normal menor a 20 mm, sin normal, acumulado null, margen anti-oscilación en ambos sentidos, fronteras de la época, fecha inválida, 1.0 mm y 0.9 mm como frontera de día seco, null que corta el DSC, menos de 30 días, ruido de coma flotante y SIN_DATOS.
+- npm run clima:clasificar (solo lectura, API real): 26 filas, fecha de datos 2026-11-06. DSC de 0 o 1 en todos los distritos; razon30 entre 0.513 y 0.890; 23 distritos INVIERNO_ACEPTABLE y 3 SEQUIA por déficit de 30 días (1305, 1314 y 1315, razon30 0.513, acumulado 137.6 mm frente a normal de 268.3 mm); ningún EXCESO_LLUVIA; nivelSequia null en todos (el DSC no llegó a 11). Los valores repetidos entre distritos son coherentes con las celdas compartidas del modelo (14 celdas para 26 distritos).
+- npm run clima:clasificar -- --guardar (primera vez): cambio = true en los 26 distritos (condicionAnterior era null). Segunda vez: cambio = false en los 26 (idempotencia).
+- npx prisma migrate dev: "Already in sync, no schema change or pending migration was found."
+- npm run dev: imprime "Backend corriendo en puerto 3000".
+
+Pruebas NO realizadas:
+- SELECT COUNT(*) FROM condiciones_distrito: se escribió en la terminal de Git Bash y dio error de sintaxis de bash; no se corrió dentro de MySQL. Que se guardaron 26 filas se infiere de las dos corridas con --guardar, no de una consulta SQL.
+- GET /health con el backend arrancado (solo se comprobó el mensaje de arranque) y git diff main --stat (sección 8, bloque A).
+- Con datos reales no se ejercitó SEQUIA por días secos, EXCESO_LLUVIA ni el margen anti-oscilación (hoy no hay DSC alto ni razon30 alta ni condición previa); esos casos solo están cubiertos por las pruebas sin red.
+- Comportamiento fuera de época con datos reales (hoy sigue dentro de la época evaluable, que termina el 15 de noviembre): la corrida con datos reales debe repetirse a partir del 16 de noviembre para confirmar que condicion queda en null.
+- Concurrencia de escritores, repetir las pruebas en el equipo de otro integrante y pruebas automatizadas con un framework (las pruebas de esta rama son scripts propios).
+
+Observaciones sobre los resultados con datos reales (no son defectos confirmados):
+- Los tres distritos en SEQUIA lo están solo por razon30 < 0.60. Otros dos (1308 y 1326) quedaron en 0.602, apenas por encima del corte, y 1302 y 1313 en 0.655. Con un corte tan sensible, pequeñas diferencias de lluvia pueden cambiar la condición de varios distritos de un día para otro: es lo que el margen de 0.05 intenta amortiguar solo después de entrar en SEQUIA.
+- razon30 se concentra por debajo de 1 (mediana cercana a 0.78) en los 26 distritos. No se puede distinguir si es un año seco o el sesgo conocido entre la normal (ERA5, 25 km) y la lluvia reciente (modelos de pronóstico; Info_Datos_OpenMeteo.md, sección 9). No se calibró nada con este resultado.
+- La fecha de datos (6 de noviembre) cae dentro de la transición lluviosa a seca (15 de octubre al 15 de noviembre), cuando la lluvia de 30 días cae de forma natural. Es un riesgo de falsos SEQUIA al final de la época: pendiente de revisar con el equipo.
+
+Qué NO se hizo / qué falta:
+- Emisión de ActualizacionMeteorologica y CondicionClimaticaActualizada (3-C) y tarea periódica y endpoint GET /clima/distritos/:id (3-D).
+- Producir el nivel DEBIL (límite inferior del MARN sin confirmar).
+- Confirmar o ajustar los SUPUESTOS de Info_Datos_Clima.md (F2 parcial).
+- Persistencia mínima de N días antes de emitir un cambio (decisión de 3-C).
+- Pruebas automatizadas con un framework.
+
+Qué se agregó de más (no pedido originalmente): razon30, criterios y sinEvaluar en el resultado; clasificarLluvia() como conveniencia; guardarCondicion() con condicionDesde y el retorno { condicionAnterior, cambio }; el script clasificar-probar.ts y las 24 pruebas sin red.
+
+Archivos tocados fuera de su carpeta (puntos de contacto entre partes): backend/prisma/schema.prisma y backend/prisma/migrations/ (compartidos con 4-A y 5), backend/package.json. No se tocaron events/types.ts, backend/src/index.ts, config/ ni ningún archivo de 3-A fuera de las exportaciones de clima/index.ts.
+
+Incidencias técnicas durante el desarrollo:
+- prisma validate, migrate dev y generate fallaron con P1012 ("This line is not a valid field or attribute definition", prisma\schema.prisma línea 59): la relación inversa quedó escrita en la misma línea que usuarios Usuario[]. Prisma exige un campo por línea. Se separaron en dos líneas y los tres comandos pasaron. Los tres comandos solo fallaban por ese error.
+- Las primeras corridas de npm run clima:clasificar (con y sin --guardar) terminaron sin imprimir nada: clasificar-probar.ts no se había guardado completo en el editor. Al guardarlo se repitieron las corridas y ya imprimieron la tabla. Esas primeras corridas no escribieron nada en la base.
+- SELECT COUNT(*) se tecleó en Git Bash en lugar de dentro de MySQL (ver Pruebas NO realizadas). Forma correcta, desde la raíz del repo: docker compose exec -T -e MYSQL_PWD=agroalerta db mysql -uagroalerta agroalerta -e "SELECT COUNT(*) FROM condiciones_distrito;"
+
+Puntos de atención para las siguientes ramas:
+- Quien mergee después de esta rama debe correr: git pull, npx prisma generate y npx prisma migrate dev (tabla nueva; no hace falta reiniciar la base). 4-A y 5 también migran: quien mergee segundo regenera su migración sobre main actualizado.
+- 3-C y 3-D: llamar a clasificarLluvia(d.diario, d.normal30Mm, condicionAnterior) y luego a guardarCondicion; con sinEvaluar = "SIN_DATOS" NO llamar a guardarCondicion (se conserva el último dato bueno). Importar todo de backend/src/clima/index.ts.
+- 3-C: en la primera clasificación de un distrito condicionAnterior es null y cambio es true (pasó en los 26 distritos). Decidir si eso emite CondicionClimaticaActualizada o solo se guarda. Además, entrar a sin evaluación devuelve cambio = false y borra la condición vigente: al volver la época, el primer resultado también tendrá condicionAnterior null.
+- 3-C: el DSC por sí solo puede oscilar (un día con 1 mm o más lo reinicia); si se quiere persistencia de N días antes de emitir, se decide en 3-C: no hace falta cambiar nada aquí.
+- 3-D: condicion = null (fuera de época) llega desde el 16 de noviembre. El endpoint y la interfaz (6-D) deben mostrar "fuera de la época lluviosa" y no un estado vacío ni un error. actualizadoEn es la hora de la consulta, no la de los datos (fechaDatos es el último día completo).
+- 5-C (recomendaciones): la sequía meteorológica no equivale a pérdida de cultivo; redactarlo así y citar que el umbral es un supuesto. Los umbrales se usan desde umbrales.ts, no se copian.
+- Nombre del evento y del tipo: EXCESO_LLUVIA en todo el código; Info_Datos_Clima.md todavía dice EXCESO.
+
+============================================================
+PROPUESTAS (opcionales)
+============================================================
+- Revisar y, si procede, aprobar con allowScripts los 4 paquetes del frontend con scripts bloqueados, con acuerdo del equipo, en una rama aparte.
+- Revisión de las vulnerabilidades de npm audit del frontend en una rama aparte, sin npm audit fix automático.
+- Sustituir los CDN de fuente e iconos por recursos locales si la demo llegara a hacerse sin internet.
+- Cargar el perfil una sola vez con un resolver de ruta, en lugar de que el dashboard espere al shell, si más vistas necesitan el perfil.
+- Mover a styles.css los estilos de KPI y del selector segmentado si otra vista los reutiliza (hoy viven en el CSS del dashboard).
+- Decidir si se elimina el SSR (server.ts, main.server.ts y outputMode "server") o se conserva, ahora que toda la app usa RenderMode.Client.
+- Un .gitattributes para evitar que Windows marque como modificados los CSV limpios por el fin de línea (ver Propuestas de Pt1).
+
+============================================================
+PENDIENTES (obligatorio)
+============================================================
+PARTE 2 — Cierre
+- Los pendientes de la Parte 2 que no cambian (A2 de Requeno y Pocho, A4, bloque E, bloque F y la confirmación de las decisiones de 2-D) siguen en la sección 11 de Estado_del_Proyecto.txt.
+
+MAPA v2
+- Corregir en Mapa_v2.txt la línea de fecha de presentación entre corchetes, la frase suelta "este cambio debe documentarse..." y "se rebalancea..".
+
+PARTE 6 — Frontend
+- 6-C Historial (depende de 4-D y 5-D), 6-D Clima Zonal y Configuración (depende de 3-D) y 6-E estimación real en el dashboard (depende de 5-D).
+- Indicadores de sistema vivo en el encabezado y KPI de clima y temporada (Hito 2).
+- Decidir el guard inverso en login y registro y si el guard valida la vigencia del token.
+- Aviso propio del dashboard cuando /auth/yo falla.
+- Entradas del sidebar deshabilitadas (Historial, Clima Zonal y Configuración) hasta que existan sus vistas.
+- Despliegue (Parte 7): reemplazar el proxy de desarrollo y configurar CORS con el encabezado Authorization; decidir qué pasa con el SSR.
+- Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
+
+PARTE 3 y siguientes
+- 3-0a, 3-0b, 3-0c (parcial, ver F2), 3-A y 3-B hechos. Siguen 3-C (emisión de eventos) y 3-D (tarea periódica y GET /clima/distritos/:id).
+- Alinear EXCESO con EXCESO_LLUVIA en Info_Datos_Clima.md (types.ts usa EXCESO_LLUVIA).
+- F2 parcial: confirmar o corregir los SUPUESTOS de Info_Datos_Clima.md (día seco, cortes de sequía y exceso, guarda de 20 mm, ventanas de primera y postrera) con CENTA, un agrónomo o datos reales; conseguir los umbrales de inicio de época lluviosa y el límite inferior de la sequía débil del MARN; extraer los requerimientos hídricos por etapa del boletín agrometeorológico del MARN.
+- Confirmar con Pocho y el equipo la decisión por defecto de 3-B: sin cuarta salida, condicion = null fuera de la época lluviosa y sin evento (no se tocó events/types.ts). Si se decide una cuarta salida, cambia el payload de CondicionClimaticaActualizada.
+- Confirmar o ajustar los SUPUESTOS que 3-B dejó en umbrales.ts (margen anti-oscilación 0.05, época evaluable 01-05 a 15-11, DSC_DEBIL_MIN = null) y revisar el riesgo de falsos SEQUIA durante la transición lluviosa a seca (15 de octubre al 15 de noviembre), cuando la lluvia de 30 días cae de forma natural.
+- Repetir npm run clima:clasificar a partir del 16 de noviembre y confirmar que condicion queda en null (fuera de época); correr dentro de MySQL SELECT COUNT(*) FROM condiciones_distrito (debe dar 26) y GET /health con el backend arrancado, pruebas de 3-B no realizadas.
+- 3-C: decidir si la primera clasificación de un distrito (condicionAnterior null, cambio true) emite CondicionClimaticaActualizada, y si se exige persistencia de N días; tener en cuenta que al salir de época se pierde la condición vigente.
+- 3-D: tarea periódica con intervalo de 1 hora o más, sin reemplazar el último dato bueno ante ErrorOpenMeteo (TIMEOUT, RED, HTTP; esperar más de un ciclo ante 429), y mostrar condicion null como "fuera de la época lluviosa".
+- Mostrar la atribución a Open-Meteo en la interfaz (6-D o 7-D), junto a la de GeoNames.
+- Confirmar cómo cuenta Open-Meteo las peticiones de rango largo si se regenera la normal con otro periodo. models=era5 fue aceptado por la API en 3-A: no hay nada que ajustar.
+- Verificar con una segunda fuente los 15 distritos que tienen una sola fuente de coordenadas.
+- Mostrar la atribución a GeoNames en la aplicación (6-D o 7-D).
+- Datos de referencia fuera de CENTA (rendimientos, precios, precio de venta): conseguirlos desde ya, bloquean 4-C y 5-B. Umbrales de lluvia y temporadas: ver F2 parcial; 3-B puede avanzar con los supuestos declarados.
+- Parte 4: decidir si el formulario de siembra usa el distrito registrado o permite elegir otro.
+
+TRANSVERSAL
+- Copiar las secciones base de Pt1 a este archivo (posteriormente).
+- Info_Datos_CENTA.md aún habla de las coordenadas como pendientes (2-END, bloque "Pendientes"). Ya lo avisa 3-0b, pero sigue sin hacerse.
+- Completar los campos abiertos de 3-A: Responsable y Fecha figuran entre corchetes ([Requeno], [04/11/2026]), confirmar que backend/data/referencia/normales_lluvia_30d.json quedó en el PR (3-B lo usa) y el estado de merge de feat/3-a-cliente-open-meteo y de docs/3-a-cliente-open-meteo.
+- Completar los campos abiertos: fecha y pruebas de feat/6-a-auth-login-registro y feat/6-a-endpoint-distritos; estado de merge de feat/6-b-layout-dashboard y de fix/6-a-styles-duplicado. Dato para Pt1: la carpeta de la migración de 2-A es 20261004212446_add_viabilidad. De 3-B: confirmar el estado de merge de feat/3-b-clasificacion-clima.
