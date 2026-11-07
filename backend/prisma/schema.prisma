@@ -57,6 +57,7 @@ model Distrito {
   municipio         Municipio   @relation(fields: [municipioId], references: [id])
   areas             AreaClase[]
   usuarios          Usuario[]
+  condicion         CondicionDistrito?
 
   @@map("distritos")
 }
@@ -96,4 +97,37 @@ model AreaClase {
 
   @@unique([distritoId, claseId])
   @@map("areas_clase")
+}
+
+// ------------------------------------------------------------
+// Parte 3 — Clima (3-B): última condición por distrito
+// ------------------------------------------------------------
+enum CondicionClima {
+  SEQUIA
+  EXCESO_LLUVIA
+  INVIERNO_ACEPTABLE
+}
+
+enum NivelSequia {
+  DEBIL
+  MODERADA
+  FUERTE
+  SEVERA
+}
+
+model CondicionDistrito {
+  distritoId            Int             @id @map("distrito_id")
+  condicion             CondicionClima? // null = sin evaluación (fuera de época)
+  nivelSequia           NivelSequia?    @map("nivel_sequia")
+  diasSecosConsecutivos Int             @map("dias_secos_consecutivos")
+  acumulado30Mm         Decimal?        @map("acumulado_30_mm") @db.Decimal(8, 2)
+  normal30Mm            Decimal?        @map("normal_30_mm") @db.Decimal(8, 2)
+  razon30               Decimal?        @db.Decimal(6, 3)
+  fechaDatos            DateTime        @map("fecha_datos") @db.Date
+  actualizadoEn         DateTime        @map("actualizado_en")
+  condicionDesde        DateTime?       @map("condicion_desde")
+
+  distrito Distrito @relation(fields: [distritoId], references: [id])
+
+  @@map("condiciones_distrito")
 }

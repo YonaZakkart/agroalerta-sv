@@ -17,3 +17,8 @@ export type {
     ResultadoClima,
     SerieLluviaDistrito,
 } from "./tipos";
+
+export * from "./umbrales";
+export * from "./resumen-lluvia";
+export * from "./clasificacion";
+export * from "./condicion.repo";
