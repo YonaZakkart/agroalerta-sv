@@ -30,7 +30,7 @@ export interface CondicionClimaticaActualizadaPayload {
     distritoId: number;
     condicion: CondicionClimatica;
     condicionAnterior: CondicionClimatica | null;
-    precipitacionAcumuladaMm: number;
+    precipitacionAcumuladaMm: number | null; // null si falta algún día de la ventana de 30 días
     fecha: Date;
 }
 
