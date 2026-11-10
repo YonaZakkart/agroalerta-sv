@@ -18,7 +18,7 @@ export interface OpcionesOrquestacion extends OpcionesClimaActual {
   /** Puntos ya resueltos (para pruebas). Si no se pasan, se leen de la base. */
   puntos?: readonly PuntoDistrito[];
   /** Distritos a actualizar. Por defecto, todos los que tienen coordenada. */
-  distritoIds?: readonly number[];
+  distritoIds?: readonly number[] | undefined;
   /** false solo para pruebas: calcula y guarda, pero no emite eventos. */
   emitirEventos?: boolean;
 }
