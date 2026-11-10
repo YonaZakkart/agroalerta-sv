@@ -15,6 +15,8 @@ import type { ResumenLluvia } from "./resumen-lluvia";
 import { guardarCondicion, leerCondicion } from "./condicion.repo";
 
 export interface OpcionesOrquestacion extends OpcionesClimaActual {
+  /** Puntos ya resueltos (para pruebas). Si no se pasan, se leen de la base. */
+  puntos?: readonly PuntoDistrito[];
   /** Distritos a actualizar. Por defecto, todos los que tienen coordenada. */
   distritoIds?: readonly number[];
   /** false solo para pruebas: calcula y guarda, pero no emite eventos. */
@@ -49,7 +51,9 @@ export function actualizarClima(opciones: OpcionesOrquestacion = {}): Promise<Re
 }
 
 async function ejecutar(opciones: OpcionesOrquestacion): Promise<ResultadoOrquestacion> {
-  const puntos: PuntoDistrito[] = await leerPuntosDistrito(opciones.distritoIds);
+  const puntos: PuntoDistrito[] = opciones.puntos
+    ? [...opciones.puntos]
+    : await leerPuntosDistrito(opciones.distritoIds);
   // Si Open-Meteo falla, obtenerClimaActual lanza y no se toca ninguna condición.
   const clima: ClimaActual = await obtenerClimaActual(puntos, opciones);
   const emitir = opciones.emitirEventos ?? true;
