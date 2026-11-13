@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { leerPuerto } from './puerto';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -52,13 +53,26 @@ app.use((req, res, next) => {
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  const port = process.env['PORT'] || 4000;
-  app.listen(port, (error) => {
-    if (error) {
-      throw error;
-    }
+  let port: number;
+  try {
+    port = leerPuerto(process.env['PORT'], 4000);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 
+  const server = app.listen(port, () => {
     console.log(`Node Express server listening on http://localhost:${port}`);
+  });
+
+  // Los errores de arranque llegan por el evento "error", no por el callback.
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`El puerto ${port} ya está en uso. Cierra el otro proceso o define otro PORT.`);
+    } else {
+      console.error(`No se pudo iniciar el servidor en el puerto ${port}:`, error);
+    }
+    process.exit(1);
   });
 }
 

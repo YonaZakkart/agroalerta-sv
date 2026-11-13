@@ -8,18 +8,28 @@ import { PerfilUsuario, RespuestaPerfil } from './models';
 export class PerfilService {
   private readonly http = inject(HttpClient);
   private readonly perfilActual = signal<PerfilUsuario | null>(null);
+  private readonly errorActual = signal(false);
 
   readonly perfil = this.perfilActual.asReadonly();
+  /** true si la última consulta de /auth/yo falló (por ejemplo, backend caído). */
+  readonly error = this.errorActual.asReadonly();
 
   /** Consulta /auth/yo y deja el perfil disponible para el shell y el dashboard. */
   cargar(): Observable<PerfilUsuario> {
     return this.http.get<RespuestaPerfil>(`${API_URL}/auth/yo`).pipe(
       map((respuesta) => respuesta.usuario),
-      tap((usuario) => this.perfilActual.set(usuario)),
+      tap({
+        next: (usuario) => {
+          this.errorActual.set(false);
+          this.perfilActual.set(usuario);
+        },
+        error: () => this.errorActual.set(true),
+      }),
     );
   }
 
   limpiar(): void {
     this.perfilActual.set(null);
+    this.errorActual.set(false);
   }
 }

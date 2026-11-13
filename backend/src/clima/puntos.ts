@@ -2,6 +2,14 @@ import { prisma } from "../config/prisma";
 import { ErrorOpenMeteo } from "./errores";
 import type { PuntoDistrito } from "./tipos";
 
+/** Alguno de los distritos solicitados no existe en la base (error del cliente). */
+export class ErrorDistritosNoExisten extends Error {
+    constructor(readonly distritoIds: number[]) {
+        super(`Distritos que no existen: ${distritoIds.join(", ")}`);
+        this.name = "ErrorDistritosNoExisten";
+    }
+}
+
 /**
  * Lee de la base los puntos a consultar. latitud y longitud llegan como Decimal | null:
  * se convierten con toNumber() y un null se trata como error (corre npm run datos:cargar).
@@ -18,7 +26,7 @@ export async function leerPuntosDistrito(ids?: readonly number[]): Promise<Punto
         const encontrados = new Set(filas.map((f) => f.id));
         const faltan = ids.filter((id) => !encontrados.has(id));
         if (faltan.length > 0) {
-            throw new ErrorOpenMeteo("COORDENADA_INVALIDA", `Distritos que no existen: ${faltan.join(", ")}`);
+            throw new ErrorDistritosNoExisten(faltan);
         }
     }
 

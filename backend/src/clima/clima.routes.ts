@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { requireAuth } from "../auth/auth.middleware";
 import { actualizarClima } from "./orquestador";
+import { validarDistritoIds } from "./distritos-solicitados";
+import { ErrorDistritosNoExisten } from "./puntos";
 
 export const climaRouter = Router();
 
@@ -8,24 +10,22 @@ export const climaRouter = Router();
 // Llama a la misma función que el job, así que ambos comparten el cerrojo de orquestador.ts.
 climaRouter.post("/actualizar", requireAuth, async (req, res) => {
   const cuerpo = req.body as { distritoIds?: unknown } | undefined;
-  const distritoIds = cuerpo?.distritoIds;
+  const validacion = validarDistritoIds(cuerpo?.distritoIds);
 
-  if (distritoIds !== undefined) {
-    if (!Array.isArray(distritoIds) || !distritoIds.every((id) => Number.isSafeInteger(id) && id > 0)) {
-      res.status(400).json({
-        error: "Datos inválidos",
-        detalles: "distritoIds debe ser una lista de enteros positivos",
-      });
-      return;
-    }
+  if (!validacion.ok) {
+    res.status(400).json({ error: "Datos inválidos", detalles: validacion.detalles });
+    return;
   }
 
   try {
-    const resultado = await actualizarClima({
-      distritoIds: distritoIds as number[] | undefined,
-    });
+    const resultado = await actualizarClima({ distritoIds: validacion.distritoIds });
     res.status(200).json(resultado);
   } catch (error) {
+    // Un id inexistente es un error del cliente, no del servidor.
+    if (error instanceof ErrorDistritosNoExisten) {
+      res.status(400).json({ error: "Datos inválidos", detalles: error.message });
+      return;
+    }
     console.error("Error en POST /clima/actualizar:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
