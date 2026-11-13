@@ -18,7 +18,7 @@ export interface OpcionesOrquestacion extends OpcionesClimaActual {
   /** Puntos ya resueltos (para pruebas). Si no se pasan, se leen de la base. */
   puntos?: readonly PuntoDistrito[];
   /** Distritos a actualizar. Por defecto, todos los que tienen coordenada. */
-  distritoIds?: readonly number[];
+  distritoIds?: readonly number[] | undefined;
   /** false solo para pruebas: calcula y guarda, pero no emite eventos. */
   emitirEventos?: boolean;
 }
@@ -31,12 +31,18 @@ export interface ResultadoDistrito {
   nivelSequia: NivelSequia | null;
   /** true solo si cambió a una condición evaluada (pasar a "sin evaluación" no cuenta). */
   cambio: boolean;
+  /**
+   * true si se emitió ActualizacionMeteorologica. false si emitirEventos es false,
+   * si el distrito está SIN_DATOS, o si el último día completo no tiene precipitación (precipitacionMm null).
+   */
+  actualizacionEmitida: boolean;
   sinEvaluar: ResultadoClasificacion["sinEvaluar"];
   resumen: ResumenLluvia | null;
 }
 
 export interface ResultadoOrquestacion {
-  fechaUltimoDiaCompleto: string;
+  /** null si la respuesta no trae ningún día completo: todos los distritos quedan SIN_DATOS. */
+  fechaUltimoDiaCompleto: string | null;
   normalDisponible: boolean;
   distritos: ResultadoDistrito[];
 }
@@ -75,6 +81,7 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
   const condicionAnterior = previa?.condicion ?? null;
   const { resumen, resultado } = clasificarLluvia(d.diario, d.normal30Mm, condicionAnterior);
 
+  // Sin ningún día completo no hay nada que guardar ni emitir (Info_Datos_Clima.md, sección 4).
   if (resumen.fecha === null) {
     return {
       distritoId: d.distritoId,
@@ -82,6 +89,7 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
       condicion: null,
       nivelSequia: null,
       cambio: false,
+      actualizacionEmitida: false,
       sinEvaluar: resultado.sinEvaluar,
       resumen: null,
     };
@@ -94,6 +102,8 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
     normal30Mm: d.normal30Mm,
     consultadoEn: clima.consultadoEn,
   });
+
+  let actualizacionEmitida = false;
 
   // Se emite después de guardar, para que quien escuche lea ya el estado nuevo.
   if (emitir) {
@@ -109,6 +119,13 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
         fuente: clima.fuente,
       };
       bus.emit(EVENTOS.ACTUALIZACION_METEOROLOGICA, payload);
+      actualizacionEmitida = true;
+    } else {
+      // El contrato pide emitir en cada consulta, pero sin lluvia del último día no hay número que publicar.
+      // Se omite a propósito y se avisa. Cambiar esto (precipitacionMm: number | null) requiere aprobación de Yona y Smith.
+      console.warn(
+        `[clima] distrito ${d.distritoId}: el último día completo no tiene precipitación; no se emite ActualizacionMeteorologica`,
+      );
     }
 
     if (cambio && resultado.condicion !== null) {
@@ -129,6 +146,7 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
     condicion: resultado.condicion,
     nivelSequia: resultado.nivelSequia,
     cambio,
+    actualizacionEmitida,
     sinEvaluar: resultado.sinEvaluar,
     resumen,
   };
