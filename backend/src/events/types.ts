@@ -16,7 +16,8 @@ export interface AgricultorRegistradoPayload {
 // Condición climática de un distrito. 
 export type CondicionClimatica = "SEQUIA" | "EXCESO_LLUVIA" | "INVIERNO_ACEPTABLE";
 
-// Se emite en cada consulta a Open-Meteo (3-C).
+// Se emite en cada consulta a Open-Meteo (3-C), salvo cuando el último día completo no tiene precipitación:
+// en ese caso no hay número que publicar y el orquestador lo omite (ver orquestador.ts).
 export interface ActualizacionMeteorologicaPayload {
     distritoId: number;
     fecha: Date;
