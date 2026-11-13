@@ -1,7 +1,7 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática).
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática); 13 de noviembre de 2026 (3-C y 3-D: clima).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
@@ -48,7 +48,7 @@ agroalerta-sv/
 │   │   └── migrations/                add_usuarios, add_verificacion_correo, add_viabilidad (20261004212446),
 │   │                                  20261030231036 (Usuario.distrito_id con FK), 20261102032958_add_coordenadas_distrito (3-0b), 20261107143412_add_condicion_distrito (3-B) y migration_lock.toml
 │   └── src/
-│       ├── index.ts                   Express; valida JWT_SECRET y DUI_PEPPER; monta /auth, /viabilidad y /distritos
+│       ├── index.ts                   Express; valida JWT_SECRET y DUI_PEPPER; monta /auth, /viabilidad, /distritos y /clima
 │       ├── auth/                      registro.routes/service, login.routes, perfil.routes, jwt, auth.middleware, distrito.select
 │       ├── viabilidad/
 │       │   ├── constantes.ts          HA_POR_MANZANA
@@ -61,7 +61,8 @@ agroalerta-sv/
 │       ├── config/prisma.ts           cliente Prisma compartido
 │       ├── generated/                 cliente Prisma generado (no versionado)
 │       ├── clima/                     cliente de Open-Meteo y normales (3-A: config, tipos, errores, open-meteo.client, normales, normales-archivo, clima-actual, puntos, generar-normales, probar-open-meteo, clima.pruebas, index);
-│       │                              clasificación (3-B: umbrales, resumen-lluvia, clasificacion, condicion.repo, clasificacion.pruebas, clasificar-probar)
+│       │                              clasificación (3-B: umbrales, resumen-lluvia, clasificacion, condicion.repo, clasificacion.pruebas, clasificar-probar);
+│       │                              orquestación (3-C: orquestador, orquestador.prueba); endpoint de clima (3-D: clima.routes)
 │       └── siembra/, estimacion/      vacíos (Partes 4 y 5)
 └── frontend/                          Angular 22
     ├── package.json, package-lock.json, angular.json, tsconfig.json, tsconfig.app.json, tsconfig.spec.json
@@ -102,6 +103,8 @@ agroalerta-sv/
   3-0a  feat/3-0a-eventos, docs/3-0a-estado   [Pocho]
   3-A   feat/3-a-cliente-open-meteo, docs/3-a-cliente-open-meteo   [Requeno]
   3-B   feat/3-b-clasificacion-clima, docs/3-b-estado   [Smith]
+  3-C   feat/3-c-orquestador-clima, docs/3-c-3-d-estado   [Josué]
+  3-D   feat/3-d-endpoint-clima   [Josué]
 
 ============================================================
 PARTE 6 — Frontend (adelantado por el Mapa v2)
@@ -749,7 +752,7 @@ Observaciones sobre los resultados con datos reales (no son defectos confirmados
 - La fecha de datos (6 de noviembre) cae dentro de la transición lluviosa a seca (15 de octubre al 15 de noviembre), cuando la lluvia de 30 días cae de forma natural. Es un riesgo de falsos SEQUIA al final de la época: pendiente de revisar con el equipo.
 
 Qué NO se hizo / qué falta:
-- Emisión de ActualizacionMeteorologica y CondicionClimaticaActualizada (3-C) y tarea periódica y endpoint GET /clima/distritos/:id (3-D).
+- Emisión de ActualizacionMeteorologica y CondicionClimaticaActualizada (3-C) y tarea periódica y endpoint POST /clima/actualizar (3-D).
 - Producir el nivel DEBIL (límite inferior del MARN sin confirmar).
 - Confirmar o ajustar los SUPUESTOS de Info_Datos_Clima.md (F2 parcial).
 - Persistencia mínima de N días antes de emitir un cambio (decisión de 3-C).
@@ -772,6 +775,81 @@ Puntos de atención para las siguientes ramas:
 - 3-D: condicion = null (fuera de época) llega desde el 16 de noviembre. El endpoint y la interfaz (6-D) deben mostrar "fuera de la época lluviosa" y no un estado vacío ni un error. actualizadoEn es la hora de la consulta, no la de los datos (fechaDatos es el último día completo).
 - 5-C (recomendaciones): la sequía meteorológica no equivale a pérdida de cultivo; redactarlo así y citar que el umbral es un supuesto. Los umbrales se usan desde umbrales.ts, no se copian.
 - Nombre del evento y del tipo: EXCESO_LLUVIA en todo el código; Info_Datos_Clima.md todavía dice EXCESO.
+
+
+3-C — Orquestador de clima (consulta, clasifica, guarda y emite)
+-----------------------------------------------------------------
+Rama feat/3-c-orquestador-clima (Parte 3, Punto C del Mapa v2)
+Responsable: Josué
+Fecha: 13 de noviembre de 2026
+Estado: pendiente de aprobación (PR abierto). Documentación en docs/3-c-3-d-estado.
+
+Contexto: une 3-A (consulta a Open-Meteo y normal de 30 días) con 3-B (clasificación y guardado) en una sola función, actualizarClima, que usan el endpoint y el job de 3-D.
+
+Qué se hizo:
+- backend/src/clima/orquestador.ts: actualizarClima(opciones). Por cada distrito, en este orden: lee la condición anterior, clasifica con clasificarLluvia (3-B), guarda con guardarCondicion (3-B) y emite después de guardar.
+- Emisión: ActualizacionMeteorologica en cada consulta, con la lluvia del último día completo. CondicionClimaticaActualizada solo cuando la condición cambia a una evaluada. Pasar a sin evaluación (época seca) guarda el estado y no emite.
+- Si no hay ningún día completo, el distrito queda SIN_DATOS: no se guarda ni se emite nada.
+- Si el último día completo no tiene precipitación, no se emite ActualizacionMeteorologica y se avisa en consola. El resultado indica si se emitió (actualizacionEmitida).
+- Las ejecuciones se encolan dentro del proceso (cerrojo en memoria).
+- backend/src/clima/orquestador.prueba.ts: script manual con Open-Meteo simulado y emitirEventos: false. Seis casos.
+
+Cambios en archivos de otras partes (cada uno en su propio commit):
+- clima-actual.ts (Requeno, autorizado): obtenerClimaActual devuelve fechaUltimoDiaCompleto: null en vez de lanzar error cuando no hay día completo.
+- events/types.ts (aprobado por Yona y Smith): precipitacionAcumuladaMm admite null en CondicionClimaticaActualizadaPayload. El comentario de ActualizacionMeteorologicaPayload documenta la excepción; el tipo de precipitacionMm no cambia.
+
+Pruebas realizadas:
+- npx tsc --noEmit: exit=0.
+- orquestador.prueba.ts: 6 de 6 OK (sin lluvia, lluvia normal con emisión, exceso, sin normal, SIN_DATOS, último día sin lluvia).
+- clima:pruebas (3-A): 17 de 17.
+- clima:pruebas-clasificacion (3-B): 24 de 24.
+
+NO realizadas:
+- Pruebas automatizadas en CI (el proyecto no tiene framework de pruebas configurado).
+- Prueba del orquestador con respuestas reales de Open-Meteo (la prueba real se hizo a través del endpoint de 3-D).
+
+Pendientes y puntos de atención:
+- Decidir con Yona y Smith si ActualizacionMeteorologica debe llevar precipitacionMm: null en vez de omitirse. Si lo aprueban, es un cambio de tipo en events/types.ts y otro en el orquestador, en commits aparte.
+- La primera clasificación de un distrito (condicionAnterior null, cambio true) emite CondicionClimaticaActualizada. Revisar si es el comportamiento deseado.
+- La clave de la normal es el último día completo (MM-DD), no hoy.
+- El cerrojo en memoria funciona solo si el endpoint y el job comparten proceso.
+- Los listeners de 5-A deben manejar precipitacionAcumuladaMm null.
+
+
+3-D — Endpoint de actualización bajo demanda del clima
+-------------------------------------------------------
+Rama feat/3-d-endpoint-clima (Parte 3, Punto D del Mapa v2; depende de feat/3-c-orquestador-clima)
+Responsable: Josué
+Fecha: 13 de noviembre de 2026
+Estado: pendiente de aprobación (PR abierto). Documentación en docs/3-c-3-d-estado.
+
+Contexto: expone actualizarClima (3-C) como actualización bajo demanda. El job con setInterval queda pendiente.
+
+Qué se hizo:
+- backend/src/clima/clima.routes.ts (nuevo): POST /clima/actualizar, protegido con requireAuth.
+  - Sin cuerpo: actualiza los 26 distritos.
+  - Con distritoIds: solo esos distritos. Debe ser una lista de enteros positivos seguros; si no, responde 400 { error, detalles }.
+  - Errores de Open-Meteo o de base: 500 { error: "Error interno del servidor" }, sin error.message.
+- backend/src/index.ts: import de climaRouter y app.use("/clima", climaRouter).
+- backend/src/clima/orquestador.ts: distritoIds admite undefined (commit aparte, f1dfb51). Es un cambio de tipo necesario por exactOptionalPropertyTypes; el archivo pertenece a 3-C.
+
+Pruebas realizadas (curl, base local de desarrollo, usuario verificado):
+- Sin token: 401.
+- { "distritoIds": [1304] }: 200. Chilanga, estado ACTUALIZADO, acumulado 185.1 mm con 30 días completos. Primera consulta real a Open-Meteo.
+- { "distritoIds": ["abc"] }: 400 "Datos inválidos".
+- Sin cuerpo: 200 con 26 distritos (conteo con grep).
+
+Efectos a tener en cuenta:
+- Cada llamada escribe en condicion_distrito y emite ActualizacionMeteorologica y CondicionClimaticaActualizada, porque el endpoint no pasa emitirEventos: false. Hoy no hay listeners.
+- Las pruebas se hicieron en la base de desarrollo local, no en producción.
+
+NO realizadas:
+- Pruebas automatizadas (pendientes de aprobación de dependencias).
+- Prueba con un token expirado o con JWT_EXPIRES_IN corto.
+
+Pendiente:
+- Job con setInterval (recorte 4 de la sección 8 si falta tiempo). Intervalo de 1 hora o más, sin reemplazar el último dato bueno ante ErrorOpenMeteo.
+- Rebasar sobre main si feat/3-c-orquestador-clima se mergea primero.
 
 ============================================================
 PROPUESTAS (opcionales)
@@ -803,7 +881,7 @@ PARTE 6 — Frontend
 - Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
 
 PARTE 3 y siguientes
-- 3-0a, 3-0b, 3-0c (parcial, ver F2), 3-A y 3-B hechos. Siguen 3-C (emisión de eventos) y 3-D (tarea periódica y GET /clima/distritos/:id).
+- 3-0a, 3-0b, 3-0c (parcial, ver F2), 3-A, 3-B, 3-C y 3-D (endpoint) hechos, con PR abierto. Falta el job periódico de 3-D (setInterval).
 - Alinear EXCESO con EXCESO_LLUVIA en Info_Datos_Clima.md (types.ts usa EXCESO_LLUVIA).
 - F2 parcial: confirmar o corregir los SUPUESTOS de Info_Datos_Clima.md (día seco, cortes de sequía y exceso, guarda de 20 mm, ventanas de primera y postrera) con CENTA, un agrónomo o datos reales; conseguir los umbrales de inicio de época lluviosa y el límite inferior de la sequía débil del MARN; extraer los requerimientos hídricos por etapa del boletín agrometeorológico del MARN.
 - Confirmar con Pocho y el equipo la decisión por defecto de 3-B: sin cuarta salida, condicion = null fuera de la época lluviosa y sin evento (no se tocó events/types.ts). Si se decide una cuarta salida, cambia el payload de CondicionClimaticaActualizada.
