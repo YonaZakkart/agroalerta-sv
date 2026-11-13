@@ -5,23 +5,34 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
+import { PerfilService } from './perfil.service';
 
 describe('authInterceptor', () => {
   let http: HttpTestingController;
+  let perfilLimpiado: number;
   const token = signal<string | null>('token-de-prueba');
 
   beforeEach(() => {
     token.set('token-de-prueba');
+    perfilLimpiado = 0;
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([{ path: 'login', children: [] }]),
         {
           provide: AuthService,
           useValue: {
             token: token.asReadonly(),
             cerrarSesion: () => token.set(null),
+          },
+        },
+        {
+          provide: PerfilService,
+          useValue: {
+            limpiar: () => {
+              perfilLimpiado++;
+            },
           },
         },
       ],
@@ -56,5 +67,27 @@ describe('authInterceptor', () => {
     const peticion = http.expectOne('/api/distritos');
     expect(peticion.request.headers.has('Authorization')).toBe(false);
     peticion.flush([]);
+  });
+
+  it('ante un 401 cierra la sesión y limpia el perfil anterior', () => {
+    TestBed.inject(HttpClient).get('/api/auth/yo').subscribe({ error: () => undefined });
+    http.expectOne('/api/auth/yo').flush(
+      { error: 'Sesión expirada' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+
+    expect(token()).toBeNull();
+    expect(perfilLimpiado).toBe(1);
+  });
+
+  it('ante un 401 en login no limpia la sesión', () => {
+    TestBed.inject(HttpClient).post('/api/auth/login', {}).subscribe({ error: () => undefined });
+    http.expectOne('/api/auth/login').flush(
+      { error: 'Credenciales inválidas' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+
+    expect(token()).toBe('token-de-prueba');
+    expect(perfilLimpiado).toBe(0);
   });
 });
