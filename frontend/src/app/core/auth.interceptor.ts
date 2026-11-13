@@ -2,13 +2,21 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { API_URL } from './api.config';
 import { AuthService } from './auth.service';
+
+/** El token solo viaja al API propio; nunca a orígenes externos ni a recursos estáticos. */
+function esPeticionApi(url: string): boolean {
+  return url === API_URL || url.startsWith(`${API_URL}/`) || url.startsWith(`${API_URL}?`);
+}
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const token = auth.token();
-  const peticion = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  const peticion = token && esPeticionApi(req.url)
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+    : req;
   const esAcceso = req.url.endsWith('/auth/login') || req.url.endsWith('/auth/registro');
 
   return next(peticion).pipe(
