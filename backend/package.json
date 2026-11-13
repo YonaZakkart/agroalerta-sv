@@ -13,6 +13,7 @@
     "db:studio": "prisma studio",
     "datos:limpiar": "ts-node-dev --transpile-only src/viabilidad/datos/limpiar-centa.ts",
     "datos:cargar": "ts-node-dev --transpile-only src/viabilidad/datos/cargar-centa.ts",
+    "pruebas:config": "ts-node-dev --transpile-only src/config/puerto.pruebas.ts",
     "clima:pruebas": "ts-node-dev --transpile-only src/clima/clima.pruebas.ts",
     "clima:pruebas-clasificacion": "ts-node-dev --transpile-only src/clima/clasificacion.pruebas.ts",
     "clima:probar": "ts-node-dev --transpile-only src/clima/probar-open-meteo.ts",
