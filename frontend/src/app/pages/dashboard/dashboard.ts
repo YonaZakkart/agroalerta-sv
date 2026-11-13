@@ -35,8 +35,10 @@ function leerCultivo(): Cultivo {
 export class Dashboard {
   private readonly viabilidad = inject(ViabilidadService);
   private readonly catalogo = inject(DistritosService);
+  private readonly perfilService = inject(PerfilService);
 
-  protected readonly perfil = inject(PerfilService).perfil;
+  protected readonly perfil = this.perfilService.perfil;
+  protected readonly perfilNoDisponible = this.perfilService.error;
   protected readonly cultivos = CULTIVOS;
   protected readonly cultivo = signal<Cultivo>(leerCultivo());
   protected readonly datos = signal<RespuestaViabilidad | null>(null);
@@ -106,6 +108,11 @@ export class Dashboard {
 
   protected reintentar(): void {
     this.intento.update((n) => n + 1);
+  }
+
+  /** Si /auth/yo falló, el dashboard no tiene distrito; este reintento lo recupera. */
+  protected recargarPerfil(): void {
+    this.perfilService.cargar().subscribe({ error: () => undefined });
   }
 
   protected cambiarDistrito(evento: Event): void {

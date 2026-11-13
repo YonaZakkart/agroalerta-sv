@@ -52,7 +52,12 @@
   }
 </div>
 
-@if (error()) {
+@if (perfilNoDisponible()) {
+<div class="alerta alerta-error" role="alert">
+  <p>No se pudo cargar tu perfil, así que todavía no sabemos qué distrito mostrarte.</p>
+  <button type="button" class="btn-primary" (click)="recargarPerfil()">Reintentar</button>
+</div>
+} @else if (error()) {
 <div class="alerta alerta-error" role="alert">
   <p>No se pudo cargar la viabilidad de cultivo.</p>
   <button type="button" class="btn-primary" (click)="reintentar()">Reintentar</button>
