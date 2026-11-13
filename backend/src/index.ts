@@ -7,6 +7,7 @@ import { viabilidadRouter } from "./viabilidad/viabilidad.routes";
 import { distritosRouter } from "./viabilidad/distritos.routes";
 import { climaRouter } from "./clima/clima.routes";
 import { leerPuerto } from "./config/puerto";
+import { manejarErrores, rutaNoEncontrada } from "./comun/http-errores";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
 for (const nombre of ["JWT_SECRET", "DUI_PEPPER"] as const) {
@@ -38,6 +39,9 @@ app.use("/viabilidad", viabilidadRouter);
 app.use("/distritos", distritosRouter);
 
 app.use("/clima", climaRouter);
+
+app.use(rutaNoEncontrada);
+app.use(manejarErrores);
 
 function obtenerPuerto(): number {
   try {
