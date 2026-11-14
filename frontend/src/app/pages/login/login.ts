@@ -1,6 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthShell } from '../../layout/auth-shell/auth-shell';
 import { AuthService } from '../../core/auth.service';
 import { PerfilService } from '../../core/perfil.service';
@@ -13,6 +14,7 @@ import { mensajesDeError } from '../../core/errores';
   styleUrl: './login.css',
 })
 export class Login {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly perfilService = inject(PerfilService);
   private readonly router = inject(Router);
@@ -45,7 +47,7 @@ export class Login {
     this.errores.set([]);
     const { correo, contrasena } = this.formulario.getRawValue();
 
-    this.auth.login(correo.trim(), contrasena).subscribe({
+    this.auth.login(correo.trim(), contrasena).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         // Nunca reutilizar el perfil de una sesión anterior (otra cuenta o
         // distrito) mientras el shell vuelve a consultar /auth/yo.

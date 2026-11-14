@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -13,6 +13,7 @@ import { ClimaService, CondicionDistritoDto } from '../../core/clima.service';
   styleUrl: './shell.css',
 })
 export class Shell {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly perfilService = inject(PerfilService);
   private readonly climaService = inject(ClimaService);
@@ -45,7 +46,7 @@ export class Shell {
 
   protected cargarPerfil(): void {
     this.errorPerfil.set(false);
-    this.perfilService.cargar().pipe(takeUntilDestroyed()).subscribe({
+    this.perfilService.cargar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.cargarClimaHeader(),
       error: () => {
         this.errorPerfil.set(true);
@@ -61,7 +62,7 @@ export class Shell {
     this.cargandoHeader.set(true);
     this.errorHeader.set(false);
 
-    this.climaService.obtenerCondicion(distritoId).pipe(takeUntilDestroyed()).subscribe({
+    this.climaService.obtenerCondicion(distritoId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (respuesta) => {
         this.condicionHeader.set(respuesta.condicion);
         this.cargandoHeader.set(false);

@@ -1,6 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, DestroyRef } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, filter, map, switchMap, tap, EMPTY } from 'rxjs';
 import { PerfilService } from '../../core/perfil.service';
 import { DistritosService } from '../../core/distritos.service';
@@ -59,6 +59,7 @@ interface DistritoConClima extends Distrito {
   templateUrl: './clima-zonal.html',
 })
 export class ClimaZonal {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly perfilService = inject(PerfilService);
   private readonly distritosService = inject(DistritosService);
   private readonly climaService = inject(ClimaService);
@@ -81,7 +82,7 @@ export class ClimaZonal {
   private cargarCatalogo(): void {
     this.cargandoCatalogo.set(true);
     this.errorCatalogo.set(false);
-    this.distritosService.listar().subscribe({
+    this.distritosService.listar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => {
         this.distritos.set(lista);
         this.cargandoCatalogo.set(false);
@@ -110,7 +111,7 @@ export class ClimaZonal {
     this.errorClima.set(errores);
 
     this.climaService.obtenerCondicion(distritoId).pipe(
-      takeUntilDestroyed(),
+      takeUntilDestroyed(this.destroyRef),
       catchError(() => {
         const err = new Set(this.errorClima());
         err.add(distritoId);
@@ -138,7 +139,7 @@ export class ClimaZonal {
   }
 
   protected recargarPerfil(): void {
-    this.perfilService.cargar().subscribe();
+    this.perfilService.cargar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
   protected obtenerCondicion(distritoId: number): RespuestaClimaDistrito['condicion'] | undefined {

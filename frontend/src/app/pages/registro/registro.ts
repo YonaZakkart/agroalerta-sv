@@ -1,6 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, DestroyRef } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthShell } from '../../layout/auth-shell/auth-shell';
 import { AuthService } from '../../core/auth.service';
 import { DistritosService } from '../../core/distritos.service';
@@ -16,6 +17,7 @@ type Estado = 'formulario' | 'creada' | 'verificada';
   styleUrl: './registro.css',
 })
 export class Registro {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
   private readonly catalogo = inject(DistritosService);
   private readonly fb = inject(NonNullableFormBuilder);
@@ -48,7 +50,7 @@ export class Registro {
   protected cargarDistritos(): void {
     this.cargandoDistritos.set(true);
     this.errorDistritos.set(false);
-    this.catalogo.listar().subscribe({
+    this.catalogo.listar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => {
         this.distritos.set(lista);
         this.cargandoDistritos.set(false);
@@ -82,6 +84,7 @@ export class Registro {
         dui: v.dui,
         distrito: v.distrito, // nombre del distrito; el backend lo valida contra el catálogo
       })
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (respuesta) => {
           this.correoRegistrado.set(respuesta.correo);
@@ -104,7 +107,7 @@ export class Registro {
 
     this.cargando.set(true);
     this.errores.set([]);
-    this.auth.verificar(token).subscribe({
+    this.auth.verificar(token).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
         this.estado.set('verificada');
         this.cargando.set(false);
