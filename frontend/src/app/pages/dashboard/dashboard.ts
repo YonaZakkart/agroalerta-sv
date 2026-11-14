@@ -1,5 +1,5 @@
 import { DecimalPipe, LowerCasePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, filter, switchMap, tap } from 'rxjs';
 import { DistritosService } from '../../core/distritos.service';
@@ -33,6 +33,7 @@ function leerCultivo(): Cultivo {
   templateUrl: './dashboard.html',
 })
 export class Dashboard {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly viabilidad = inject(ViabilidadService);
   private readonly catalogo = inject(DistritosService);
   private readonly perfilService = inject(PerfilService);
@@ -115,7 +116,7 @@ export class Dashboard {
 
   protected cargarDistritos(): void {
     this.errorCatalogo.set(false);
-    this.catalogo.listar().subscribe({
+    this.catalogo.listar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => this.distritos.set(lista),
       error: () => this.errorCatalogo.set(true),
     });
@@ -123,7 +124,7 @@ export class Dashboard {
 
   /** Si /auth/yo falló, el dashboard no tiene distrito; este reintento lo recupera. */
   protected recargarPerfil(): void {
-    this.perfilService.cargar().subscribe({ error: () => undefined });
+    this.perfilService.cargar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: () => undefined });
   }
 
   protected cambiarDistrito(evento: Event): void {
