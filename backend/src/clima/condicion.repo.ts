@@ -2,6 +2,7 @@ import { prisma } from "../config/prisma";
 import type { CondicionClimatica } from "../events/types";
 import type { ResultadoClasificacion } from "./clasificacion";
 import type { ResumenLluvia } from "./resumen-lluvia";
+import { cambioAEvaluada } from "./condicion-cambio";
 
 export function leerCondicion(distritoId: number) {
   return prisma.condicionDistrito.findUnique({ where: { distritoId } });
@@ -22,6 +23,7 @@ export async function guardarCondicion(p: {
   const anterior = await prisma.condicionDistrito.findUnique({ where: { distritoId } });
   const condicionAnterior = anterior?.condicion ?? null;
   const cambioCondicion = resultado.condicion !== condicionAnterior;
+  const actualizaDesde = cambioAEvaluada(condicionAnterior, resultado.condicion);
 
   const datos = {
     condicion: resultado.condicion,
@@ -37,7 +39,7 @@ export async function guardarCondicion(p: {
   await prisma.condicionDistrito.upsert({
     where: { distritoId },
     create: { distritoId, ...datos, condicionDesde: consultadoEn },
-    update: cambioCondicion ? { ...datos, condicionDesde: consultadoEn } : datos,
+    update: actualizaDesde ? { ...datos, condicionDesde: consultadoEn } : datos,
   });
 
   // Entrar a "sin evaluación" (null) no es un evento.
