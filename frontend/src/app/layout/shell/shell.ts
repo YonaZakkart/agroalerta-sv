@@ -32,6 +32,11 @@ export class Shell {
 
   constructor() {
     // Valida el token al entrar al área protegida. Si da 401, el interceptor ya limpia la sesión y redirige.
+    this.cargarPerfil();
+  }
+
+  protected cargarPerfil(): void {
+    this.errorPerfil.set(false);
     this.perfilService.cargar().subscribe({
       error: () => this.errorPerfil.set(true),
     });

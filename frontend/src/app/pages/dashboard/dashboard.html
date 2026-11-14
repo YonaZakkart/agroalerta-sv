@@ -1,6 +1,6 @@
 <section class="kpis" aria-label="Resumen de zona">
   <div class="kpi">
-    <div class="kpi-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+    <div class="kpi-icon"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></div>
     <div>
       <h3>Distrito</h3>
       <p>{{ distritoActual()?.nombre ?? '—' }}</p>
@@ -8,7 +8,7 @@
     </div>
   </div>
   <div class="kpi">
-    <div class="kpi-icon"><i class="fa-solid fa-location-dot"></i></div>
+    <div class="kpi-icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></div>
     <div>
       <h3>Municipio</h3>
       <p>{{ distritoActual()?.municipio.nombre ?? '—' }}</p>
@@ -16,10 +16,10 @@
     </div>
   </div>
   <div class="kpi">
-    <div class="kpi-icon"><i class="fa-solid fa-database"></i></div>
+    <div class="kpi-icon"><i class="fa-solid fa-database" aria-hidden="true"></i></div>
     <div>
       <h3>Fuente</h3>
-      <p>{{ datos()?.fuente ?? 'CENTA' }}</p>
+      <p>{{ datos()?.fuente ?? '—' }}</p>
       <span>{{ datos()?.fechaExtraccion ? 'Extracción ' + datos()?.fechaExtraccion : 'Viabilidad de cultivo' }}</span>
     </div>
   </div>
@@ -30,9 +30,9 @@
 @if (distritos().length > 0) {
 <div class="form-group">
   <label for="distrito">Distrito a consultar</label>
-  <select id="distrito" name="distrito" (change)="cambiarDistrito($event)">
+  <select id="distrito" name="distrito" [value]="distritoActual()?.id ?? ''" (change)="cambiarDistrito($event)">
     @for (d of distritos(); track d.id) {
-    <option [value]="d.id" [selected]="d.id === distritoActual()?.id">{{ d.nombre }}</option>
+    <option [value]="d.id">{{ d.nombre }}</option>
     }
   </select>
   @if (esOtroDistrito()) {
@@ -42,11 +42,17 @@
   }
 </div>
 }
+@if (errorCatalogo()) {
+<div class="alerta alerta-aviso" role="alert">
+  <p>No se pudo cargar el catálogo de distritos. Puedes seguir consultando tu distrito.</p>
+  <button type="button" class="btn-primary" (click)="cargarDistritos()">Reintentar catálogo</button>
+</div>
+}
 
 <div class="selector" role="radiogroup" aria-label="Cultivo">
   @for (c of cultivos; track c.valor) {
   <button type="button" role="radio" [attr.aria-checked]="c.valor === cultivo()" [class.activo]="c.valor === cultivo()"
-    (click)="elegir(c.valor)">
+    [tabindex]="c.valor === cultivo() ? 0 : -1" (click)="elegir(c.valor)" (keydown)="moverCultivo($event, $index)">
     {{ c.etiqueta }}
   </button>
   }
@@ -63,14 +69,15 @@
   <button type="button" class="btn-primary" (click)="reintentar()">Reintentar</button>
 </div>
 } @else if (cargando()) {
-<p class="vacio" role="status">Cargando viabilidad...</p>
+<p class="vacio" role="status" aria-live="polite">Cargando viabilidad...</p>
 } @else {
 <div class="capas">
   @for (capa of capas(); track capa.codigo) {
   <section class="card">
     <div class="card-header">
       <h2>
-        <i [class]="capa.tipo === 'POTENCIAL' ? 'fa-solid fa-seedling' : 'fa-solid fa-sun-plant-wilt'"></i>
+        <i [class]="capa.tipo === 'POTENCIAL' ? 'fa-solid fa-seedling' : 'fa-solid fa-sun-plant-wilt'"
+          aria-hidden="true"></i>
         {{ capa.nombre }}
       </h2>
     </div>
@@ -93,10 +100,10 @@
       <ul class="leyenda">
         @for (cl of capa.clases; track cl.valor) {
         <li>
-          <span class="punto" [attr.data-nivel]="nivel(capa.tipo, cl.valor)"></span>
+          <span class="punto" [attr.data-nivel]="nivel(capa.tipo, cl.valor)" aria-hidden="true"></span>
           <span class="ln">{{ cl.nombre }}</span>
           <span class="lp">{{ cl.porcentaje | number: '1.1-1' }} %</span>
-          <span class="la">{{ cl.areaMz | number: '1.0-0' }} mz</span>
+          <span class="la">{{ cl.areaMz | number: '1.0-2' }} mz</span>
         </li>
         }
       </ul>
@@ -112,10 +119,10 @@
 
 <section class="card estimacion" aria-label="Estimación de siembra">
   <div class="card-header">
-    <h2><i class="fa-solid fa-calculator"></i> Estimación de siembra</h2>
+    <h2><i class="fa-solid fa-calculator" aria-hidden="true"></i> Estimación de siembra</h2>
   </div>
   <div class="card-body vacio">
-    <i class="fa-solid fa-hourglass-half"></i>
+    <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
     <p>Aún no disponible</p>
     <span>La proyección de rendimiento e ingresos y las recomendaciones se activarán cuando exista el registro de
       siembra y el monitoreo del clima</span>

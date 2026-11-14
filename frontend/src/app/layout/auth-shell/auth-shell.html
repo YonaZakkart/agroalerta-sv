@@ -7,14 +7,14 @@
   <section class="panel">
     <div class="box">
       <header class="auth-header">
-        <i class="fa-solid fa-seedling"></i>
+        <i class="fa-solid fa-seedling" aria-hidden="true"></i>
         <h2>Bienvenido</h2>
         <p>Ingresa tus credenciales o crea una cuenta nueva</p>
       </header>
 
       <nav class="tabs" aria-label="Acceso">
-        <a class="tab" routerLink="/login" routerLinkActive="active">Iniciar sesión</a>
-        <a class="tab" routerLink="/registro" routerLinkActive="active">Registrarse</a>
+        <a class="tab" routerLink="/login" routerLinkActive="active" ariaCurrentWhenActive="page">Iniciar sesión</a>
+        <a class="tab" routerLink="/registro" routerLinkActive="active" ariaCurrentWhenActive="page">Registrarse</a>
       </nav>
 
       <ng-content />

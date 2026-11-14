@@ -1,5 +1,5 @@
 <app-auth-shell>
-  <form novalidate [formGroup]="formulario" (ngSubmit)="enviar()">
+  <form novalidate [formGroup]="formulario" [attr.aria-busy]="cargando()" (ngSubmit)="enviar()">
     @if (avisoSesion) {
       <p class="alerta alerta-aviso" role="status">{{ avisoSesion }}</p>
     }
@@ -21,7 +21,7 @@
       <input id="contrasena" name="contrasena" type="password" autocomplete="current-password" placeholder="••••••••"
         formControlName="contrasena">
     </div>
-    <button type="submit" class="btn-primary" [disabled]="cargando()">
+    <button type="submit" class="btn-primary" [disabled]="cargando()" [attr.aria-busy]="cargando()">
       {{ cargando() ? 'Ingresando...' : 'Iniciar sesión' }}
     </button>
   </form>

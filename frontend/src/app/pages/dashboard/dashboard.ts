@@ -44,6 +44,7 @@ export class Dashboard {
   protected readonly datos = signal<RespuestaViabilidad | null>(null);
   protected readonly cargando = signal(true);
   protected readonly error = signal(false);
+  protected readonly errorCatalogo = signal(false);
   private readonly intento = signal(0);
 
   protected readonly capas = computed(() => this.datos()?.capas ?? []);
@@ -71,12 +72,14 @@ export class Dashboard {
   });
 
   constructor() {
-    // Si el catálogo falla, simplemente no se ofrece el selector y se sigue con el distrito del perfil.
-    this.catalogo.listar().subscribe({ next: (lista) => this.distritos.set(lista), error: () => { } });
+    // Si el catálogo falla se sigue con el distrito del perfil y se ofrece reintentar.
+    this.cargarDistritos();
     toObservable(this.peticion)
       .pipe(
         filter((p): p is Peticion => p !== null),
         tap(() => {
+          // No mostrar el distrito/fuente de la consulta anterior mientras llega la nueva.
+          this.datos.set(null);
           this.cargando.set(true);
           this.error.set(false);
         }),
@@ -110,6 +113,14 @@ export class Dashboard {
     this.intento.update((n) => n + 1);
   }
 
+  protected cargarDistritos(): void {
+    this.errorCatalogo.set(false);
+    this.catalogo.listar().subscribe({
+      next: (lista) => this.distritos.set(lista),
+      error: () => this.errorCatalogo.set(true),
+    });
+  }
+
   /** Si /auth/yo falló, el dashboard no tiene distrito; este reintento lo recupera. */
   protected recargarPerfil(): void {
     this.perfilService.cargar().subscribe({ error: () => undefined });
@@ -119,6 +130,23 @@ export class Dashboard {
     const id = Number((evento.target as HTMLSelectElement).value);
     // Si vuelve a elegir el propio, se limpia la selección para no repetir la consulta.
     this.distritoElegidoId.set(id === this.perfil()?.distrito.id ? null : id);
+  }
+
+  /** Navegación con flechas del radiogroup de cultivos (comportamiento esperado de ARIA). */
+  protected moverCultivo(evento: KeyboardEvent, indice: number): void {
+    const paso =
+      evento.key === 'ArrowRight' || evento.key === 'ArrowDown'
+        ? 1
+        : evento.key === 'ArrowLeft' || evento.key === 'ArrowUp'
+          ? -1
+          : 0;
+    if (paso === 0) return;
+
+    evento.preventDefault();
+    const siguiente = (indice + paso + CULTIVOS.length) % CULTIVOS.length;
+    this.elegir(CULTIVOS[siguiente]!.valor);
+    const botones = (evento.currentTarget as HTMLElement).parentElement?.querySelectorAll('button');
+    botones?.[siguiente]?.focus();
   }
 
   protected volverAMiDistrito(): void {

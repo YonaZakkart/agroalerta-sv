@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from './api.config';
 import { DatosRegistro, RespuestaLogin, RespuestaRegistro, RespuestaVerificacion } from './models';
+import { tokenVigente } from './token';
 
 const CLAVE_TOKEN = 'agroalerta_token';
 
@@ -12,7 +13,15 @@ export class AuthService {
   private readonly tokenActual = signal<string | null>(this.leerToken());
 
   readonly token = this.tokenActual.asReadonly();
-  readonly autenticado = computed(() => this.tokenActual() !== null);
+  // Si el token almacenado ya venció, no se considera sesión activa aunque siga
+  // en sessionStorage (por ejemplo, la pestaña estuvo abierta más de 2 h).
+  readonly autenticado = computed(() => tokenVigente(this.tokenActual()));
+
+  constructor() {
+    if (this.tokenActual() !== null && !tokenVigente(this.tokenActual())) {
+      this.cerrarSesion();
+    }
+  }
 
   login(correo: string, contrasena: string): Observable<RespuestaLogin> {
     return this.http
