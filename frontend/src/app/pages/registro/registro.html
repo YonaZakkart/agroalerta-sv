@@ -1,6 +1,6 @@
 <app-auth-shell>
   @if (estado() === 'formulario') {
-  <form novalidate [formGroup]="formulario" (ngSubmit)="enviar()">
+  <form novalidate [formGroup]="formulario" [attr.aria-busy]="cargando()" (ngSubmit)="enviar()">
     @if (errores().length > 0) {
     <div class="alerta alerta-error" role="alert">
       @for (mensaje of errores(); track $index) {
@@ -31,7 +31,8 @@
       <div class="form-group">
         <label for="dui">DUI (sin guiones)</label>
         <input id="dui" name="dui" type="text" inputmode="numeric" maxlength="9" autocomplete="off"
-          placeholder="000000000" formControlName="dui">
+          placeholder="000000000" formControlName="dui" aria-describedby="dui-ayuda">
+        <small id="dui-ayuda">9 dígitos, sin guiones</small>
       </div>
       <div class="form-group">
         <label for="distrito">Distrito (Morazán)</label>
@@ -53,7 +54,7 @@
     </p>
     }
 
-    <button type="submit" class="btn-primary" [disabled]="cargando()">
+    <button type="submit" class="btn-primary" [disabled]="cargando()" [attr.aria-busy]="cargando()">
       {{ cargando() ? 'Creando cuenta...' : 'Crear cuenta' }}
     </button>
   </form>
