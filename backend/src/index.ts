@@ -21,6 +21,7 @@ import {
 } from "./comun/http-seguridad";
 import { crearLimitador } from "./comun/rate-limit";
 import { crearSalud } from "./comun/salud";
+import { crearManejadorCierre } from "./comun/cierre";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
 const erroresEntorno = validarEntorno(process.env);
@@ -131,4 +132,23 @@ servidor.on("error", (error: NodeJS.ErrnoException) => {
     console.error(`No se pudo iniciar el backend en el puerto ${PORT}:`, error);
   }
   process.exit(1);
+});
+
+// Cierre ordenado ante SIGTERM/SIGINT: detiene el job, deja de aceptar
+// peticiones y desconecta Prisma. Si no termina en 10 s, sale con código 1.
+const cerrar = crearManejadorCierre({
+  detenerJob: () => jobClima?.detener(),
+  cerrarServidor: () =>
+    new Promise<void>((resolver, rechazar) => {
+      servidor.close((error) => (error ? rechazar(error) : resolver()));
+    }),
+  desconectarBase: () => prisma.$disconnect(),
+  salir: (codigo) => process.exit(codigo),
+});
+
+process.once("SIGTERM", () => {
+  void cerrar("SIGTERM");
+});
+process.once("SIGINT", () => {
+  void cerrar("SIGINT");
 });
