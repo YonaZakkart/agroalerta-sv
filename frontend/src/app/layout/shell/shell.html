@@ -16,11 +16,11 @@
       <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">
         <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Dashboard
       </a>
+      <a class="nav-item" routerLink="/clima-zonal" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="cerrarMenu()">
+        <i class="fa-solid fa-cloud-sun" aria-hidden="true"></i> Clima Zonal
+      </a>
       <span class="nav-item disabled" aria-disabled="true">
         <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Historial
-      </span>
-      <span class="nav-item disabled" aria-disabled="true">
-        <i class="fa-solid fa-cloud-sun" aria-hidden="true"></i> Clima Zonal
       </span>
       <span class="nav-item disabled" aria-disabled="true">
         <i class="fa-solid fa-gear" aria-hidden="true"></i> Configuración
@@ -48,6 +48,48 @@
         </button>
       </div>
     </header>
+
+    @if (perfil(); as p) {
+    <header class="clima-header" role="region" aria-label="Condición climática de tu distrito" [class.cargando]="cargandoHeader()">
+      <div class="clima-header-content">
+        <div class="clima-header-distrito">
+          <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+          <span>{{ p.distrito.nombre }}, {{ p.distrito.municipio.nombre }}</span>
+        </div>
+        @if (cargandoHeader()) {
+        <div class="clima-header-skeleton" aria-hidden="true"></div>
+        } @else if (condicionHeader(); as ch) {
+        <div class="clima-header-condicion" [ngClass]="claseCondicion(ch.condicion)">
+          <i [class]="iconoCondicion(ch.condicion)" aria-hidden="true"></i>
+          <span>{{ etiquetaCondicion(ch.condicion) }}</span>
+          @if (ch.nivelSequia) {
+          <span class="clima-header-nivel" [ngClass]="'nivel-' + ch.nivelSequia.toLowerCase()">
+            {{ ch.nivelSequia }}
+          </span>
+          }
+        </div>
+        <div class="clima-header-detalle" aria-live="polite">
+          @if (ch.diasSecosConsecutivos > 0) {
+          <span><i class="fa-solid fa-sun" aria-hidden="true"></i> {{ ch.diasSecosConsecutivos }} días secos</span>
+          }
+          @if (ch.acumulado30Mm !== null) {
+          <span><i class="fa-solid fa-droplet" aria-hidden="true"></i> {{ ch.acumulado30Mm | number:'1.1-1' }} mm (30d)</span>
+          }
+        </div>
+        } @else if (errorHeader()) {
+        <div class="clima-header-error" role="status">
+          <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>Sin datos</span>
+        </div>
+        } @else {
+        <div class="clima-header-sin-datos" role="status">
+          <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+          <span>Sin evaluar</span>
+        </div>
+        }
+      </div>
+    </header>
+    }
 
     <main class="content">
       @if (errorPerfil()) {

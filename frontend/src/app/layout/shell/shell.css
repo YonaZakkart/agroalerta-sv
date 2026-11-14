@@ -176,6 +176,195 @@ a.nav-item:hover {
   }
 }
 
+/* Encabezado compacto de clima */
+.clima-header {
+  position: sticky;
+  top: 58px; /* altura aprox del top-header en móvil */
+  z-index: 25;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-height: 56px; /* reserva de espacio para evitar CLS */
+}
+
+.clima-header.cargando {
+  min-height: 56px;
+}
+
+.clima-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.clima-header-distrito {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clima-header-distrito i {
+  font-size: 0.85rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.clima-header-condicion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.clima-header-condicion.header-condicion-sequia {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.clima-header-condicion.header-condicion-exceso {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.clima-header-condicion.header-condicion-aceptable {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.clima-header-condicion.header-condicion-sin-datos {
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.clima-header-nivel {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.clima-header-nivel.nivel-debil {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.clima-header-nivel.nivel-moderada {
+  background: #fed7aa;
+  color: #ea580c;
+}
+
+.clima-header-nivel.nivel-fuerte {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.clima-header-nivel.nivel-severa {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.clima-header-skeleton {
+  width: 140px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--surface-subtle) 25%, var(--border) 50%, var(--surface-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.clima-header-error,
+.clima-header-sin-datos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  width: fit-content;
+}
+
+.clima-header-error i {
+  color: var(--warning);
+}
+
+.clima-header-detalle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.clima-header-detalle span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.clima-header-detalle i {
+  font-size: 0.7rem;
+}
+
+@media (min-width: 600px) {
+  .clima-header-content {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1.75rem;
+  }
+
+  .clima-header-distrito {
+    font-size: 0.8rem;
+  }
+
+  .clima-header-detalle {
+    font-size: 0.75rem;
+  }
+
+  .clima-header {
+    top: 64px; /* altura aprox del top-header en desktop */
+    min-height: 52px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .clima-header-content {
+    padding: 0.5rem 1.75rem;
+  }
+}
+
 .content {
   padding: 1.25rem 1rem;
   max-width: 1400px;
