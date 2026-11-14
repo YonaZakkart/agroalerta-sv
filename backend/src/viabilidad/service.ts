@@ -4,6 +4,7 @@
 import { prisma } from "../config/prisma";
 import { HA_POR_MANZANA } from "./constantes";
 import { normalizarNombre } from "../comun/normalizar";
+import { origenDeFilas } from "./origen";
 
 export class ViabilidadError extends Error {
     constructor(public status: number, message: string) {
@@ -86,14 +87,13 @@ export async function consultarViabilidad(idDistrito: number, opciones: Opciones
     }
 
     const filas = seleccion.flatMap((c) => c.clases.flatMap((cl) => cl.areas));
-    const fuente = filas[0]?.fuente ?? null;
-    const fechaMax = filas.reduce<Date | null>((max, a) => (max === null || a.fechaExtraccion > max ? a.fechaExtraccion : max), null);
+    const origen = origenDeFilas(filas);
 
     return {
         distrito: { id: distrito.id, nombre: distrito.nombre },
         municipio: { id: distrito.municipio.id, nombre: distrito.municipio.nombre },
-        fuente,
-        fechaExtraccion: fechaMax ? fechaMax.toISOString().slice(0, 10) : null,
+        fuente: origen.fuente,
+        fechaExtraccion: origen.fechaExtraccion ? origen.fechaExtraccion.toISOString().slice(0, 10) : null,
         capas: seleccion.map((c) => {
             const clases = c.clases.map((cl) => ({
                 valor: cl.valor,

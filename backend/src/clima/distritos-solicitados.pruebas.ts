@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { validarDistritoIds } from "./distritos-solicitados";
+import { validarCuerpoActualizacion, validarDistritoIds } from "./distritos-solicitados";
 
 // Pruebas SIN red ni base de datos:
 //   npm run pruebas:clima-validacion
@@ -43,6 +43,48 @@ prueba("rechaza ids inválidos dentro de la lista", () => {
     const r = validarDistritoIds(valor);
     assert.equal(r.ok, false, `se esperaba error para ${JSON.stringify(valor)}`);
   }
+});
+
+prueba("sin cuerpo actualiza todos los distritos", () => {
+  assert.deepEqual(validarCuerpoActualizacion(undefined, undefined, false), { ok: true, distritoIds: undefined });
+  assert.deepEqual(validarCuerpoActualizacion({}, "application/json", true), { ok: true, distritoIds: undefined });
+});
+
+prueba("acepta JSON con charset y variantes +json", () => {
+  assert.deepEqual(validarCuerpoActualizacion({ distritoIds: [1304] }, "application/json; charset=utf-8", true), {
+    ok: true,
+    distritoIds: [1304],
+  });
+  assert.deepEqual(validarCuerpoActualizacion({ distritoIds: [1304] }, "application/problem+json", true), {
+    ok: true,
+    distritoIds: [1304],
+  });
+});
+
+prueba("rechaza con 415 un cuerpo que no declara JSON", () => {
+  const r = validarCuerpoActualizacion({ distritoIds: [1304] }, "text/plain", true);
+  assert.equal(r.ok, false);
+  if (!r.ok) {
+    assert.equal(r.estado, 415);
+    assert.match(r.detalles, /Content-Type/);
+  }
+  const sinTipo = validarCuerpoActualizacion([1304], undefined, true);
+  assert.equal(sinTipo.ok, false);
+  if (!sinTipo.ok) assert.equal(sinTipo.estado, 415);
+});
+
+prueba("rechaza listas y valores que no son objeto JSON", () => {
+  for (const cuerpo of [[1304], null, "1304", 1304, true]) {
+    const r = validarCuerpoActualizacion(cuerpo, "application/json", true);
+    assert.equal(r.ok, false, `se esperaba error para ${JSON.stringify(cuerpo)}`);
+    if (!r.ok) assert.equal(r.estado, 400);
+  }
+});
+
+prueba("un distritoIds inválido sigue siendo 400", () => {
+  const r = validarCuerpoActualizacion({ distritoIds: [] }, "application/json", true);
+  assert.equal(r.ok, false);
+  if (!r.ok) assert.equal(r.estado, 400);
 });
 
 console.log(`\n${ok} ok, ${fallos} con fallas`);
