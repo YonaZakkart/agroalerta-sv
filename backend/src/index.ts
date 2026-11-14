@@ -18,6 +18,7 @@ import {
   crearCors,
   leerOrigenesPermitidos,
 } from "./comun/http-seguridad";
+import { crearLimitador } from "./comun/rate-limit";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
 const erroresEntorno = validarEntorno(process.env);
@@ -32,6 +33,26 @@ app.disable("x-powered-by");
 app.use(cabecerasSeguridad);
 app.use(crearCors(leerOrigenesPermitidos(process.env.CORS_ORIGINS)));
 app.use(express.json({ limit: LIMITE_CUERPO }));
+
+// Límites en memoria por IP. No sustituyen un límite compartido entre
+// instancias, pero frenan fuerza bruta y abuso del endpoint que llama a Open-Meteo.
+const limitarAcceso = crearLimitador({
+  limite: 20,
+  ventanaMs: 15 * 60_000,
+  mensaje: "Demasiados intentos de acceso; espera unos minutos antes de reintentar",
+});
+const limitarClima = crearLimitador({
+  limite: 6,
+  ventanaMs: 10 * 60_000,
+  mensaje: "La actualización del clima es costosa; espera unos minutos antes de reintentar",
+});
+const limitarLecturaClima = crearLimitador({ limite: 60, ventanaMs: 60_000 });
+
+app.use("/auth/login", limitarAcceso);
+app.use("/auth/registro", limitarAcceso);
+app.use("/auth/reenviar-verificacion", limitarAcceso);
+app.use("/clima/actualizar", limitarClima);
+app.use("/clima", limitarLecturaClima);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
