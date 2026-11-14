@@ -25,6 +25,11 @@ export const routes: Routes = [
         title: 'Dashboard | AgroAlerta',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
       },
+      {
+        path: 'clima-zonal',
+        title: 'Clima Zonal | AgroAlerta',
+        loadComponent: () => import('./pages/clima-zonal/clima-zonal').then((m) => m.ClimaZonal),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
