@@ -10,17 +10,14 @@ import { actualizarClima } from "./clima/orquestador";
 import { iniciarJobClima, leerIntervaloJob } from "./clima/job";
 import type { JobClima } from "./clima/job";
 import { leerPuerto } from "./config/puerto";
+import { validarEntorno } from "./config/entorno";
 import { manejarErrores, rutaNoEncontrada } from "./comun/http-errores";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
-for (const nombre of ["JWT_SECRET", "DUI_PEPPER"] as const) {
-  if (!process.env[nombre]) {
-    console.error(`Falta ${nombre} en backend/.env (ver .env.example)`);
-    process.exit(1);
-  }
-}
-if ((process.env.JWT_SECRET as string).length < 32) {
-  console.error("JWT_SECRET debe tener al menos 32 caracteres");
+const erroresEntorno = validarEntorno(process.env);
+if (erroresEntorno.length > 0) {
+  for (const error of erroresEntorno) console.error(error);
+  console.error("Revisa backend/.env (ver .env.example)");
   process.exit(1);
 }
 

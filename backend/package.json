@@ -14,7 +14,7 @@
     "db:studio": "prisma studio",
     "datos:limpiar": "ts-node-dev --transpile-only src/viabilidad/datos/limpiar-centa.ts",
     "datos:cargar": "ts-node-dev --transpile-only src/viabilidad/datos/cargar-centa.ts",
-    "pruebas:config": "ts-node-dev --transpile-only src/config/puerto.pruebas.ts",
+    "pruebas:config": "ts-node-dev --transpile-only src/config/puerto.pruebas.ts && ts-node-dev --transpile-only src/config/entorno.pruebas.ts",
     "pruebas:http": "ts-node-dev --transpile-only src/comun/http-errores.pruebas.ts",
     "pruebas:eventos": "ts-node-dev --transpile-only src/events/emitir.pruebas.ts",
     "pruebas:clima-validacion": "ts-node-dev --transpile-only src/clima/distritos-solicitados.pruebas.ts",

@@ -15,7 +15,9 @@ function obtenerSecreto(): string {
 }
 
 export function firmarToken(usuario: UsuarioAutenticado): string {
-  const expiresIn = (process.env.JWT_EXPIRES_IN ?? "2h") as NonNullable<SignOptions["expiresIn"]>;
+  // Un JWT_EXPIRES_IN vacío debe usar el valor por defecto: ?? no cubre "".
+  const expiracion = process.env.JWT_EXPIRES_IN?.trim();
+  const expiresIn = (expiracion || "2h") as NonNullable<SignOptions["expiresIn"]>;
   return jwt.sign({ correo: usuario.correo }, obtenerSecreto(), {
     algorithm: "HS256",
     expiresIn,
