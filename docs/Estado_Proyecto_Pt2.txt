@@ -1,7 +1,7 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática); 13 de noviembre de 2026 (3-C y 3-D: clima).
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática); 13 de noviembre de 2026 (3-C y 3-D: clima); 13 de noviembre de 2026 (corrección de pendientes y bugs).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
@@ -851,6 +851,70 @@ Pendiente:
 - Job con setInterval (recorte 4 de la sección 8 si falta tiempo). Intervalo de 1 hora o más, sin reemplazar el último dato bueno ante ErrorOpenMeteo.
 - Rebasar sobre main si feat/3-c-orquestador-clima se mergea primero.
 
+
+CORRECCIÓN DE PENDIENTES Y BUGS (estabilización)
+-----------------------------------------------
+
+Rama fix/correccion-pendientes-y-bugs (cierre técnico de 3-C y 3-D)
+Responsable: [equipo]
+Fecha: 13 de noviembre de 2026
+
+Contexto: auditoría de los pendientes documentados y de fallos no visibles en el arranque, el contrato HTTP y el frontend. No se agregaron dependencias ni se tocaron schema.prisma, migraciones, events/ ni docs/. Cada corrección va en un commit propio con pruebas sin red cuando aplica.
+
+Bugs corregidos:
+
+1. fix(backend): interpretar PORT como puerto TCP y manejar errores de listen
+   - Causa raíz: process.env.PORT siempre es string y app.listen("3000") lo interpreta como la ruta de un socket Unix (crea un archivo llamado 3000) en vez de escuchar en TCP. El callback de listen tampoco recibe errores: EADDRINUSE se emitía como evento "error" no manejado.
+   - Solución: config/puerto.ts valida y convierte PORT (entero 1–65535, vacío usa 3000) y falla al arrancar con un mensaje claro. El servidor escucha con app.listen(PORT, callback) y los errores se atienden con servidor.on("error"), con mensaje específico para EADDRINUSE.
+   - Pruebas: config/puerto.pruebas.ts (4).
+
+2. fix(backend): responder JSON en rutas inexistentes y cuerpos inválidos
+   - Causa raíz: Express responde el 404 por defecto en HTML y body-parser devuelve un HTML para JSON mal formado, rompiendo el contrato { error, detalles } que consume mensajesDeError() del frontend.
+   - Solución: comun/http-errores.ts agrega rutaNoEncontrada (404 JSON) y manejarErrores (400 JSON para entity.parse.failed; 500 JSON sin traza para el resto). Se montan después de las rutas en index.ts.
+   - Pruebas: comun/http-errores.pruebas.ts (3, app mínima en puerto efímero con fetch).
+
+3. fix(backend): validar distritoIds y devolver 400 ante distritos inexistentes
+   - Causa raíz: un distritoIds vacío pasaba la validación (every sobre lista vacía), llegaba a obtenerClimaActual([]) y terminaba en 500. Un id que no existe lanzaba ErrorOpenMeteo(COORDENADA_INVALIDA) y también se convertía en 500, aunque era un error del cliente.
+   - Solución: clima/distritos-solicitados.ts valida el campo (undefined = todos; lista no vacía de enteros positivos; el resto, 400). puntos.ts lanza ErrorDistritosNoExisten para ids ausentes y clima.routes.ts lo traduce a 400 { error: "Datos inválidos", detalles }. Un distrito sin coordenadas sigue siendo 500 (problema de datos del servidor).
+   - Pruebas: clima/distritos-solicitados.pruebas.ts (5).
+
+4. fix(frontend): limitar el token a las peticiones del API
+   - Causa raíz: el interceptor agregaba Authorization a toda petición, incluidos orígenes externos y recursos estáticos, lo que podía filtrar el JWT.
+   - Solución: solo se clona la petición cuando la URL es el API propio (API_URL = /api). Las peticiones externas y los assets salen sin encabezado.
+   - Pruebas: auth.interceptor.spec.ts (API, origen externo, asset y sin token).
+
+5. fix(frontend): limpiar el perfil al cerrar sesión por 401
+   - Causa raíz: ante un 401 el interceptor cerraba la sesión pero PerfilService conservaba el perfil anterior; el distrito del usuario previo podía verse un instante tras un nuevo login.
+   - Solución: el interceptor llama a PerfilService.limpiar() junto con AuthService.cerrarSesion(). Un 401 en login o registro no limpia nada (no hay sesión que cerrar).
+   - Pruebas: auth.interceptor.spec.ts (401 en /auth/yo limpia; 401 en login no).
+
+6. fix(frontend): interpretar PORT como puerto TCP en el servidor SSR
+   - Causa raíz: mismo defecto que el backend en src/server.ts (string a listen y error tratado en el callback). Aunque hoy el SSR no se usa con RenderMode.Client, el binario de producción sí arranca por este archivo.
+   - Solución: src/puerto.ts valida y convierte PORT (por defecto 4000) y el servidor maneja el evento "error", incluido EADDRINUSE.
+   - Pruebas: puerto.spec.ts (3).
+
+7. fix(frontend): mostrar y reintentar el perfil cuando /auth/yo falla (pendiente de 6-B)
+   - Causa raíz: si /auth/yo fallaba, el perfil quedaba null, el dashboard no tenía distrito y se quedaba para siempre en "Cargando viabilidad..."; el shell mostraba su aviso, pero el dashboard no ofrecía reintento.
+   - Solución: PerfilService expone la señal error. El dashboard muestra una alerta propia con botón Reintentar que vuelve a llamar a cargar(); al recuperar el perfil se dispara la consulta de viabilidad.
+   - Pruebas: perfil.service.spec.ts (3).
+
+8. test(backend): ejecutar las pruebas sin red con npm test
+   - Causa raíz: npm test seguía siendo el placeholder de npm ("Error: no test specified", exit 1), así que las suites existentes no se ejecutaban juntas.
+   - Solución: npm test encadena pruebas:config, pruebas:http, pruebas:clima-validacion, clima:pruebas y clima:pruebas-clasificacion. Son offline: no usan red, base de datos ni .env.
+
+Pruebas realizadas (13 de noviembre de 2026):
+- Backend: npx tsc --noEmit (exit 0) y npm run build (exit 0).
+- Backend: npm test → 4 + 3 + 5 + 17 + 24 = 53 pruebas, todas en verde.
+- Frontend: npx ng build (exit 0; sin advertencias de presupuesto).
+- Frontend: npx ng test --watch=false → 4 archivos, 12 pruebas, todas en verde.
+- No existe script de lint en ninguno de los dos package.json; no se ejecutó linter.
+- No se modificó ningún archivo de docs/ en los commits: git log origin/main..HEAD --stat no muestra docs/.
+
+Pendientes que siguen abiertos (no se tocaron en esta rama):
+- Job periódico de 3-D con setInterval, CORS y rate limiting (Parte 7), envío real de correo, guard inverso y eliminación o conservación del SSR.
+- Los SUPUESTOS de Info_Datos_Clima.md, el nombre EXCESO en ese documento y la aprobación de la cuarta salida de 3-B.
+- Pruebas contra la API real y en el equipo de otro integrante.
+
 ============================================================
 PROPUESTAS (opcionales)
 ============================================================
@@ -875,7 +939,7 @@ PARTE 6 — Frontend
 - 6-C Historial (depende de 4-D y 5-D), 6-D Clima Zonal y Configuración (depende de 3-D) y 6-E estimación real en el dashboard (depende de 5-D).
 - Indicadores de sistema vivo en el encabezado y KPI de clima y temporada (Hito 2).
 - Decidir el guard inverso en login y registro y si el guard valida la vigencia del token.
-- Aviso propio del dashboard cuando /auth/yo falla.
+- Aviso propio del dashboard cuando /auth/yo falla: resuelto en fix/correccion-pendientes-y-bugs (alerta con reintento).
 - Entradas del sidebar deshabilitadas (Historial, Clima Zonal y Configuración) hasta que existan sus vistas.
 - Despliegue (Parte 7): reemplazar el proxy de desarrollo y configurar CORS con el encabezado Authorization; decidir qué pasa con el SSR.
 - Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
