@@ -1,9 +1,10 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, throwError, timeout } from 'rxjs';
 import { API_URL } from './api.config';
 import { AuthService } from './auth.service';
+import { TIEMPO_LIMITE_HTTP_MS } from './errores';
 import { PerfilService } from './perfil.service';
 
 /** El token solo viaja al API propio; nunca a orígenes externos ni a recursos estáticos. */
@@ -22,6 +23,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const esAcceso = req.url.endsWith('/auth/login') || req.url.endsWith('/auth/registro');
 
   return next(peticion).pipe(
+    // Sin límite, una petición colgada deja la pantalla en "Cargando..." para siempre.
+    timeout(TIEMPO_LIMITE_HTTP_MS),
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401 && token && !esAcceso) {
         const motivo = error.error?.error === 'Sesión expirada' ? 'expirada' : 'invalida';
