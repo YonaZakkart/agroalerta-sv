@@ -12,6 +12,12 @@ import type { JobClima } from "./clima/job";
 import { leerPuerto } from "./config/puerto";
 import { validarEntorno } from "./config/entorno";
 import { manejarErrores, rutaNoEncontrada } from "./comun/http-errores";
+import {
+  LIMITE_CUERPO,
+  cabecerasSeguridad,
+  crearCors,
+  leerOrigenesPermitidos,
+} from "./comun/http-seguridad";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
 const erroresEntorno = validarEntorno(process.env);
@@ -22,7 +28,10 @@ if (erroresEntorno.length > 0) {
 }
 
 const app = express();
-app.use(express.json());
+app.disable("x-powered-by");
+app.use(cabecerasSeguridad);
+app.use(crearCors(leerOrigenesPermitidos(process.env.CORS_ORIGINS)));
+app.use(express.json({ limit: LIMITE_CUERPO }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
