@@ -7,11 +7,16 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { leerPuerto } from './puerto';
+import { leerHostsPermitidos } from './hosts';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+// Sin opciones, el motor SSR usa solo lo que haya en NG_ALLOWED_HOSTS (vacío por
+// defecto) y rechaza el render. Aquí se cae a localhost/127.0.0.1 en desarrollo.
+const angularApp = new AngularNodeAppEngine({
+  allowedHosts: leerHostsPermitidos(process.env['NG_ALLOWED_HOSTS']),
+});
 
 /**
  * Example Express Rest API endpoints can be defined here.
