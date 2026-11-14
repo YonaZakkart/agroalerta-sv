@@ -3,13 +3,13 @@
   border-color: var(--success);
 }
 
-.resultado .btn-primary+.alerta,
-.resultado .alerta+.btn-primary {
-  margin-top: 0.5rem;
+.resultado .btn-primary + .alerta,
+.resultado .alerta + .btn-primary {
+  margin-top: var(--space-2);
 }
 
 .reintentar {
-  margin-left: 0.4rem;
+  margin-left: var(--space-1);
   padding: 0;
   background: none;
   border: 0;
