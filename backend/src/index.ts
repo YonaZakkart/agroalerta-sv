@@ -11,6 +11,7 @@ import { iniciarJobClima, leerIntervaloJob } from "./clima/job";
 import type { JobClima } from "./clima/job";
 import { leerPuerto } from "./config/puerto";
 import { validarEntorno } from "./config/entorno";
+import { prisma } from "./config/prisma";
 import { manejarErrores, rutaNoEncontrada } from "./comun/http-errores";
 import {
   LIMITE_CUERPO,
@@ -19,6 +20,7 @@ import {
   leerOrigenesPermitidos,
 } from "./comun/http-seguridad";
 import { crearLimitador } from "./comun/rate-limit";
+import { crearSalud } from "./comun/salud";
 
 // Falla al arrancar si falta configuración crítica, en vez de al primer login/registro.
 const erroresEntorno = validarEntorno(process.env);
@@ -54,9 +56,18 @@ app.use("/auth/reenviar-verificacion", limitarAcceso);
 app.use("/clima/actualizar", limitarClima);
 app.use("/clima", limitarLecturaClima);
 
-app.get("/health", (_req, res) => {
+// /health/live solo confirma que el proceso responde (para reinicios).
+// /health comprueba la base y devuelve 503 si no contesta.
+app.get("/health/live", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.get(
+  "/health",
+  crearSalud(async () => {
+    await prisma.$queryRaw`SELECT 1`;
+  }),
+);
 
 app.use("/auth", registroRouter);
 
