@@ -1,4 +1,4 @@
-import { bus } from "../events/bus";
+import { emitirSeguro } from "../events/emitir";
 import { EVENTOS } from "../events/types";
 import type {
   ActualizacionMeteorologicaPayload,
@@ -118,7 +118,7 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
         precipitacionMm: mm,
         fuente: clima.fuente,
       };
-      bus.emit(EVENTOS.ACTUALIZACION_METEOROLOGICA, payload);
+      emitirSeguro(EVENTOS.ACTUALIZACION_METEOROLOGICA, payload);
       actualizacionEmitida = true;
     } else {
       // El contrato pide emitir en cada consulta, pero sin lluvia del último día no hay número que publicar.
@@ -136,7 +136,7 @@ async function procesarDistrito(d: ClimaDistrito, clima: ClimaActual, emitir: bo
         precipitacionAcumuladaMm: resumen.acumulado30Mm,
         fecha,
       };
-      bus.emit(EVENTOS.CONDICION_CLIMATICA_ACTUALIZADA, payload);
+      emitirSeguro(EVENTOS.CONDICION_CLIMATICA_ACTUALIZADA, payload);
     }
   }
 

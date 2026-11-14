@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../auth/auth.middleware";
 import { prisma } from "../config/prisma";
 import { actualizarClima } from "./orquestador";
-import { validarDistritoIds } from "./distritos-solicitados";
+import { validarCuerpoActualizacion } from "./distritos-solicitados";
 import { ErrorDistritosNoExisten } from "./puntos";
 import { aCondicionDto, validarIdDistrito } from "./condicion.dto";
 import { ATRIBUCION, OPEN_METEO } from "./config";
@@ -58,11 +58,13 @@ climaRouter.get("/distritos/:id", requireAuth, async (req, res) => {
 // POST /clima/actualizar: actualización bajo demanda de la condición climática por distrito (3-D).
 // Llama a la misma función que el job, así que ambos comparten el cerrojo de orquestador.ts.
 climaRouter.post("/actualizar", requireAuth, async (req, res) => {
-  const cuerpo = req.body as { distritoIds?: unknown } | undefined;
-  const validacion = validarDistritoIds(cuerpo?.distritoIds);
+  const longitud = Number(req.headers["content-length"] ?? 0);
+  const tieneCuerpo =
+    (Number.isFinite(longitud) && longitud > 0) || req.headers["transfer-encoding"] !== undefined;
+  const validacion = validarCuerpoActualizacion(req.body, req.headers["content-type"], tieneCuerpo);
 
   if (!validacion.ok) {
-    res.status(400).json({ error: "Datos inválidos", detalles: validacion.detalles });
+    res.status(validacion.estado).json({ error: "Datos inválidos", detalles: validacion.detalles });
     return;
   }
 
