@@ -1,29 +1,29 @@
-<div class="shell" [class.menu-abierto]="menuAbierto()">
+<div class="shell" [class.menu-abierto]="menuAbierto()" (keydown.escape)="cerrarMenu()">
   <button type="button" class="overlay" aria-label="Cerrar menú" tabindex="-1" (click)="cerrarMenu()"></button>
 
   <aside class="sidebar" id="menu-principal">
     <div class="sidebar-header">
       <div class="brand">
-        <i class="fa-solid fa-leaf"></i>
+        <i class="fa-solid fa-leaf" aria-hidden="true"></i>
         <h2>AgroAlerta<br>Morazán</h2>
       </div>
       <button type="button" class="icon-btn cerrar" aria-label="Cerrar menú" (click)="cerrarMenu()">
-        <i class="fa-solid fa-xmark"></i>
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
       </button>
     </div>
 
     <nav class="nav-menu" aria-label="Principal">
       <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" (click)="cerrarMenu()">
-        <i class="fa-solid fa-chart-line"></i> Dashboard
+        <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Dashboard
       </a>
       <span class="nav-item disabled" aria-disabled="true">
-        <i class="fa-solid fa-clock-rotate-left"></i> Historial
+        <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Historial
       </span>
       <span class="nav-item disabled" aria-disabled="true">
-        <i class="fa-solid fa-cloud-sun"></i> Clima Zonal
+        <i class="fa-solid fa-cloud-sun" aria-hidden="true"></i> Clima Zonal
       </span>
       <span class="nav-item disabled" aria-disabled="true">
-        <i class="fa-solid fa-gear"></i> Configuración
+        <i class="fa-solid fa-gear" aria-hidden="true"></i> Configuración
       </span>
     </nav>
   </aside>
@@ -32,7 +32,7 @@
     <header class="top-header">
       <button type="button" class="icon-btn menu" aria-label="Abrir menú" aria-controls="menu-principal"
         [attr.aria-expanded]="menuAbierto()" (click)="abrirMenu()">
-        <i class="fa-solid fa-bars"></i>
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
       </button>
       <h1>Monitoreo de Cultivos</h1>
       <div class="usuario">
@@ -40,20 +40,21 @@
         <span class="usuario-nombre">{{ nombreCorto() }}</span>
         <div class="avatar" aria-hidden="true">{{ iniciales() }}</div>
         } @else {
-        <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user"></i></div>
+        <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
         }
         <button type="button" class="icon-btn" aria-label="Cerrar sesión" title="Cerrar sesión"
           (click)="cerrarSesion()">
-          <i class="fa-solid fa-right-from-bracket"></i>
+          <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         </button>
       </div>
     </header>
 
     <main class="content">
       @if (errorPerfil()) {
-      <p class="alerta alerta-aviso" role="status">
-        No se pudo cargar tu perfil. Recarga la página; si persiste, verifica que el backend esté en ejecución
-      </p>
+      <div class="alerta alerta-aviso" role="status">
+        <p>No se pudo cargar tu perfil. Verifica que el backend esté en ejecución.</p>
+        <button type="button" class="btn-primary" (click)="cargarPerfil()">Reintentar</button>
+      </div>
       }
       <router-outlet />
     </main>
