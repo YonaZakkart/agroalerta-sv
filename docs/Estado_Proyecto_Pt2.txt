@@ -1,7 +1,7 @@
 ============================================================
 ESTADO DEL PROYECTO – AgroAlerta Morazán – PARTE 2 (Pt2)
 Continúa Estado_del_Proyecto.txt, que queda como historial cerrado hasta la Parte 2.
-Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática); 13 de noviembre de 2026 (3-C y 3-D: clima); 13 de noviembre de 2026 (corrección de pendientes y bugs).
+Primera versión: 31 de octubre de 2026. Actualizado: 1 de noviembre de 2026 (cierre del Hito 1: 6-0, 6-A y 6-B); 2 de noviembre de 2026 (3-0c: umbrales y temporadas); 1 de noviembre de 2026 (3-0b: coordenadas); 3 de noviembre de 2026 (3-0a: eventos); 4 de noviembre de 2026 (3-A: cliente de Open-Meteo); 7 de noviembre de 2026 (3-B: clasificación de la condición climática); 13 de noviembre de 2026 (3-C y 3-D: clima); 13 de noviembre de 2026 (corrección de pendientes y bugs); 13 de noviembre de 2026 (pendientes de riesgo bajo/medio: backend, frontend y transversal).
 ============================================================
 
 0. CÓMO SE USA ESTE ARCHIVO
@@ -856,7 +856,7 @@ CORRECCIÓN DE PENDIENTES Y BUGS (estabilización)
 -----------------------------------------------
 
 Rama fix/correccion-pendientes-y-bugs (cierre técnico de 3-C y 3-D)
-Responsable: [equipo]
+Responsable: Yona
 Fecha: 13 de noviembre de 2026
 
 Contexto: auditoría de los pendientes documentados y de fallos no visibles en el arranque, el contrato HTTP y el frontend. No se agregaron dependencias ni se tocaron schema.prisma, migraciones, events/ ni docs/. Cada corrección va en un commit propio con pruebas sin red cuando aplica.
@@ -915,6 +915,78 @@ Pendientes que siguen abiertos (no se tocaron en esta rama):
 - Los SUPUESTOS de Info_Datos_Clima.md, el nombre EXCESO en ese documento y la aprobación de la cuarta salida de 3-B.
 - Pruebas contra la API real y en el equipo de otro integrante.
 
+PENDIENTES Y BUGS DE RIESGO BAJO/MEDIO (backend, frontend y transversal)
+-----------------------------------------------------------------------
+
+Responsable de toda esta fase: Yona
+Fecha: 13 de noviembre de 2026
+Base: main en bf4bf48. No se modificó schema.prisma, migrations/, events/, docs/ ni se agregaron dependencias. Cada rama sale de main y se verificó antes de subir.
+
+Contexto: la auditoría de pendientes, bugs y propuestas dejó un conjunto de correcciones de riesgo bajo/medio que no exigen una decisión de negocio ni de infraestructura. Se implementaron en tres ramas por área, con un commit atómico por corrección importante y pruebas para el comportamiento nuevo. Las decisiones que sí requieren al equipo quedaron fuera y se listan al final.
+
+Rama feat/pendientes-backend (PR #44: https://github.com/YonaZakkart/agroalerta-sv/pull/44)
+Responsable: Yona
+
+Commits:
+- 570f7ac feat(clima): exponer GET /clima/distritos/:id con la última condición.
+- 1f31b7c feat(clima): programar actualización periódica cada hora (CLIMA_JOB_INTERVALO_MS, mínimo 1 h; pausa doble tras un 429).
+- c77ed3b fix(clima): rechazar cuerpos no JSON o que no son objeto y aislar errores de listeners de eventos.
+- c304421 fix(clima): validar el archivo de normales y escribirlo de forma atómica.
+- 0983f6f fix(clima): conservar condicionDesde al entrar a "sin evaluación".
+- 0558fdd fix(clima): mapear errores de Open-Meteo a 502 (proveedor) y 429 con Retry-After (límite).
+- ef14b4e fix(config): validar JWT_EXPIRES_IN, DUI_PEPPER (mínimo 32) y EXPONER_TOKEN_VERIFICACION en producción al arrancar.
+- 433a211 fix(viabilidad): tomar fuente y fechaExtraccion de la misma fila (la más reciente).
+- 761d789 fix(http): limitar CORS con CORS_ORIGINS, cuerpo a 100 kb y agregar cabeceras de seguridad; desactivar X-Powered-By.
+- 426bf26 fix(http): limitar en memoria los intentos de acceso y la actualización de clima.
+- 1e1ff35 fix(http): comprobar la base en GET /health (503 si falla) y agregar GET /health/live.
+- 725b5b7 fix(http): cerrar servidor, job y Prisma ante SIGTERM/SIGINT, con límite de 10 s.
+
+Pruebas: npm test → 114 pruebas, 0 fallos (12 suites nuevas o ampliadas); npm run typecheck y npm run build en verde. Verificación manual: /health → 200 {"status":"ok","baseDatos":"ok"}, /health/live → 200, ruta inexistente → 404 JSON, sin X-Powered-By y cierre limpio con SIGTERM.
+
+Rama feat/pendientes-frontend (PR #45: https://github.com/YonaZakkart/agroalerta-sv/pull/45)
+Responsable: Yona
+
+Commits:
+- 02e5b3c fix(ssr): aceptar solo localhost, 127.0.0.1 y [::1] por defecto; NG_ALLOWED_HOSTS define los hosts reales.
+- a46721e fix(auth): descartar al arrancar un token vencido, agregar invitadoGuard para /login y /registro y limpiar el perfil anterior al iniciar sesión.
+- 00df853 fix(ui): explicar 403, 413, 429 (con Retry-After) y 5xx; cortar peticiones colgadas a los 15 s.
+- 462bce8 fix(dashboard): evitar datos obsoletos al cambiar de distrito o cultivo, recuperar catálogo y perfil con reintento, reflejar el select actual y mostrar áreas en manzanas con 2 decimales.
+- 5b83a67 fix(ui): mejorar etiquetas, foco, navegación con flechas del radiogroup y semántica accesible (aria-hidden, aria-current, aria-busy y descripción del DUI).
+
+Pruebas: npx ng test --watch=false → 9 archivos, 30 pruebas, 0 fallos (18 nuevas); npx ng build en verde. No existe script de lint en frontend/package.json.
+
+Rama feat/pendientes-transversal (PR #46: https://github.com/YonaZakkart/agroalerta-sv/pull/46)
+Responsable: Yona
+
+Commits:
+- a579933 docs: corregir instalación, endpoints y estructura del README.
+- 284ee2e chore: agregar .gitattributes para normalizar finales de línea.
+- 80f5c49 chore: agregar script typecheck en backend y frontend.
+- 5608d31 chore: agregar plantilla de Pull Request.
+- 135fd93 ci: verificar backend y frontend en GitHub Actions.
+
+Pruebas: backend npm run typecheck, npm test (53 pruebas de main; 114 al integrar la rama de backend) y npm run build en verde; frontend npm run typecheck, npx ng test --watch=false (12 pruebas de main; 30 al integrar la rama de frontend) y npm run build en verde. El YAML del workflow se validó con PyYAML.
+
+Documentación corregida:
+- README: el clima ya no figura como pendiente; la lista de endpoints incluye /health/live, GET /clima/distritos/:id y POST /clima/actualizar; /health muestra su contrato real; el árbol ya no marca clima/ como vacío y refleja data/referencia/, prisma7.config.ts y siembra/estimacion/ como partes futuras.
+- README: nuevas secciones de variables de entorno (CORS_ORIGINS, CLIMA_JOB_INTERVALO_MS, NG_ALLOWED_HOSTS, PORT) y de comprobaciones (typecheck, pruebas y build). Se aclara que no hay script de lint.
+- backend/.env.example (rama de backend): DUI_PEPPER mínimo 32, formatos de JWT_EXPIRES_IN, restricción de EXPONER_TOKEN_VERIFICACION en producción y CORS_ORIGINS.
+- README: se quitó la indicación de que CENTA es el valor por defecto de "Fuente" en el dashboard; ahora se muestra "—" si no hay dato.
+
+Inconsistencias documentales que siguen (no se tocaron por la regla de no editar docs/ en ramas feat/*):
+- docs/Mapa_v2.txt sigue diciendo que GET /health con verificación de base está fuera de alcance; ya está implementado (PR #44).
+- docs/Info_Datos_Clima.md sigue usando EXCESO en lugar de EXCESO_LLUVIA.
+- docs/Info_Datos_CENTA.md sigue presentando las coordenadas como pendientes.
+
+Decisiones diferidas al equipo (no se forzaron):
+- Proveedor real de correo y flujo de verificación (hoy el token solo se expone con EXPONER_TOKEN_VERIFICACION=true en desarrollo).
+- Endurecimiento del modelo del DUI (dígito verificador y rotación del pepper).
+- Cambiar GET /auth/verificar/:token por POST y unificar el sobre de respuestas (success).
+- Límite de peticiones y cerrojo compartidos entre instancias (el actual es en memoria por proceso).
+- Contrato de nulos de precipitación, umbrales y datos de referencia de rendimientos/precios.
+- Mantener o retirar el SSR; hosts y CORS reales del despliegue.
+- Favicon y logotipo propios; revisión de npm audit y allowScripts.
+
 ============================================================
 PROPUESTAS (opcionales)
 ============================================================
@@ -924,7 +996,7 @@ PROPUESTAS (opcionales)
 - Cargar el perfil una sola vez con un resolver de ruta, en lugar de que el dashboard espere al shell, si más vistas necesitan el perfil.
 - Mover a styles.css los estilos de KPI y del selector segmentado si otra vista los reutiliza (hoy viven en el CSS del dashboard).
 - Decidir si se elimina el SSR (server.ts, main.server.ts y outputMode "server") o se conserva, ahora que toda la app usa RenderMode.Client.
-- Un .gitattributes para evitar que Windows marque como modificados los CSV limpios por el fin de línea (ver Propuestas de Pt1).
+- Un .gitattributes para evitar que Windows marque como modificados los CSV limpios por el fin de línea (ver Propuestas de Pt1). Hecho en feat/pendientes-transversal (PR #46), Responsable: Yona.
 
 ============================================================
 PENDIENTES (obligatorio)
@@ -938,21 +1010,21 @@ MAPA v2
 PARTE 6 — Frontend
 - 6-C Historial (depende de 4-D y 5-D), 6-D Clima Zonal y Configuración (depende de 3-D) y 6-E estimación real en el dashboard (depende de 5-D).
 - Indicadores de sistema vivo en el encabezado y KPI de clima y temporada (Hito 2).
-- Decidir el guard inverso en login y registro y si el guard valida la vigencia del token.
+- Decidir el guard inverso en login y registro y si el guard valida la vigencia del token. Resuelto en feat/pendientes-frontend (PR #45): invitadoGuard y descarte de tokens vencidos, Responsable: Yona.
 - Aviso propio del dashboard cuando /auth/yo falla: resuelto en fix/correccion-pendientes-y-bugs (alerta con reintento).
 - Entradas del sidebar deshabilitadas (Historial, Clima Zonal y Configuración) hasta que existan sus vistas.
-- Despliegue (Parte 7): reemplazar el proxy de desarrollo y configurar CORS con el encabezado Authorization; decidir qué pasa con el SSR.
-- Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App).
+- Despliegue (Parte 7): reemplazar el proxy de desarrollo y configurar CORS con el encabezado Authorization; decidir qué pasa con el SSR. El backend ya soporta CORS opt-in con CORS_ORIGINS (feat/pendientes-backend, PR #44, Responsable: Yona); quedan los orígenes reales y la decisión sobre el SSR.
+- Favicon y logotipo propios; pruebas automatizadas del frontend (hoy solo existe la de creación de App). Las pruebas automatizadas pasaron a 9 archivos y 30 casos en feat/pendientes-frontend (PR #45, Responsable: Yona); faltan favicon y logotipo.
 
 PARTE 3 y siguientes
-- 3-0a, 3-0b, 3-0c (parcial, ver F2), 3-A, 3-B, 3-C y 3-D (endpoint) hechos, con PR abierto. Falta el job periódico de 3-D (setInterval).
+- 3-0a, 3-0b, 3-0c (parcial, ver F2), 3-A, 3-B, 3-C y 3-D (endpoint y job periódico) hechos. El job periódico se completó en feat/pendientes-backend (PR #44, commit 1f31b7c), Responsable: Yona.
 - Alinear EXCESO con EXCESO_LLUVIA en Info_Datos_Clima.md (types.ts usa EXCESO_LLUVIA).
 - F2 parcial: confirmar o corregir los SUPUESTOS de Info_Datos_Clima.md (día seco, cortes de sequía y exceso, guarda de 20 mm, ventanas de primera y postrera) con CENTA, un agrónomo o datos reales; conseguir los umbrales de inicio de época lluviosa y el límite inferior de la sequía débil del MARN; extraer los requerimientos hídricos por etapa del boletín agrometeorológico del MARN.
 - Confirmar con Pocho y el equipo la decisión por defecto de 3-B: sin cuarta salida, condicion = null fuera de la época lluviosa y sin evento (no se tocó events/types.ts). Si se decide una cuarta salida, cambia el payload de CondicionClimaticaActualizada.
 - Confirmar o ajustar los SUPUESTOS que 3-B dejó en umbrales.ts (margen anti-oscilación 0.05, época evaluable 01-05 a 15-11, DSC_DEBIL_MIN = null) y revisar el riesgo de falsos SEQUIA durante la transición lluviosa a seca (15 de octubre al 15 de noviembre), cuando la lluvia de 30 días cae de forma natural.
 - Repetir npm run clima:clasificar a partir del 16 de noviembre y confirmar que condicion queda en null (fuera de época); correr dentro de MySQL SELECT COUNT(*) FROM condiciones_distrito (debe dar 26) y GET /health con el backend arrancado, pruebas de 3-B no realizadas.
 - 3-C: decidir si la primera clasificación de un distrito (condicionAnterior null, cambio true) emite CondicionClimaticaActualizada, y si se exige persistencia de N días; tener en cuenta que al salir de época se pierde la condición vigente.
-- 3-D: tarea periódica con intervalo de 1 hora o más, sin reemplazar el último dato bueno ante ErrorOpenMeteo (TIMEOUT, RED, HTTP; esperar más de un ciclo ante 429), y mostrar condicion null como "fuera de la época lluviosa".
+- 3-D: tarea periódica con intervalo de 1 hora o más, sin reemplazar el último dato bueno ante ErrorOpenMeteo (TIMEOUT, RED, HTTP; esperar más de un ciclo ante 429), y mostrar condicion null como "fuera de la época lluviosa". La tarea periódica y el manejo de errores 429/502 se completaron en feat/pendientes-backend (PR #44), Responsable: Yona; falta mostrar condicion null en la interfaz.
 - Mostrar la atribución a Open-Meteo en la interfaz (6-D o 7-D), junto a la de GeoNames.
 - Confirmar cómo cuenta Open-Meteo las peticiones de rango largo si se regenera la normal con otro periodo. models=era5 fue aceptado por la API en 3-A: no hay nada que ajustar.
 - Verificar con una segunda fuente los 15 distritos que tienen una sola fuente de coordenadas.
@@ -961,6 +1033,7 @@ PARTE 3 y siguientes
 - Parte 4: decidir si el formulario de siembra usa el distrito registrado o permite elegir otro.
 
 TRANSVERSAL
+- README desactualizado, .gitattributes, scripts typecheck, plantilla de Pull Request y CI: completados en feat/pendientes-transversal (PR #46), Responsable: Yona.
 - Copiar las secciones base de Pt1 a este archivo (posteriormente).
 - Info_Datos_CENTA.md aún habla de las coordenadas como pendientes (2-END, bloque "Pendientes"). Ya lo avisa 3-0b, pero sigue sin hacerse.
 - Completar los campos abiertos de 3-A: Responsable y Fecha figuran entre corchetes ([Requeno], [04/11/2026]), confirmar que backend/data/referencia/normales_lluvia_30d.json quedó en el PR (3-B lo usa) y el estado de merge de feat/3-a-cliente-open-meteo y de docs/3-a-cliente-open-meteo.
