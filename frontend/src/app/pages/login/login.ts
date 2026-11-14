@@ -3,6 +3,7 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthShell } from '../../layout/auth-shell/auth-shell';
 import { AuthService } from '../../core/auth.service';
+import { PerfilService } from '../../core/perfil.service';
 import { mensajesDeError } from '../../core/errores';
 
 @Component({
@@ -13,6 +14,7 @@ import { mensajesDeError } from '../../core/errores';
 })
 export class Login {
   private readonly auth = inject(AuthService);
+  private readonly perfilService = inject(PerfilService);
   private readonly router = inject(Router);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly motivoSesion = inject(ActivatedRoute).snapshot.queryParamMap.get('sesion');
@@ -44,7 +46,12 @@ export class Login {
     const { correo, contrasena } = this.formulario.getRawValue();
 
     this.auth.login(correo.trim(), contrasena).subscribe({
-      next: () => void this.router.navigate(['/dashboard']),
+      next: () => {
+        // Nunca reutilizar el perfil de una sesión anterior (otra cuenta o
+        // distrito) mientras el shell vuelve a consultar /auth/yo.
+        this.perfilService.limpiar();
+        void this.router.navigate(['/dashboard']);
+      },
       error: (error: unknown) => {
         this.errores.set(mensajesDeError(error));
         this.cargando.set(false);

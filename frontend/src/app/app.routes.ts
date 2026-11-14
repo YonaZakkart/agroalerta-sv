@@ -1,16 +1,18 @@
 import { Routes } from '@angular/router';
 import { Shell } from './layout/shell/shell';
-import { authGuard } from './core/auth.guard';
+import { authGuard, invitadoGuard } from './core/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     title: 'Iniciar sesión | AgroAlerta',
+    canActivate: [invitadoGuard],
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
   },
   {
     path: 'registro',
     title: 'Registro | AgroAlerta',
+    canActivate: [invitadoGuard],
     loadComponent: () => import('./pages/registro/registro').then((m) => m.Registro),
   },
   {
