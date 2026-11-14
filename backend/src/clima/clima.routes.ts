@@ -4,6 +4,7 @@ import { prisma } from "../config/prisma";
 import { actualizarClima } from "./orquestador";
 import { validarCuerpoActualizacion } from "./distritos-solicitados";
 import { ErrorDistritosNoExisten } from "./puntos";
+import { respuestaErrorClima } from "./errores-http";
 import { aCondicionDto, validarIdDistrito } from "./condicion.dto";
 import { ATRIBUCION, OPEN_METEO } from "./config";
 
@@ -77,6 +78,16 @@ climaRouter.post("/actualizar", requireAuth, async (req, res) => {
       res.status(400).json({ error: "Datos inválidos", detalles: error.message });
       return;
     }
+
+    const respuesta = respuestaErrorClima(error);
+    if (respuesta) {
+      if (respuesta.reintentarEnSegundos !== undefined) {
+        res.setHeader("Retry-After", String(respuesta.reintentarEnSegundos));
+      }
+      res.status(respuesta.estado).json(respuesta.cuerpo);
+      return;
+    }
+
     console.error("Error en POST /clima/actualizar:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
