@@ -1,7 +1,7 @@
 # AgroAlerta Morazán
 
-Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador. Combina la viabilidad de cultivo por distrito (referencia CENTA), el clima (Open-Meteo, pendiente) y los datos de siembra del agricultor para estimar rendimiento, riesgo y recomendaciones.
-Avance actual: autenticación, catálogo y viabilidad de cultivo en el backend, y login, registro y dashboard en el frontend (Hito 1). El detalle está en `docs/`.
+Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador. Combina la viabilidad de cultivo por distrito (referencia CENTA), la condición climática por distrito (Open-Meteo) y los datos de siembra del agricultor para estimar rendimiento, riesgo y recomendaciones.
+Avance actual: autenticación, catálogo, viabilidad de cultivo y clima por distrito en el backend; login, registro y dashboard en el frontend. La siembra y la estimación real siguen en partes futuras. El detalle está en `docs/`.
 
 ## Stack
 
@@ -60,6 +60,41 @@ npx ng serve
 
 El frontend llama al backend por `/api`; `frontend/proxy.conf.json` lo reenvía a `localhost:3000` (solo desarrollo).
 
+## Variables de entorno
+
+El backend lee `backend/.env` (plantilla en `backend/.env.example`). El arranque falla con un mensaje claro si `JWT_SECRET` o `DUI_PEPPER` faltan o miden menos de 32 caracteres, o si `JWT_EXPIRES_IN` no es una duración válida (`7200`, `2h`, `7d`...). `EXPONER_TOKEN_VERIFICACION=true` solo vale en desarrollo: con `NODE_ENV=production` el backend no arranca si está activo.
+
+| Variable | Obligatoria | Uso |
+| --- | --- | --- |
+| `DATABASE_URL` | Sí | Conexión MySQL que usan Prisma y el backend. |
+| `JWT_SECRET` | Sí | Firma de los tokens de sesión (mínimo 32 caracteres). |
+| `DUI_PEPPER` | Sí | Pepper del hash del DUI (mínimo 32 caracteres). No rotarlo: invalida la detección de duplicados. |
+| `JWT_EXPIRES_IN` | No | Duración del token; por defecto `2h`. |
+| `EXPONER_TOKEN_VERIFICACION` | No | Solo desarrollo: devuelve el token de verificación en la respuesta (todavía no hay envío real de correo). |
+| `CORS_ORIGINS` | No | Orígenes permitidos separados por comas. Vacío = sin CORS; el frontend de desarrollo usa el proxy `/api` y no lo necesita. |
+| `CLIMA_JOB_INTERVALO_MS` | No | Intervalo del job de clima en milisegundos; mínimo una hora (`3600000`). |
+| `PORT` | No | Puerto del backend; por defecto `3000`. |
+
+El servidor SSR del frontend (`npm run serve:ssr:frontend`, tras `npm run build`) acepta por defecto solo `localhost`, `127.0.0.1` y `[::1]`. En un despliegue real hay que definir `NG_ALLOWED_HOSTS` con los dominios separados por comas y `PORT` si no se usa el `4000` por defecto.
+
+## Comprobaciones
+
+```bash
+# Backend
+cd backend
+npm run typecheck
+npm test
+npm run build
+
+# Frontend (no hay script de lint; Angular 22 no lo incluye por defecto)
+cd frontend
+npm run typecheck
+npx ng test --watch=false
+npm run build
+```
+
+`npm test` del backend es offline: no usa red, base de datos ni `.env`. Las pruebas del frontend corren con Vitest y jsdom.
+
 ## Después de cada `git pull`
 
 Según lo que haya cambiado:
@@ -73,13 +108,14 @@ Según lo que haya cambiado:
 ## Verificación
 
 ```bash
-curl http://localhost:3000/health      # {"status":"ok"}
+curl http://localhost:3000/health      # {"status":"ok","baseDatos":"ok"} (503 si MySQL no responde)
+curl http://localhost:3000/health/live # {"status":"ok"} (solo confirma que el proceso responde)
 curl http://localhost:3000/distritos   # los 26 distritos de Morazán
 ```
 
 Abre `http://localhost:4200`: debe aparecer el inicio de sesión. Flujo de prueba: Registrarse, pulsar "Simular verificación de correo" (solo con `EXPONER_TOKEN_VERIFICACION=true` en el `.env`, que es el valor de la plantilla), Iniciar sesión y ver el dashboard con la viabilidad de CENTA de tu distrito.
 
-Endpoints: `GET /health`, `GET /distritos` (público), `POST /auth/registro`, `GET /auth/verificar/:token`, `POST /auth/reenviar-verificacion`, `POST /auth/login`, `GET /auth/yo` y `GET /viabilidad/distritos/:id` (estos dos con `Authorization: Bearer <token>`; la viabilidad acepta `?capa=` o `?cultivo=`). Los errores siguen el formato `{ "error": string, "detalles"?: string | string[] }`.
+Endpoints: `GET /health` y `GET /health/live` (públicos), `GET /distritos` (público), `POST /auth/registro`, `GET /auth/verificar/:token`, `POST /auth/reenviar-verificacion`, `POST /auth/login`, `GET /auth/yo`, `GET /viabilidad/distritos/:id`, `GET /clima/distritos/:id` y `POST /clima/actualizar`. Los cuatro últimos exigen `Authorization: Bearer <token>`; la viabilidad acepta `?capa=` o `?cultivo=` y la actualización de clima acepta `{ "distritoIds"?: number[] }` (sin cuerpo actualiza todos los distritos). Los errores siguen el formato `{ "error": string, "detalles"?: string | string[] }`; los 429 incluyen `Retry-After`.
 
 ## Estructura del proyecto
 
@@ -88,21 +124,25 @@ agroalerta-sv/
 ├── docker-compose.yml        MySQL de desarrollo
 ├── docker/mysql-init/        privilegios para la shadow database de Prisma
 ├── docs/                     documentación del proyecto
+├── .github/                  plantilla de Pull Request y CI de GitHub Actions
 ├── backend/
 │   ├── prisma/               schema y migraciones
+│   ├── prisma7.config.ts     configuración del CLI de Prisma
 │   ├── data/centa/           exports crudos (raw/) y CSV limpios (clean/)
+│   ├── data/referencia/      coordenadas por distrito y normales de lluvia
 │   ├── .env.example          plantilla de variables de entorno
 │   └── src/
-│       ├── auth/             registro, verificación, login, perfil
+│       ├── auth/             registro, verificación, login, perfil y JWT
 │       ├── viabilidad/       servicio, endpoints y carga de datos CENTA
-│       ├── comun/            utilidades compartidas
+│       ├── clima/            Open-Meteo, normales, clasificación, job y endpoints
+│       ├── comun/            normalización, errores HTTP, seguridad y salud
 │       ├── events/           bus de eventos
-│       ├── config/           cliente Prisma
-│       └── clima/ siembra/ estimacion/   (vacíos, partes futuras)
+│       ├── config/           cliente Prisma, puerto y validación de entorno
+│       └── siembra/, estimacion/   (vacíos, Partes 4 y 5)
 └── frontend/
     ├── proxy.conf.json       /api -> backend (desarrollo)
     └── src/app/
-        ├── core/             servicios, interceptor, guard y modelos
+        ├── core/             servicios, interceptor, guards, errores y modelos
         ├── layout/           shell y panel de acceso
         └── pages/            login, registro y dashboard
 ```
