@@ -1,7 +1,7 @@
 # AgroAlerta Morazán
 
 Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador. Combina la viabilidad de cultivo por distrito (referencia CENTA), la condición climática por distrito (Open-Meteo) y los datos de siembra del agricultor para estimar rendimiento, riesgo y recomendaciones.
-Avance actual: autenticación, catálogo, viabilidad de cultivo y clima por distrito en el backend; login, registro y dashboard en el frontend. La siembra y la estimación real siguen en partes futuras. El detalle está en `docs/`.
+Avance actual: autenticación, catálogo, viabilidad de cultivo y clima por distrito en el backend; login, registro y dashboard en el frontend. La siembra y la estimación real siguen en partes futuras. El detalle está en [`docs/INDEX.md`](docs/INDEX.md).
 
 ## Stack
 
@@ -19,11 +19,13 @@ Avance actual: autenticación, catálogo, viabilidad de cultivo y clima por dist
 
 ## Instalación
 
-Los comandos de `docker compose` se corren desde la raíz del repo; los de `npm` y `npx`, dentro de `backend/` o `frontend/`.
+Los comandos de `docker compose` se corren desde la raíz del repo; los de `npm` y `npx`, dentro de `backend/` o `frontend/`. La guía ampliada del entorno está en [`docs/workflow.md`](docs/workflow.md), sección 5.
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/YonaZakkart/agroalerta-sv.git
+# 1. Clonar el repositorio (privado)
+git clone git@github.com:YonaZakkart/agroalerta-sv.git
+# Alternativa por HTTPS, con un token de acceso personal:
+# git clone https://github.com/YonaZakkart/agroalerta-sv.git
 cd agroalerta-sv
 
 # 2. Levantar MySQL (desde la raíz; el puerto 3306 debe estar libre)
@@ -64,20 +66,21 @@ El frontend llama al backend por `/api`; `frontend/proxy.conf.json` lo reenvía 
 
 El backend lee `backend/.env` (plantilla en `backend/.env.example`). El arranque falla con un mensaje claro si `JWT_SECRET` o `DUI_PEPPER` faltan o miden menos de 32 caracteres, o si `JWT_EXPIRES_IN` no es una duración válida (`7200`, `2h`, `7d`...). `EXPONER_TOKEN_VERIFICACION=true` solo vale en desarrollo: con `NODE_ENV=production` el backend no arranca si está activo.
 
-| Variable | Obligatoria | Uso |
-| --- | --- | --- |
-| `DATABASE_URL` | Sí | Conexión MySQL que usan Prisma y el backend. |
-| `JWT_SECRET` | Sí | Firma de los tokens de sesión (mínimo 32 caracteres). |
-| `DUI_PEPPER` | Sí | Pepper del hash del DUI (mínimo 32 caracteres). No rotarlo: invalida la detección de duplicados. |
-| `JWT_EXPIRES_IN` | No | Duración del token; por defecto `2h`. |
-| `EXPONER_TOKEN_VERIFICACION` | No | Solo desarrollo: devuelve el token de verificación en la respuesta (todavía no hay envío real de correo). |
-| `CORS_ORIGINS` | No | Orígenes permitidos separados por comas. Vacío = sin CORS; el frontend de desarrollo usa el proxy `/api` y no lo necesita. |
-| `CLIMA_JOB_INTERVALO_MS` | No | Intervalo del job de clima en milisegundos; mínimo una hora (`3600000`). |
-| `PORT` | No | Puerto del backend; por defecto `3000`. |
+Las obligatorias son:
+
+| Variable | Uso |
+| --- | --- |
+| `DATABASE_URL` | Conexión MySQL que usan Prisma y el backend. |
+| `JWT_SECRET` | Firma de los tokens de sesión (mínimo 32 caracteres). |
+| `DUI_PEPPER` | Pepper del hash del DUI (mínimo 32 caracteres). No rotarlo: invalida la detección de duplicados. |
+
+La referencia completa, incluidas `JWT_EXPIRES_IN`, `EXPONER_TOKEN_VERIFICACION`, `CORS_ORIGINS`, `CLIMA_JOB_INTERVALO_MS` y `PORT`, está en [`docs/architecture/api.md`](docs/architecture/api.md), sección 7, y en `backend/.env.example`.
 
 El servidor SSR del frontend (`npm run serve:ssr:frontend`, tras `npm run build`) acepta por defecto solo `localhost`, `127.0.0.1` y `[::1]`. En un despliegue real hay que definir `NG_ALLOWED_HOSTS` con los dominios separados por comas y `PORT` si no se usa el `4000` por defecto.
 
 ## Comprobaciones
+
+El detalle de cada suite y de las pruebas manuales está en [`docs/workflow.md`](docs/workflow.md), sección 4.
 
 ```bash
 # Backend
@@ -97,6 +100,13 @@ npm run build
 
 ## Después de cada `git pull`
 
+Trabaja sobre `main` actualizado y crea la rama del punto antes de tocar código (ver [`docs/workflow.md`](docs/workflow.md), sección 1):
+
+```bash
+git switch main
+git pull --ff-only origin main
+```
+
 Según lo que haya cambiado:
 
 - `backend/package.json`: `npm install` dentro de `backend/`.
@@ -104,6 +114,8 @@ Según lo que haya cambiado:
 - `backend/prisma/schema.prisma` o `backend/prisma/migrations/`: `npx prisma generate` y `npx prisma migrate dev` dentro de `backend/`. Si tu base tiene usuarios anteriores al 30 de octubre, la migración de `distrito_id` falla: desde la raíz, `docker compose down -v` y `docker compose up -d db`, y repite los pasos 6 a 8.
 - `backend/data/centa/clean/`: `npm run datos:cargar` dentro de `backend/`.
 - `backend/.env.example`: revisa si hay variables nuevas y agrégalas a tu `.env`.
+
+Si algo falla, revisa [`docs/gotchas.md`](docs/gotchas.md) antes de depurar desde cero.
 
 ## Verificación
 
@@ -113,48 +125,44 @@ curl http://localhost:3000/health/live # {"status":"ok"} (solo confirma que el p
 curl http://localhost:3000/distritos   # los 26 distritos de Morazán
 ```
 
-Abre `http://localhost:4200`: debe aparecer el inicio de sesión. Flujo de prueba: Registrarse, pulsar "Simular verificación de correo" (solo con `EXPONER_TOKEN_VERIFICACION=true` en el `.env`, que es el valor de la plantilla), Iniciar sesión y ver el dashboard con la viabilidad de CENTA de tu distrito.
+El contrato completo de la API —métodos, autenticación, cuerpos y errores— está en [`docs/architecture/api.md`](docs/architecture/api.md).
 
-Endpoints: `GET /health` y `GET /health/live` (públicos), `GET /distritos` (público), `POST /auth/registro`, `GET /auth/verificar/:token`, `POST /auth/reenviar-verificacion`, `POST /auth/login`, `GET /auth/yo`, `GET /viabilidad/distritos/:id`, `GET /clima/distritos/:id` y `POST /clima/actualizar`. Los cuatro últimos exigen `Authorization: Bearer <token>`; la viabilidad acepta `?capa=` o `?cultivo=` y la actualización de clima acepta `{ "distritoIds"?: number[] }` (sin cuerpo actualiza todos los distritos). Los errores siguen el formato `{ "error": string, "detalles"?: string | string[] }`; los 429 incluyen `Retry-After`.
+Abre `http://localhost:4200`: debe aparecer el inicio de sesión. Flujo de prueba: Registrarse, pulsar "Simular verificación de correo" (solo con `EXPONER_TOKEN_VERIFICACION=true` en el `.env`, que es el valor de la plantilla), Iniciar sesión y ver el dashboard con la viabilidad de CENTA de tu distrito.
 
 ## Estructura del proyecto
 
-```
+```text
 agroalerta-sv/
 ├── docker-compose.yml        MySQL de desarrollo
-├── docker/mysql-init/        privilegios para la shadow database de Prisma
+├── docker/                   privilegios para la shadow database de Prisma
 ├── docs/                     documentación del proyecto
-├── .github/                  plantilla de Pull Request y CI de GitHub Actions
-├── backend/
-│   ├── prisma/               schema y migraciones
-│   ├── prisma7.config.ts     configuración del CLI de Prisma
-│   ├── data/centa/           exports crudos (raw/) y CSV limpios (clean/)
-│   ├── data/referencia/      coordenadas por distrito y normales de lluvia
-│   ├── .env.example          plantilla de variables de entorno
-│   └── src/
-│       ├── auth/             registro, verificación, login, perfil y JWT
-│       ├── viabilidad/       servicio, endpoints y carga de datos CENTA
-│       ├── clima/            Open-Meteo, normales, clasificación, job y endpoints
-│       ├── comun/            normalización, errores HTTP, seguridad y salud
-│       ├── events/           bus de eventos
-│       ├── config/           cliente Prisma, puerto y validación de entorno
-│       └── siembra/, estimacion/   (vacíos, Partes 4 y 5)
-└── frontend/
-    ├── proxy.conf.json       /api -> backend (desarrollo)
-    └── src/app/
-        ├── core/             servicios, interceptor, guards, errores y modelos
-        ├── layout/           shell y panel de acceso
-        └── pages/            login, registro y dashboard
+├── backend/                  API, Prisma, datos CENTA y pruebas
+├── frontend/                 Angular 22
+└── .github/                  plantilla de Pull Request y CI de GitHub Actions
 ```
+
+El árbol detallado, archivo por archivo, está en [`docs/architecture/files.md`](docs/architecture/files.md).
 
 ## Documentación y flujo de trabajo
 
-La carpeta `docs/` es la fuente de verdad: `Estado_del_Proyecto.txt` (historial hasta la Parte 2), `Estado_Proyecto_Pt2.txt` (desde la Parte 6 y el Mapa v2), `Mapa_v2.txt` (mapa vigente), `Mapa_inicial.txt`, `Propuesta_Inicial.txt` e `Info_Datos_CENTA.md`. 
-Léelos antes de tocar código. Se trabaja siempre en una rama por parte y punto (`feat/`, `fix/`, `chore/` o `docs/`), nunca directo en `main`, y se sube con Pull Request. Los archivos compartidos (`schema.prisma`, `migrations/`, `events/`, `config/prisma.ts`, `backend/src/index.ts` y los `package.json`, además de `app.routes.ts`, `app.config.ts`, `models.ts` y `styles.css` del frontend) requieren coordinación. 
+La carpeta `docs/` es la fuente de verdad; entra por [`docs/INDEX.md`](docs/INDEX.md).
+
+| Documento | Contenido |
+| --- | --- |
+| [`docs/INDEX.md`](docs/INDEX.md) | Estado del proyecto, mapa de documentos y glosario. |
+| [`docs/workflow.md`](docs/workflow.md) | Ramas, PR, pruebas, cierre de un punto y archivos compartidos. |
+| [`docs/conventions.md`](docs/conventions.md) | Reglas de código, API, datos y frontend. |
+| [`docs/gotchas.md`](docs/gotchas.md) | Trampas activas y problemas conocidos. |
+| [`docs/architecture/`](docs/architecture/) | Cómo funciona hoy el backend, el frontend, la API, los datos y los archivos. |
+| [`docs/tasks/`](docs/tasks/) | Qué sigue, pendientes y decisiones abiertas. |
+| [`docs/history/`](docs/history/) | Qué se hizo y por qué. |
+| [`docs/roadmap/`](docs/roadmap/) | Plan vigente e histórico. |
+
+Se trabaja siempre en una rama por parte y punto (`feat/`, `fix/`, `chore/` o `docs/`), nunca directo en `main`, y se integra con Pull Request. El ciclo completo y la lista de archivos que requieren coordinación están en [`docs/workflow.md`](docs/workflow.md).
 
 ## Problemas frecuentes
 
-El resto está en la sección 7 de `docs/Estado_del_Proyecto.txt`.
+El catálogo completo está en [`docs/gotchas.md`](docs/gotchas.md). Los más comunes al levantar el entorno:
 
 - El backend o `prisma migrate` "funcionan" pero no ves las tablas en Docker: otro MySQL (por ejemplo un servicio de Windows) ocupa el puerto 3306. Detén ese servicio y vuelve a crear el contenedor (`docker compose down -v` y `docker compose up -d db`); `docker ps` debe mostrar `0.0.0.0:3306->3306/tcp`.
 - `npm install` falla con `Cannot read properties of null (reading 'edgesOut')`: es un bug de npm. Usa `npm install --legacy-peer-deps`.

@@ -170,10 +170,10 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 
 ## 5. Documentación y proceso
 
-### 5.1 Los `.txt` no son la verdad actual
+### 5.1 La documentación vigente está en `.md`
 
-- **Causa:** `Estado_del_Proyecto.txt` se cerró con la Parte 2 y `Estado_Proyecto_Pt2.txt` con los cierres de la Parte 3 y el Hito 1. Después se mergearon 6-D, el pulido responsive y el fix de `takeUntilDestroyed`.
-- **Solución:** para el estado actual, leer los `.md` de `architecture/` y `tasks/`; los `.txt` son historia y contexto.
+- **Causa:** los antiguos `.txt` se retiraron al consolidar la documentación.
+- **Solución:** el estado actual se lee en `INDEX.md`, `architecture/` y `tasks/`; `history/` y `roadmap/` guardan el contexto histórico.
 
 ### 5.2 `Info_Datos_Clima.md` dice `EXCESO`, el código dice `EXCESO_LLUVIA`
 

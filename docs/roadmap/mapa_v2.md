@@ -2,11 +2,11 @@
 
 - **Versión:** 2.0
 - **Fecha:** 31 de octubre de 2026
-- **Fuente original:** `docs/Mapa_v2.txt`
-- **Estado:** vigente. Las Partes 0, 1 y 2 conservan su registro en `Estado_del_Proyecto.txt`.
+- **Fuente original:** el `Mapa_v2.txt` retirado; este documento es la versión vigente.
+- **Estado:** vigente. Las Partes 0, 1 y 2 conservan su registro en `history/branches/`.
 - **Última revisión de estado:** 14 de noviembre de 2026
 
-> Este documento ordena el Mapa v2 y marca el avance real. El texto original sigue en `Mapa_v2.txt`; ante una contradicción, prevalece el código y se anota aquí.
+> Este documento ordena el Mapa v2 y marca el avance real. Ante una contradicción, prevalece el código y se anota aquí.
 
 ---
 
@@ -220,10 +220,10 @@ Orden de recorte si falta tiempo (de lo primero que se sacrifica a lo último):
 
 ## 9. Correcciones al texto original
 
-El `Mapa_v2.txt` contiene tres defectos de redacción que no cambian el plan:
+El mapa original contenía tres defectos de redacción que no cambian el plan:
 
-- Una frase suelta: “este cambio debe documentarse en Estado_del_Proyecto.txt”.
+- Una frase suelta: “este cambio debe documentarse en el historial”.
 - “se rebalancea..” al final de las pistas.
 - Una línea de fecha entre corchetes.
 
-Se corrigen aquí; el `.txt` se conserva como historia.
+Se corrigen aquí y no se arrastran a este documento.

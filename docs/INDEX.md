@@ -3,7 +3,7 @@
 Este directorio reúne todo lo que necesita una persona para entender, levantar y continuar el proyecto **AgroAlerta Morazán**: una plataforma web orientada a eventos para prevención de riesgos agrícolas en Morazán, El Salvador.
 
 - **Repositorio:** `agroalerta-sv` (privado)
-- **Rama de trabajo de esta documentación:** `docs`
+- **Documentación:** consolidada en `.md`; los antiguos `.txt` se retiraron.
 - **Última actualización de este índice:** 14 de noviembre de 2026
 
 ---
@@ -77,12 +77,6 @@ docs/
 │   ├── continuacion.md       Próximos pasos en orden, con dependencias
 │   ├── pendiente.md          Pendientes abiertos y decisiones del equipo
 │   └── ideas.md              Mejoras opcionales, fuera del alcance mínimo
-│
-├── Propuesta_Inicial.txt     Visión original del proyecto (histórico)
-├── Mapa_inicial.txt          Mapa v1 original (histórico)
-├── Mapa_v2.txt               Mapa v2 original (histórico)
-├── Estado_del_Proyecto.txt   Historial de las Partes 0 a 2 (histórico, cerrado)
-└── Estado_Proyecto_Pt2.txt   Historial de la Parte 3, 6 y cierres (histórico, cerrado)
 ```
 
 ---
@@ -130,7 +124,7 @@ docs/
 
 ## 4. Reglas de esta documentación
 
-1. **Los `.txt` son historia y no se reescriben.** `Estado_del_Proyecto.txt`, `Estado_Proyecto_Pt2.txt`, `Mapa_inicial.txt`, `Mapa_v2.txt` y `Propuesta_Inicial.txt` conservan el registro original. Los `.md` los resumen y los actualizan.
+1. **Los `.md` son la única fuente viva.** Los antiguos `.txt` se retiraron al consolidar la documentación; su contenido histórico quedó resumido en `history/` y `roadmap/`.
 2. **Los contratos de `data/` no se modifican sin acuerdo del equipo.** `Info_Datos_CENTA.md`, `Info_Datos_Clima.md`, `Info_Datos_Coordenadas.md` e `Info_Datos_OpenMeteo.md` describen fuentes externas y umbrales; un cambio ahí afecta código y pruebas.
 3. **Un cambio de código que altere el comportamiento actualiza su documento.** Si cambia un endpoint, se actualiza `architecture/api.md`; si cambia el modelo, `architecture/data.md`; si aparece una trampa nueva, `gotchas.md`.
 4. **Una decisión importante se registra como ADR.** No hace falta un ADR para cada detalle, pero sí para elecciones difíciles de revertir: autenticación, persistencia, eventos, fuente de datos y despliegue.

@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–3 cerradas, Hito 1 cerrado, 6-D implementado.
+- **Estado del proyecto:** Partes 0–3 cerradas, Hito 1 cerrado, 6-D implementado. Decisión D1 aprobada: **4-A puede comenzar**.
 - **Última actualización:** 14 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -15,14 +15,13 @@
 
 ---
 
-## 1. Decisión que bloquea la Parte 4
+## 1. Decisión de la Parte 4 — aprobada
 
-**¿La siembra usa el distrito registrado del usuario o permite elegir otro?**
+**D1 (14/11/2026):** la siembra **permite elegir el distrito**, con el del perfil como valor inicial.
 
 - Una siembra ocurre en un lugar concreto; heredar el distrito que el usuario estaba explorando en el dashboard es riesgoso.
-- **Recomendación:** permitir elegir distrito, con el del perfil como valor inicial.
-- **Consecuencia:** 4-A necesita `distritoId` en el modelo de siembra de todos modos; la decisión solo afecta al formulario (4-B).
-- **Responsable:** equipo. **Plazo:** antes de 4-B.
+- **Consecuencia:** 4-A ya puede comenzar, porque el modelo de siembra incluye `distritoId` de todos modos. La decisión solo afecta al formulario de 4-B.
+- **Estado:** resuelta. No bloquea la Parte 4.
 
 ---
 
@@ -30,7 +29,7 @@
 
 ### 4-A — Modelo de Siembra
 
-**Depende de:** nada nuevo (Usuario y Distrito existen). **Tamaño:** M.
+**Depende de:** nada nuevo (Usuario y Distrito existen). **Estado:** puede comenzar; D1 ya está decidida. **Tamaño:** M.
 
 - Agregar al final de `schema.prisma`, bajo un comentario de sección:
   - `Siembra`: `id`, `usuarioId`, `distritoId`, `cultivo`, `estado`, `fechaSiembra`, `areaMz`, y los campos de inversión (semilla, alquiler, maquinaria, riego, otros).
@@ -46,6 +45,7 @@
 
 - Vista nueva en `pages/siembra/`, ruta hija del `Shell` protegida por `authGuard`.
 - Dos grupos: datos agronómicos (cultivo, distrito, fecha, área) y datos técnicos (semilla, alquiler, maquinaria, riego).
+- Selector de distrito con el del perfil como valor inicial; no heredar el distrito que se está explorando en el dashboard (D1).
 - Estimado de inversión previo, calculado en el cliente con los mismos supuestos que 4-C, o mostrado solo cuando 4-C exista.
 - Mobile-first, con los tokens de `styles.css`; no copiar colores.
 - **Criterio de aceptación:** el formulario valida, muestra errores del backend y no inventa cifras.
@@ -81,6 +81,7 @@
 
 - Escuchar `SiembraRegistrada` y `CondicionClimaticaActualizada`.
 - Un listener no debe lanzar: `emitirSeguro` captura el error, pero el listener debe registrar y continuar.
+- **Decisiones ya tomadas:** D2 mantiene `null` para la cuarta salida de clima; D3 emite `CondicionClimaticaActualizada` en la primera clasificación de cada distrito, una sola vez; D4 no exige persistencia de N días porque el margen de 0.05 amortigua.
 - **Criterio de aceptación:** una siembra nueva dispara el cálculo; un cambio de clima recalcula solo los distritos afectados.
 
 ### 5-B — Proyección de rendimiento e ingresos
