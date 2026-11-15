@@ -10,16 +10,18 @@ Cada pendiente indica **qué bloquea**, **quién decide** y **dónde está el de
 
 ## 1. Decisiones del equipo
 
-| # | Decisión | Bloquea | Propuesta |
-|---|---|---|---|
-| D1 | ¿La siembra usa el distrito del perfil o permite elegir otro? | 4-B | Permitir elegir, con el del perfil como valor inicial. |
-| D2 | ¿Se mantiene la cuarta salida de clima como `null` o se agrega `SIN_EVALUACION` al enum? | 3-B, 5-A | Mantener `null`; cambiar el enum obliga a migración y a tocar el payload del evento. |
-| D3 | ¿La primera clasificación de un distrito emite `CondicionClimaticaActualizada`? | 5-A | Sí, pero solo una vez por distrito; documentarlo. |
-| D4 | ¿Se exige persistencia de N días antes de emitir un cambio de condición? | 5-A | No por ahora; el margen de 0.05 ya amortigua. |
-| D5 | ¿Se conserva el SSR o se retira? | Parte 7 | Retirarlo: todas las rutas son `RenderMode.Client` y el servidor no aporta. |
-| D6 | ¿Se adopta Prettier? | Todo el código | No por ahora; el formato se respeta por archivo. |
-| D7 | ¿Se acepta el alias `sorgo` para `cultivo`? | API de viabilidad | No; CENTA lo llama sorgo y el proyecto maicillo. Si se acepta, va en la ruta. |
-| D8 | ¿Se cambia `GET /auth/verificar/:token` por `POST`? | Seguridad | Sí, antes de producción: un GET queda en historiales y logs. |
+| # | Decisión | Bloquea | Propuesta | Estado |
+|---|---|---|---|---|
+| D1 | ¿La siembra usa el distrito del perfil o permite elegir otro? | 4-B | Permitir elegir, con el del perfil como valor inicial. | ✅ Aprobada (14/11/2026) |
+| D2 | ¿Se mantiene la cuarta salida de clima como `null` o se agrega `SIN_EVALUACION` al enum? | 3-B, 5-A | Mantener `null`; cambiar el enum obliga a migración y a tocar el payload del evento. | ✅ Aprobada (14/11/2026) |
+| D3 | ¿La primera clasificación de un distrito emite `CondicionClimaticaActualizada`? | 5-A | Sí, pero solo una vez por distrito; documentarlo. | ✅ Aprobada (14/11/2026) |
+| D4 | ¿Se exige persistencia de N días antes de emitir un cambio de condición? | 5-A | No por ahora; el margen de 0.05 ya amortigua. | ✅ Aprobada (14/11/2026) |
+| D5 | ¿Se conserva el SSR o se retira? | Parte 7 | Retirarlo: todas las rutas son `RenderMode.Client` y el servidor no aporta. | ⏳ Pendiente |
+| D6 | ¿Se adopta Prettier? | Todo el código | No por ahora; el formato se respeta por archivo. | ⏳ Pendiente |
+| D7 | ¿Se acepta el alias `sorgo` para `cultivo`? | API de viabilidad | No; CENTA lo llama sorgo y el proyecto maicillo. Si se acepta, va en la ruta. | ⏳ Pendiente |
+| D8 | ¿Se cambia `GET /auth/verificar/:token` por `POST`? | Seguridad | Sí, antes de producción: un GET queda en historiales y logs. | ⏳ Pendiente |
+
+**D1–D4 quedaron aprobadas el 14 de noviembre de 2026** con la propuesta indicada. D1 desbloquea la Parte 4: 4-A puede comenzar porque el modelo ya incluye `distritoId`; el selector de distrito se implementa en 4-B. El detalle de ejecución está en `continuacion.md`.
 
 ---
 

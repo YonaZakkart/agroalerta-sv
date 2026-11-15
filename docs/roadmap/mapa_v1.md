@@ -2,8 +2,8 @@
 
 - **Versión:** 1.0
 - **Fecha:** 13 de septiembre de 2026
-- **Fuente original:** `docs/Mapa_inicial.txt`
-- **Estado:** histórico. Sustituido por el Mapa v2 desde la Parte 3. Las Partes 0, 1 y 2 conservan su registro en `Estado_del_Proyecto.txt`.
+- **Fuente original:** el `Mapa_inicial.txt` retirado; este documento resume el plan.
+- **Estado:** histórico. Sustituido por el Mapa v2 desde la Parte 3. Las Partes 0, 1 y 2 conservan su registro en `history/branches/`.
 
 > Este documento resume el mapa original y agrega el estado real al 14 de noviembre de 2026. No cambia el alcance acordado: sirve para entender de dónde viene el plan.
 

@@ -221,7 +221,7 @@ frontend/src/app/
 - Los ejemplos de código son reales o marcados como ilustrativos.
 - Los estados se escriben en presente: “el endpoint devuelve”, no “devolverá”.
 - Lo que falta se marca como pendiente, no se omite.
-- Los `.txt` históricos no se editan; si hay contradicción, prevalece el código y se anota en el `.md` correspondiente.
+- Los `.md` son la fuente viva; si hay contradicción con el código, prevalece el código y se anota en el `.md` correspondiente.
 - Los contratos de `data/` no se editan sin acuerdo del equipo.
 
 ---

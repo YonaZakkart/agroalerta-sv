@@ -10,9 +10,8 @@ Este documento describe cómo se organiza el trabajo en `agroalerta-sv`: ramas, 
 main                  rama estable; solo recibe merges por Pull Request
 ├── feat/…            código nuevo
 ├── fix/…             correcciones
-├── docs/…            solo documentación
 ├── chore/…           infraestructura, dependencias, CI
-└── docs              rama de esta reorganización documental
+└── docs/…            solo documentación
 ```
 
 Reglas:
@@ -228,7 +227,7 @@ chore(ci): verificar backend y frontend en GitHub Actions
 
 ### Reglas
 
-1. Los `.txt` de `docs/` son historia: **no se reescriben**. Los `.md` son la versión viva.
+1. Los `.md` son la única fuente viva. Los antiguos `.txt` de `docs/` se retiraron al consolidar la documentación.
 2. Los archivos de `docs/data/` son contratos: un cambio requiere acuerdo del equipo y, si afecta código, una rama `feat/` o `fix/` que lo implemente.
 3. Cada rama que cambia comportamiento actualiza al menos un `.md`. Una rama solo de documentación no toca código.
 4. Los datos que faltan se marcan como `[COMPLETAR]` o `[VERIFICAR]` y se listan en `tasks/pendiente.md`. No se inventan.
@@ -253,6 +252,6 @@ No se usa `npm audit fix` ni `npm audit fix --force`: puede mover versiones fija
 ## 9. Situación actual del repositorio
 
 - `main` contiene las Partes 0, 1 y 2, el Hito 1, la Parte 3 completa, 6-D (Clima Zonal), el pulido responsive y el arreglo de `takeUntilDestroyed`.
-- La rama `docs` contiene esta reorganización documental y no modifica código.
+- La documentación está consolidada en `.md`; los antiguos `.txt` se retiraron.
 - Los archivos `backend/data/centa/raw/*.csv` pueden aparecer como modificados por diferencias de fin de línea (CRLF/LF). **No se stagean** y no forman parte de ningún cambio funcional.
-- Las Partes 4 y 5, 6-C, 6-E y la Parte 7 siguen pendientes.
+- Las Partes 4 y 5, 6-C, 6-E y la Parte 7 siguen pendientes. La decisión D1 está aprobada, así que 4-A puede comenzar.
