@@ -28,6 +28,7 @@ model Usuario {
   tokenVerificacion       String?   @unique @map("token_verificacion") @db.VarChar(64)
   tokenVerificacionExpira DateTime? @map("token_verificacion_expira")
   fechaRegistro  DateTime @default(now()) @map("fecha_registro")
+  siembras       Siembra[]
 
   @@map("usuarios")
 }
@@ -58,6 +59,7 @@ model Distrito {
   areas             AreaClase[]
   usuarios          Usuario[]
   condicion         CondicionDistrito?
+  siembras          Siembra[]
 
   @@map("distritos")
 }
@@ -130,4 +132,57 @@ model CondicionDistrito {
   distrito Distrito @relation(fields: [distritoId], references: [id])
 
   @@map("condiciones_distrito")
+}
+
+
+// ------------------------------------------------------------
+// Parte 4 — Siembra (4-A)
+// ------------------------------------------------------------
+enum Cultivo {
+  MAIZ
+  FRIJOL
+  MAICILLO // CENTA lo llama "sorgo"; el proyecto usa "maicillo" (D7)
+}
+
+enum EstadoSiembra {
+  POR_SEMBRAR
+  SEMBRADO
+}
+
+enum UnidadSemilla {
+  LIBRAS
+  BOLSAS
+}
+
+model Siembra {
+  id           Int           @id @default(autoincrement())
+  usuarioId    Int           @map("usuario_id")
+  distritoId   Int           @map("distrito_id")
+  cultivo      Cultivo
+  estado       EstadoSiembra
+  fechaSiembra DateTime      @map("fecha_siembra") @db.Date // cuándo sembró o cuándo planea sembrar, según estado
+  areaMz       Decimal       @map("area_mz") @db.Decimal(8, 2)
+
+  cantidadSemilla Decimal?       @map("cantidad_semilla") @db.Decimal(10, 2)
+  unidadSemilla   UnidadSemilla? @map("unidad_semilla")
+
+  alquilaTerreno Boolean @default(false) @map("alquila_terreno")
+  usaMaquinaria  Boolean @default(false) @map("usa_maquinaria")
+  usaRiego       Boolean @default(false) @map("usa_riego")
+
+  // Lo que declara el agricultor (incluye todo). El desglose es opcional.
+  inversionTotalUsd  Decimal  @map("inversion_total_usd") @db.Decimal(10, 2)
+  costoSemillaUsd    Decimal? @map("costo_semilla_usd") @db.Decimal(10, 2)
+  costoAlquilerUsd   Decimal? @map("costo_alquiler_usd") @db.Decimal(10, 2)
+  costoMaquinariaUsd Decimal? @map("costo_maquinaria_usd") @db.Decimal(10, 2)
+  costoRiegoUsd      Decimal? @map("costo_riego_usd") @db.Decimal(10, 2)
+  costoOtrosUsd      Decimal? @map("costo_otros_usd") @db.Decimal(10, 2)
+
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+  distrito Distrito @relation(fields: [distritoId], references: [id])
+
+  @@index([usuarioId, creadoEn])
+  @@map("siembras")
 }
