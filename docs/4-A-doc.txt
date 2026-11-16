@@ -1,0 +1,409 @@
+============================================================
+DOCUMENTACIÓN DE RAMA – Punto 4-A (Modelo de Siembra)
+Proyecto: AgroAlerta Morazán (agroalerta-sv)
+Responsable: Requeno
+Fecha de cierre del trabajo: 15 de noviembre de 2026 (noche, hora de El Salvador)
+Rama de código: feat/4-a-modelo-siembra
+Base: main en f6a06a4 (merge del PR #52, "docs/readme-task")
+PR: el Pull Request de feat/4-a-modelo-siembra hacia main (número y
+commit quedan en el historial de GitHub).
+Nota para Yona: este archivo contiene TODA la documentación de 4-A, según
+lo acordado, para que se migre al formato .md (history/branches/,
+architecture/data.md, tasks/continuacion.md, gotchas.md). Al final está
+la lista de qué actualizar y dónde.
+============================================================
+
+
+1. OBJETIVO DEL PUNTO
+------------------------------------------------------------
+Según docs/tasks/continuacion.md y docs/roadmap/mapa_v2.md, 4-A es el
+modelo de datos de la Parte 4 (Siembra): tabla, relaciones y migración.
+No incluye formulario (4-B), estimación de costos (4-C) ni endpoints y
+evento (4-D).
+
+Criterio de aceptación definido en continuacion.md:
+  - `npx prisma migrate dev` limpio.
+  - `npx tsc --noEmit` sin errores.
+  - Una siembra de prueba creada por SQL o Prisma Studio.
+
+Decisión previa aprobada: D1 (14/11/2026). La siembra permite elegir el
+distrito, con el del perfil como valor inicial. Afecta solo a 4-B; el
+modelo ya incluye distritoId.
+
+
+2. QUÉ SE HIZO (resumen)
+------------------------------------------------------------
+- Se agregó el modelo Siembra (tabla `siembras`) a backend/prisma/schema.prisma.
+- Se agregaron tres enums: Cultivo, EstadoSiembra, UnidadSemilla.
+- Se agregaron las relaciones inversas `siembras Siembra[]` en Usuario y
+  Distrito.
+- Se generó y aplicó la migración 20261116035128_add_siembras.
+- Se regeneró el cliente de Prisma (7.10.0).
+- Se probó por SQL en el contenedor Docker (inserción válida, FK
+  rechazando datos inválidos).
+
+No se escribió lógica, endpoints, servicios, eventos ni código de
+frontend.
+
+
+3. DETALLE DE CAMBIOS
+------------------------------------------------------------
+
+3.1 Archivos modificados
+  backend/prisma/schema.prisma   (55 líneas agregadas, 0 eliminadas)
+    a) Modelo Usuario: se agregó la línea `siembras Siembra[]` después
+       de `fechaRegistro` y antes de `@@map("usuarios")`.
+    b) Modelo Distrito: se agregó `siembras Siembra[]` después de
+       `condicion CondicionDistrito?` y antes de `@@map("distritos")`.
+    c) Al final del archivo, bajo el comentario de sección
+       "Parte 4 — Siembra (4-A)": los tres enums y el modelo Siembra.
+
+3.2 Archivos agregados
+  backend/prisma/migrations/20261116035128_add_siembras/migration.sql
+
+3.3 Archivos eliminados
+  Ninguno.
+
+3.4 Qué crea el SQL de la migración (revisado antes de commitear)
+  - CREATE TABLE `siembras` con enums de MySQL inline (cultivo, estado,
+    unidad_semilla).
+  - INDEX siembras_usuario_id_creado_en_idx (usuario_id, creado_en).
+  - FK siembras_usuario_id_fkey  -> usuarios(id)  ON DELETE RESTRICT
+    ON UPDATE CASCADE.
+  - FK siembras_distrito_id_fkey -> distritos(id) ON DELETE RESTRICT
+    ON UPDATE CASCADE.
+  - No toca las tablas usuarios ni distritos (sin ALTER ni DROP sobre
+    ellas).
+
+
+4. MODELO IMPLEMENTADO
+------------------------------------------------------------
+
+4.1 Enums
+  Cultivo          MAIZ | FRIJOL | MAICILLO
+                   (CENTA lo llama "sorgo"; el proyecto usa "maicillo";
+                   ver pendiente D7)
+  EstadoSiembra    POR_SEMBRAR | SEMBRADO
+  UnidadSemilla    LIBRAS | BOLSAS
+
+4.2 Tabla siembras (modelo Siembra)
+  Campo (Prisma)       Columna                 Tipo MySQL        Notas
+  id                   id                      INT AI, PK
+  usuarioId            usuario_id              INT, FK usuarios
+  distritoId           distrito_id             INT, FK distritos
+  cultivo              cultivo                 ENUM Cultivo
+  estado               estado                  ENUM EstadoSiembra
+  fechaSiembra         fecha_siembra           DATE              Cuándo sembró o cuándo planea sembrar, según estado.
+  areaMz               area_mz                 DECIMAL(8,2)      Manzanas. Los km² no se guardan.
+  cantidadSemilla      cantidad_semilla        DECIMAL(10,2) NULL
+  unidadSemilla        unidad_semilla          ENUM NULL
+  alquilaTerreno       alquila_terreno         BOOLEAN default false
+  usaMaquinaria        usa_maquinaria          BOOLEAN default false
+  usaRiego             usa_riego               BOOLEAN default false
+  inversionTotalUsd    inversion_total_usd     DECIMAL(10,2)     Obligatoria. Lo que declara el agricultor (todo incluido).
+  costoSemillaUsd      costo_semilla_usd       DECIMAL(10,2) NULL
+  costoAlquilerUsd     costo_alquiler_usd      DECIMAL(10,2) NULL
+  costoMaquinariaUsd   costo_maquinaria_usd    DECIMAL(10,2) NULL
+  costoRiegoUsd        costo_riego_usd         DECIMAL(10,2) NULL
+  costoOtrosUsd        costo_otros_usd         DECIMAL(10,2) NULL
+  creadoEn             creado_en               DATETIME(3) default now()
+  Índice: (usuario_id, creado_en), para GET /siembras por dueño (4-D).
+
+4.3 Decisiones de diseño tomadas
+  1. Enums y no cadenas: son 3 granos fijos en la propuesta;
+     continuacion.md permitía cualquiera de las dos opciones. Costo:
+     agregar un cultivo exige migración.
+  2. areaMz como Decimal y no Float, por la convención de no usar
+     flotantes con áreas. Los km² no se guardan (Info_Datos_CENTA.md
+     ya establece que se calcula, no se guarda); el formulario
+     convierte a manzanas (HA_POR_MANZANA = 0.7).
+  3. cantidadSemilla/unidadSemilla son nulas en BD: la obligatoriedad se
+     valida en 4-D, no en el esquema.
+  4. inversionTotalUsd es obligatoria y el desglose es nulo, para que el
+     total y las partes no se contradigan en el esquema. 4-D debe
+     validar que la suma del desglose no exceda el total.
+  5. Moneda: dólares (USD), sufijo `Usd` en los nombres.
+  6. ON DELETE RESTRICT (por defecto de Prisma): no se podrá borrar un
+     usuario o distrito que tenga siembras.
+
+
+5. VERIFICACIÓN REALIZADA
+------------------------------------------------------------
+  - `npx prisma migrate dev --name add_siembras` (desde backend/): creó
+    y aplicó 20261116035128_add_siembras. Antes aplicó
+    20261107143412_add_condicion_distrito, que faltaba en la base local.
+  - `npx prisma generate`: cliente 7.10.0 generado en src/generated/prisma.
+  - `npx tsc --noEmit`: sin errores.
+  - `npm run build`: sin errores.
+  - Pruebas SQL en Docker (docker compose exec db mysql ...):
+      * DESCRIBE/SELECT: la tabla existe con las columnas esperadas.
+      * INSERT de una siembra de prueba (usuario 1, distrito 1316,
+        MAIZ, POR_SEMBRAR, 3.00 mz, 45 libras, inversión 1900.00): OK;
+        creado_en se llenó solo.
+      * INSERT con usuario_id 99999: rechazado por FK (error 1452).
+      * La FK de distrito_id (siembras_distrito_id_fkey) está declarada
+        en el SQL de la migración y se revisó el archivo; la prueba en
+        vivo de rechazo se hizo con usuario_id.
+      * La fila de prueba se borró (DELETE FROM siembras).
+
+  npm test (backend):
+      * 11 de 12 grupos pasan completos: config, http-seguridad,
+        eventos, viabilidad, clima-validacion, clima-endpoint,
+        clima-job, clima-errores, normales, condicion, clima:pruebas
+        (17/17) y clima:pruebas-clasificacion (24/24).
+      * pruebas:http pasa sus 3 casos pero el proceso termina con
+        "Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file
+        src\win\async.c, line 94" y sale con código distinto de cero.
+        Ocurrió en dos corridas seguidas. Como npm test encadena con
+        `&&`, la cadena se corta ahí. Ver sección 9.1.
+
+
+6. ¿SE CUMPLIÓ LO REQUERIDO?
+------------------------------------------------------------
+  Criterio de continuacion.md                         Resultado
+  Migración limpia                                    Cumplido
+  tsc --noEmit sin errores                            Cumplido
+  Siembra de prueba por SQL                           Cumplido
+  Relaciones inversas en Usuario y Distrito           Cumplido
+  Migración nueva sobre main actualizado,             Cumplido (base f6a06a4;
+  sin reutilizar nombres                              nombre con --name)
+  "Agregar al final de schema.prisma bajo un          Cumplido (el comentario de
+  comentario de sección"                              sección está al final)
+  Campos del Estado_del_Proyecto.txt original         Cumplido (ver sección 7)
+  (Pendientes: formulario detallado)
+
+  Resultado: 4-A cumple su alcance. Lo único no verde es npm test, por
+  una falla de entorno ajena al punto (sección 9.1).
+
+
+7. LO QUE SE AGREGÓ DE MÁS Y POR QUÉ
+------------------------------------------------------------
+continuacion.md pedía: cultivo, estado, fechaSiembra, areaMz y "campos
+de inversión (semilla, alquiler, maquinaria, riego, otros)". La lista de
+campos del formulario detallado que existía en el
+Estado_del_Proyecto.txt original (sección Pendientes) NO sobrevivió en
+los .md nuevos (se verificó con búsqueda en docs/ y README: no aparecen
+libras, bolsas, regadío ni cantidad sembrada). Por eso 4-A incorpora
+campos del .txt original que continuacion.md no listaba:
+
+  - cantidadSemilla + unidadSemilla (libras o bolsas de semilla).
+  - alquilaTerreno, usaMaquinaria, usaRiego (sí/no).
+  - inversionTotalUsd como total declarado, además del desglose.
+
+Esto es una decisión consciente tomada por Requeno y debe ser
+confirmada por el equipo. Si se prefiere un modelo más delgado, hay que
+decidirlo antes de que 4-B/4-D dependan de estos campos; quitar campos
+después es otra migración sobre archivos compartidos.
+
+Lo que NO se agregó (a propósito):
+  - inversionEstimadaUsd (el "se estima que invirtió ~$##" de 4-C). Si
+    se quiere guardar como instantánea, requiere otra migración.
+  - Campos de fertilizantes, venenos y mano de obra por separado: van
+    dentro de costoOtrosUsd o del total.
+  - Km² como columna.
+
+
+8. PENDIENTES QUE DEJA / FALTÓ
+------------------------------------------------------------
+  - Confirmar con el equipo las decisiones de la sección 7 y 4.3.
+  - Validaciones de negocio: van en 4-D (cantidadSemilla obligatoria,
+    suma del desglose <= total, área > 0, fecha coherente con estado,
+    distrito existente, cultivo válido).
+  - Una "bolsa" de semilla no tiene peso definido. 4-C debe declarar un
+    supuesto (por ejemplo libras por bolsa) con fuente y fecha, o
+    restringir la unidad a LIBRAS.
+  - Datos F3 (precios de insumos, dosis por manzana, jornales,
+    alquiler, maquinaria, riego) siguen sin conseguirse; bloquean 4-C.
+  - Documentación en formato .md: la hace Yona a partir de este archivo.
+  - Pendiente histórico (Estado_del_Proyecto.txt): el sistema debe poder
+    mostrar "Se estima que invirtió / invertirá aproximadamente $##"
+    antes de que el usuario digite su valor. Es de 4-B/4-C, no de 4-A.
+
+
+9. PROBLEMAS ENCONTRADOS (candidatos a gotchas.md)
+------------------------------------------------------------
+
+9.1 Crash de libuv en Windows al cerrar pruebas HTTP
+  Síntoma: `npm run pruebas:http` pasa sus 3 casos y termina con
+  "Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file
+  src\win\async.c, line 94". `npm test` se corta en ese punto.
+  Causa probable: src/comun/http-errores.pruebas.ts llama
+  `process.exit(...)` justo después de `servidor.close(...)`; en Windows
+  eso dispara la aserción de libuv. La rama de 4-A parte de f6a06a4 (igual a
+  origin/main) y no modifica código ni pruebas, solo schema.prisma y una
+  migración; por eso la falla ya existe en main en Windows con esta
+  configuración. La versión de Node no se registró.
+  Solución propuesta (NO aplicada, fuera del alcance de 4-A): reemplazar
+  `process.exit(fallos > 0 ? 1 : 0)` por
+  `process.exitCode = fallos > 0 ? 1 : 0` en un PR aparte
+  (fix/pruebas-exit-windows). Revisar si otras pruebas usan el mismo
+  patrón.
+  Mientras tanto: correr los grupos de pruebas por separado.
+
+9.2 `main` local desactualizado con cambios en staging
+  Síntoma: `git checkout main` mostraba archivos A/M (clima, docs) y
+  "Your branch and 'origin/main' have diverged, 1 and 79 different
+  commits"; `git pull origin main` fallaba por cambios locales que se
+  sobrescribirían.
+  Causa: el main local estaba 79 commits atrás y con archivos en staging
+  del trabajo viejo de clima, que ya estaba en origin/main.
+  Solución aplicada: crear la rama de 4-A directamente desde
+  origin/main. La rama quedó en f6a06a4 igual que origin/main.
+  Después, `git checkout main` falló por backend/package-lock.json
+  modificado: se descartó con `git restore`.
+  Regla: antes de empezar un punto, `git fetch origin` y crear la rama
+  con `git checkout -b <rama> origin/main`.
+
+9.3 VS Code mostraba y guardaba una versión vieja de schema.prisma
+  Síntoma: el editor mostraba un schema sin CondicionDistrito (diff con
+  todo el bloque de clima en rojo y panel izquierdo no editable);
+  al guardar: "El contenido del archivo es más reciente".
+  Causa: el editor tenía una copia en memoria desactualizada respecto
+  al disco, después de cambiar de rama y restaurar el archivo.
+  Efecto en cadena: la primera `prisma migrate dev` solo aplicó
+  add_condicion_distrito y dijo "in sync", porque el bloque Siembra no
+  se había guardado. No se creó add_siembras hasta repetir la edición.
+  Solución: no pulsar "Sobrescribir"; elegir "Revertir"/"Comparar",
+  cerrar las pestañas de schema.prisma (Ctrl+K y luego W), `git restore
+  backend/prisma/schema.prisma`, reabrir y volver a editar.
+  Verificación obligatoria antes de migrar: `git diff --stat
+  backend/prisma/schema.prisma` debe mostrar solo inserciones.
+  Si `migrate dev` no dice "Applying migration ..._<nombre>", la
+  migración nueva NO se creó.
+
+9.3.b Repositorio dentro de OneDrive
+  El repo está en OneDrive\Imágenes\Documentos. OneDrive sincroniza en
+  segundo plano y puede dejar copias viejas o bloquear cambios de Git.
+  Sospechado como causa de 9.3; no confirmado. Recomendación: mover el
+  repo fuera de OneDrive (ej. C:\dev\agroalerta-sv) o pausar la
+  sincronización mientras se trabaja.
+
+9.4 Ruido de finales de línea en migration_lock.toml y package-lock.json
+  `git status` marcaba modified backend/package-lock.json (por
+  `npm install`) y backend/prisma/migrations/migration_lock.toml.
+  `git diff` de migration_lock.toml salió vacío: ruido CRLF/LF. Ambos se
+  descartaron con `git restore` y no se commitearon.
+  Coincide con gotchas.md 1.7 (ruido de saltos de línea en Windows).
+
+9.5 Errores de rutas en PowerShell
+  `git add backend/prisma/...` fallaba con "backend/backend/prisma"
+  porque el prompt estaba en agroalerta-sv\backend y no en la raíz.
+  Además, `head` y `grep` no existen en PowerShell
+  (usar `git log --oneline -3` y `Select-String`). Y un comando pegado
+  dos veces seguidas produjo `package-lock.jsongit restore` (ejecutar
+  una línea por vez).
+
+
+10. ARCHIVOS COMPARTIDOS Y RIESGOS DE MERGE
+------------------------------------------------------------
+Archivos compartidos tocados:
+  - backend/prisma/schema.prisma
+  - backend/prisma/migrations/ (carpeta nueva)
+
+Archivos tocados fuera del alcance: ninguno. Los que aparecieron
+modificados por ruido (package-lock.json, migration_lock.toml) se
+descartaron y no entran en el commit.
+
+Riesgos:
+  - Las dos líneas `siembras Siembra[]` dentro de Usuario y Distrito
+    son el punto de conflicto más probable si otra rama toca esos
+    modelos.
+  - Las migraciones van en secuencia, nunca en paralelo. 4-C
+    probablemente agregue tablas de precios (F3): debe esperar el merge
+    de 4-A, hacer `git pull origin main` y generar su migración encima.
+  - Quien tome 4-B o 4-D necesita, tras el merge, `git pull origin
+    main` y `npx prisma migrate dev` desde backend/ para tener la tabla.
+  - No correr `npx prisma format` sobre schema.prisma: reordena bloques
+    ajenos y ensucia el diff.
+
+
+11. PUNTOS DE ATENCIÓN PARA LAS SIGUIENTES RAMAS
+------------------------------------------------------------
+4-B (formulario, Angular):
+  - Selector de distrito con el del perfil como valor inicial (D1).
+  - Aceptar km² como entrada opcional y convertir a manzanas antes de
+    enviar (1 mz = 0.7 ha; 1 km² = 100 ha).
+  - Los nombres de campos del contrato son los de la sección 4.2.
+  - Cultivo: enviar MAIZ, FRIJOL o MAICILLO (no "sorgo").
+  - No mostrar cifras inventadas como estimado de inversión; si 4-C no
+    existe, no se muestra.
+
+4-C (estimación de costos):
+  - Resolver F3. Cada valor con fuente y fecha; lo no conseguido se
+    declara supuesto.
+  - Declarar el peso de una bolsa de semilla.
+  - Decidir si se guarda inversionEstimadaUsd (otra migración).
+
+4-D (endpoints y evento):
+  - Convertir Decimal a number con Number(...) al armar
+    SiembraRegistradaPayload (events/types.ts tiene areaMz: number y
+    cultivo: string); no cambiar el tipo sin acuerdo.
+  - Validar entrada con el contrato { error, detalles }; ids con
+    validación explícita (no Number(req.params.id)).
+  - Emitir SiembraRegistrada después de persistir, con emitirSeguro.
+  - Seleccionar campos explícitos en las consultas; solo el dueño ve sus
+    siembras.
+  - Las FK son RESTRICT: considerarlo si se agrega "eliminar cuenta".
+  - Mapeo de enums de Prisma a texto de interfaz en el frontend.
+
+5-B (proyección): usa areaMz y cultivo; necesita F1 y F4.
+
+
+12. QUÉ ACTUALIZAR EN LA DOCUMENTACIÓN (para Yona)
+------------------------------------------------------------
+  - docs/architecture/data.md: agregar el modelo Siembra y sus enums
+    (sección 1), la migración 20261116035128_add_siembras (sección 2) y
+    las invariantes (sección 6): Siembra siempre tiene usuarioId y
+    distritoId válidos; inversionTotalUsd obligatoria.
+  - docs/history/branches/: crear 4-siembra.md con este contenido
+    (4-A cerrado).
+  - docs/tasks/continuacion.md: marcar 4-A como hecho; actualizar el
+    estado de la Parte 4.
+  - docs/INDEX.md: tabla "Estado actual": Parte 4 en curso.
+  - docs/gotchas.md: agregar 9.1 a 9.5 (los que se consideren útiles).
+  - docs/tasks/pendiente.md: agregar la decisión sobre el modelo
+    ampliado (sección 7), el peso de una bolsa y la corrección del
+    process.exit en pruebas.
+  - docs/architecture/backend.md: el módulo siembra/ sigue vacío; sin
+    cambios hasta 4-D.
+
+
+13. COMANDOS DEL FLUJO USADO
+------------------------------------------------------------
+  git checkout -b feat/4-a-modelo-siembra origin/main
+  cd backend
+  npx prisma migrate dev --name add_siembras
+  npx prisma generate
+  npx tsc --noEmit
+  (pruebas SQL en docker compose exec db mysql ...)
+  git restore backend/package-lock.json
+  git restore backend/prisma/migrations/migration_lock.toml
+  git add backend/prisma/schema.prisma backend/prisma/migrations/20261116035128_add_siembras
+  git commit -m "feat(siembra): modelo Siembra, enums y migración add_siembras (4-A)"
+  git push -u origin feat/4-a-modelo-siembra
+  PR en GitHub con la plantilla del repo.
+
+------------------------------------------------------------
+PROPUESTAS (opcionales)
+------------------------------------------------------------
+  - Corregir process.exit en las pruebas que cierran servidores, en un
+    PR aparte.
+  - Agregar a la plantilla de PR o a workflow.md una nota sobre
+    verificar `git diff --stat` antes de migrar.
+  - Mover los repos fuera de OneDrive en las máquinas Windows del
+    equipo.
+  - Restaurar en docs/ una lista canónica de los campos del formulario
+    (la del Estado_del_Proyecto.txt original), porque se perdió en la
+    reorganización.
+
+------------------------------------------------------------
+PENDIENTES (obligatorio)
+------------------------------------------------------------
+  1. Equipo: confirmar el modelo ampliado de la sección 7.
+  2. 4-C: declarar el peso de una bolsa de semilla y conseguir F3.
+  3. 4-D: implementar las validaciones de la sección 8.
+  4. Equipo: PR aparte para el crash de libuv en pruebas:http (fuera del
+     alcance de 4-A).
+  5. Yona: migrar este contenido a los .md (sección 12).
+  El punto 4-A no deja tareas abiertas para su responsable.
+============================================================
