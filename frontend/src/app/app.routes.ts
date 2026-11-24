@@ -30,6 +30,11 @@ export const routes: Routes = [
         title: 'Clima Zonal | AgroAlerta',
         loadComponent: () => import('./pages/clima-zonal/clima-zonal').then((m) => m.ClimaZonal),
       },
+      {
+        path: 'siembra',
+        title: 'Registrar siembra | AgroAlerta',
+        loadComponent: () => import('./pages/siembra/siembra').then((m) => m.Siembra),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
