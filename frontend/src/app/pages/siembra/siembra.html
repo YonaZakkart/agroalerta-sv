@@ -1,12 +1,167 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="./siembra.css">
-</head>
-<body>
-    <p>Registrar siembra (en construcción).</p>
-</body>
-</html>
+<section class="siembra">
+  <header class="siembra__cabecera">
+    <h1>Registrar siembra</h1>
+    <p>Describe la siembra que vas a registrar. Los datos sirven para el seguimiento de tu distrito.</p>
+  </header>
+  <link rel="stylesheet" href="./siembra.css" />
+
+  @if (enviadaOk()) {
+    <div class="alerta alerta-ok" role="status">
+      Siembra registrada.
+      <button type="button" class="btn-secundario" (click)="volverAlDashboard()">Volver al dashboard</button>
+    </div>
+  }
+
+  @if (erroresBackend().length) {
+    <div class="alerta alerta-error" role="alert">
+      <ul>
+        @for (mensaje of erroresBackend(); track $index) {
+          <li>{{ mensaje }}</li>
+        }
+      </ul>
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    <fieldset>
+      <legend>Datos agronómicos</legend>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cultivo">Cultivo</label>
+          <select id="cultivo" formControlName="cultivo">
+            @for (c of cultivos; track c.valor) {
+              <option [value]="c.valor">{{ c.etiqueta }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="distrito">Distrito</label>
+          @if (cargandoDistritos()) {
+            <p class="ayuda">Cargando distritos…</p>
+          } @else if (errorDistritos()) {
+            <p class="alerta alerta-error">
+              No se pudieron cargar los distritos.
+              <button type="button" class="reintentar" (click)="cargarDistritos()">Reintentar</button>
+            </p>
+          } @else {
+            <select id="distrito" formControlName="distritoId">
+              <option [ngValue]="0" disabled>Selecciona un distrito</option>
+              @for (d of distritos(); track d.id) {
+                <option [ngValue]="d.id">{{ d.nombre }} ({{ d.municipio.nombre }})</option>
+              }
+            </select>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="estado">Estado</label>
+          <select id="estado" formControlName="estado">
+            <option value="POR_SEMBRAR">Por sembrar</option>
+            <option value="SEMBRADO">Ya sembrado</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="fechaSiembra">
+            {{ form.controls.estado.value === 'SEMBRADO' ? 'Fecha de siembra' : 'Fecha planeada' }}
+          </label>
+          <input id="fechaSiembra" type="date" formControlName="fechaSiembra"
+                 [attr.max]="form.controls.estado.value === 'SEMBRADO' ? hoy : null"
+                 [attr.min]="form.controls.estado.value === 'POR_SEMBRAR' ? hoy : null" />
+          @if (form.controls.fechaSiembra.hasError('fechaFutura')) {
+            <p class="error">Una siembra ya realizada no puede tener fecha futura.</p>
+          }
+          @if (form.controls.fechaSiembra.hasError('fechaPasada')) {
+            <p class="error">Una siembra planeada no puede tener fecha pasada.</p>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="areaMz">Área (manzanas)</label>
+          <input id="areaMz" type="number" step="0.01" min="0.01" max="999999.99" formControlName="areaMz" />
+          @if (form.controls.areaMz.touched && form.controls.areaMz.invalid) {
+            <p class="error">Indica un área entre 0.01 y 999 999.99 manzanas.</p>
+          }
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="cantidadSemilla">Cantidad de semilla (opcional)</label>
+          <input id="cantidadSemilla" type="number" step="0.01" min="0.01" formControlName="cantidadSemilla" />
+        </div>
+
+        <div class="form-group">
+          <label for="unidadSemilla">Unidad (opcional)</label>
+          <select id="unidadSemilla" formControlName="unidadSemilla">
+            <option [ngValue]="null">—</option>
+            <option value="LIBRAS">Libras</option>
+            <option value="BOLSAS">Bolsas</option>
+          </select>
+        </div>
+      </div>
+      @if (form.hasError('semillaIncompleta')) {
+        <p class="error">Si indicas cantidad de semilla, también elige la unidad, y viceversa.</p>
+      }
+    </fieldset>
+
+    <fieldset>
+      <legend>Datos técnicos</legend>
+
+      <div class="casillas">
+        <label><input type="checkbox" formControlName="alquilaTerreno" /> Alquilo el terreno</label>
+        <label><input type="checkbox" formControlName="usaMaquinaria" /> Uso maquinaria</label>
+        <label><input type="checkbox" formControlName="usaRiego" /> Uso riego</label>
+      </div>
+
+      <div class="form-group">
+        <label for="inversionTotalUsd">Inversión total (USD)</label>
+        <input id="inversionTotalUsd" type="number" step="0.01" min="0" formControlName="inversionTotalUsd" />
+        @if (form.controls.inversionTotalUsd.touched && form.controls.inversionTotalUsd.invalid) {
+          <p class="error">Indica la inversión total en dólares.</p>
+        }
+      </div>
+
+      <details>
+        <summary>Desglose de la inversión (opcional)</summary>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="costoSemillaUsd">Semilla (USD)</label>
+            <input id="costoSemillaUsd" type="number" step="0.01" min="0" formControlName="costoSemillaUsd" />
+          </div>
+          <div class="form-group">
+            <label for="costoAlquilerUsd">Alquiler (USD)</label>
+            <input id="costoAlquilerUsd" type="number" step="0.01" min="0" formControlName="costoAlquilerUsd" />
+          </div>
+          <div class="form-group">
+            <label for="costoMaquinariaUsd">Maquinaria (USD)</label>
+            <input id="costoMaquinariaUsd" type="number" step="0.01" min="0" formControlName="costoMaquinariaUsd" />
+          </div>
+          <div class="form-group">
+            <label for="costoRiegoUsd">Riego (USD)</label>
+            <input id="costoRiegoUsd" type="number" step="0.01" min="0" formControlName="costoRiegoUsd" />
+          </div>
+          <div class="form-group">
+            <label for="costoOtrosUsd">Otros (USD)</label>
+            <input id="costoOtrosUsd" type="number" step="0.01" min="0" formControlName="costoOtrosUsd" />
+          </div>
+        </div>
+        @if (desgloseSuperaTotal()) {
+          <p class="aviso">El desglose supera la inversión total. Revisa los montos; puedes guardar igual.</p>
+        }
+      </details>
+
+      <p class="ayuda">
+        El estimado de inversión estará disponible cuando existan los precios de referencia del proyecto.
+      </p>
+    </fieldset>
+
+    <div class="acciones">
+      <button type="submit" class="btn-primary" [disabled]="enviando()">
+        {{ enviando() ? 'Guardando…' : 'Registrar siembra' }}
+      </button>
+    </div>
+  </form>
+</section>
