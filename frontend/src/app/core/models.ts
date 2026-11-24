@@ -99,3 +99,39 @@ export interface RespuestaPerfil {
   success: boolean;
   usuario: PerfilUsuario;
 }
+
+
+// ---- Siembra (Parte 4, 4-A). Los valores son los del enum de Prisma, tal cual se envían.
+export type CultivoSiembra = 'MAIZ' | 'FRIJOL' | 'MAICILLO';
+
+export const CULTIVOS_SIEMBRA: { valor: CultivoSiembra; etiqueta: string }[] = [
+  { valor: 'MAIZ', etiqueta: 'Maíz' },
+  { valor: 'FRIJOL', etiqueta: 'Frijol' },
+  { valor: 'MAICILLO', etiqueta: 'Maicillo' },
+];
+
+export type EstadoSiembra = 'POR_SEMBRAR' | 'SEMBRADO';
+
+export type UnidadSemilla = 'LIBRAS' | 'BOLSAS';
+
+// Body de POST /siembras (contrato por confirmar con 4-D).
+// usuarioId no se envía: el backend lo toma del token.
+// Con exactOptionalPropertyTypes, los opcionales vacíos se omiten, no se ponen en undefined.
+export interface DatosSiembra {
+  distritoId: number;
+  cultivo: CultivoSiembra;
+  estado: EstadoSiembra;
+  fechaSiembra: string; // AAAA-MM-DD
+  areaMz: number;
+  cantidadSemilla?: number;
+  unidadSemilla?: UnidadSemilla;
+  alquilaTerreno: boolean;
+  usaMaquinaria: boolean;
+  usaRiego: boolean;
+  inversionTotalUsd: number;
+  costoSemillaUsd?: number;
+  costoAlquilerUsd?: number;
+  costoMaquinariaUsd?: number;
+  costoRiegoUsd?: number;
+  costoOtrosUsd?: number;
+}
