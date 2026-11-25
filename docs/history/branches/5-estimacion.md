@@ -9,13 +9,13 @@
 
 | Punto | Rama | Responsable | PR | Resultado |
 |---|---|---|---|---|
-| 5-A | `feat/5-a-listeners` | Yona | por abrir | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
+| 5-A | `feat/5-a-listeners` | Yona | #58 | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
 
 ---
 
 ## 5-A — Listeners
 
-**Rama:** `feat/5-a-listeners` · **Responsable:** Yona · **24 de noviembre de 2026** · PR por abrir
+**Rama:** `feat/5-a-listeners` · **Responsable:** Yona · **24 de noviembre de 2026** · PR #58
 
 **Qué se hizo:**
 
