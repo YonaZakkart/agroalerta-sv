@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–3 cerradas, Hito 1 cerrado, 6-D implementado y 4-A, 4-B y 4-C hechos. Siguiente: 4-D.
+- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado. Siguiente: 5-A.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -63,7 +63,7 @@
 
 ### 4-D — Endpoints y evento
 
-**Depende de:** 4-A (listo). **Estado:** siguiente. **Tamaño:** M.
+**Depende de:** 4-A (listo). **Estado:** ✅ hecho. **Tamaño:** M.
 
 - `POST /siembras` y `GET /siembras` con `requireAuth`; solo el dueño ve sus siembras.
 - Validación de entrada con el contrato `{ error, detalles }`.
@@ -77,7 +77,7 @@
 
 ### 5-A — Listeners
 
-**Depende de:** 4-D y 3-C. **Tamaño:** M.
+**Depende de:** 4-D y 3-C (listos). **Estado:** siguiente. **Tamaño:** M.
 
 - Escuchar `SiembraRegistrada` y `CondicionClimaticaActualizada`.
 - Un listener no debe lanzar: `emitirSeguro` captura el error, pero el listener debe registrar y continuar.
@@ -168,13 +168,12 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 4-D (sin endpoints no hay siembra que estimar).
-2. 5-A y 5-B con supuestos declarados.
-3. 6-E (una sola cifra real vale más que tres vistas).
-4. 5-C y 6-C.
-5. Parte 7.
+1. 5-A y 5-B con supuestos declarados.
+2. 6-E (una sola cifra real vale más que tres vistas).
+3. 5-C y 6-C.
+4. Parte 7.
 
-4-A, 4-B y 4-C ya están hechos. 4-C quedó con precios reales del MAG 2022-2023.
+La Parte 4 está cerrada: 4-A, 4-B, 4-C y 4-D ya están en `main` (4-D en su PR).
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

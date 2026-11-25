@@ -49,7 +49,7 @@ main.ts
 | `distritos.service.ts` | `GET /distritos`. |
 | `viabilidad.service.ts` | `GET /viabilidad/distritos/:id?cultivo=…`. |
 | `clima.service.ts` | `GET /clima/distritos/:id` y `POST /clima/actualizar`. |
-| `siembra.service.ts` | `POST /siembras` (4-B; el endpoint llega en 4-D). |
+| `siembra.service.ts` | `POST /siembras` (4-B; el endpoint existe desde 4-D). |
 | `errores.ts` | `mensajesDeError()` y timeout HTTP. |
 
 ### Sesión
@@ -132,7 +132,7 @@ Panel de acceso para login y registro: lado visual con degradado, pestañas y pr
 - Formulario reactivo con dos grupos: agronómico (cultivo, distrito, estado, fecha y área) y técnico (alquiler, maquinaria, riego, inversión total y desglose).
 - El distrito del perfil es el valor inicial; el usuario puede cambiarlo (D1).
 - Validaciones: fecha coherente con el estado, semilla completa (cantidad y unidad juntas), área entre 0.01 y 999 999.99 y aviso si el desglose supera la inversión total.
-- Envía a `POST /siembras` con `SiembraService`; el endpoint todavía no existe (4-D), así que el envío falla hasta que se implemente.
+- Envía a `POST /siembras` con `SiembraService`. El endpoint existe desde 4-D; al guardar muestra “Siembra registrada” y permite volver al dashboard.
 - El estimado de inversión no se muestra: el aviso dice que llegará cuando exista la integración con 4-C.
 - La ruta `/siembra` existe, pero todavía no tiene enlace en el sidebar.
 

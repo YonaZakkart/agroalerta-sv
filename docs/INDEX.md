@@ -18,14 +18,14 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 | Hito 1 — frontend mínimo | ✅ Cerrado | 6-0, 6-A y 6-B: login, registro y dashboard con datos reales |
 | Parte 3 — clima | ✅ Cerrada | 3-0a/b/c, 3-A, 3-B, 3-C y 3-D, incluido el job periódico |
 | 6-D — Clima Zonal | ✅ Implementado | Vista por distrito y condición en el encabezado |
-| Parte 4 — siembra | 🟡 En curso | 4-A, 4-B y 4-C hechos; 4-D pendiente |
+| Parte 4 — siembra | ✅ Cerrada | 4-A a 4-D: modelo, formulario, costos, endpoints y evento |
 | Parte 5 — estimación | ⏳ Pendiente | Listeners, proyección, recomendaciones y reporte |
 | 6-C / 6-E | ⏳ Pendientes | Historial y estimación real en el dashboard |
 | Parte 7 — despliegue | ⏳ Pendiente | Docker de producción, TLS, CORS final y pruebas E2E |
 
-**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, modelo y formulario de siembra (sin endpoint todavía) y estimación de costos como función pura con precios del MAG.
+**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, y estimación de costos como función pura con precios del MAG.
 
-**Lo que todavía no existe:** guardar una siembra desde la API, mostrar el estimado de costos en la interfaz, estimar rendimiento o ingresos, recomendaciones automáticas, historial y despliegue.
+**Lo que todavía no existe:** mostrar el estimado de costos en la interfaz, estimar rendimiento o ingresos, recomendaciones automáticas, historial y despliegue.
 
 ---
 
@@ -70,7 +70,7 @@ docs/
 │   │   ├── 1-autenticacion.md
 │   │   ├── 2-viabilidad.md
 │   │   ├── 3-clima.md
-│   │   ├── 4-siembra.md      4-A, 4-B y 4-C
+│   │   ├── 4-siembra.md      4-A a 4-D
 │   │   ├── 6-frontend.md
 │   │   └── cierre-y-pendientes.md
 │   └── bugs-resueltos.md     Incidencias reales, causa y solución
@@ -150,7 +150,7 @@ docs/
 | **Clase** | Subdivisión de una capa (por ejemplo, potencial alto, medio o bajo). Cada combinación distrito–capa–clase tiene un área en hectáreas. |
 | **Condición climática** | `SEQUIA`, `EXCESO_LLUVIA` o `INVIERNO_ACEPTABLE`; `null` cuando el distrito está fuera de la época evaluable. |
 | **Evento** | Mensaje interno del bus (`AgricultorRegistrado`, `ActualizacionMeteorologica`, `CondicionClimaticaActualizada`, `SiembraRegistrada`). |
-| **Siembra** | Registro de un cultivo en un distrito: estado, fecha, área en manzanas e inversión declarada. Modelo de 4-A; formulario de 4-B. |
+| **Siembra** | Registro de un cultivo en un distrito: estado, fecha, área en manzanas e inversión declarada. Modelo de 4-A, formulario de 4-B y endpoints de 4-D. |
 | **F3** | Precios y dosis de referencia del MAG para estimar costos (4-C). Cada valor lleva fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). |
 | **EDA** | Event-Driven Architecture: el sistema reacciona a eventos en lugar de esperar que el usuario pida un recálculo. |
 | **CENTA** | Fuente de los datos de viabilidad agrícola. No tiene API pública; se usan exportaciones CSV. |

@@ -119,7 +119,14 @@ backend/
     │   ├── bus.ts                instancia única de EventEmitter
     │   ├── emitir.ts             emitirSeguro()
     │   └── types.ts              nombres y payloads de eventos
-    ├── siembra/                  vacío: 4-D agrega rutas y servicio
+    ├── siembra/
+    │   ├── siembra.validacion.ts    validación pura de POST /siembras
+    │   ├── siembra.dto.ts           contrato público (Decimal → number)
+    │   ├── siembra.service.ts       persistencia, evento y listado por dueño
+    │   ├── siembra.routes.ts        POST y GET /siembras
+    │   ├── siembra.pruebas.ts       validación, DTO y servicio
+    │   ├── siembra.routes.pruebas.ts contrato HTTP con servicios falsos
+    │   └── siembra.pruebas.ayudas.ts ayudas compartidas por las pruebas
     └── estimacion/
         ├── referencia.ts         tabla F3 con fuente, fecha y tipo
         ├── estimar-costos.ts     función pura estimarCostos()
@@ -141,6 +148,7 @@ src/clima/clima.pruebas.ts, clasificacion.pruebas.ts,
          job.pruebas.ts, normales-archivo.pruebas.ts,
          orquestador.prueba.ts
 src/estimacion/estimar-costos.pruebas.ts
+src/siembra/siembra.pruebas.ts, siembra.routes.pruebas.ts
 ```
 
 ---
@@ -208,6 +216,7 @@ frontend/
    - `/viabilidad` → viabilidad
    - `/distritos` → catálogo público
    - `/clima` → clima
+   - `/siembras` → registro y listado de siembras
 5. `rutaNoEncontrada` y `manejarErrores` al final.
 6. `app.listen`; en el callback se inicia el job de clima si `CLIMA_JOB_ACTIVO !== "false"`.
 7. `servidor.on("error")` maneja puerto ocupado y otros fallos de arranque.
@@ -253,6 +262,9 @@ frontend/
 | Job periódico | `backend/src/clima/job.ts` |
 | Estimación de costos (4-C) | `backend/src/estimacion/estimar-costos.ts` |
 | Precios y dosis F3 | `backend/src/estimacion/referencia.ts` |
+| Validación de siembra (4-D) | `backend/src/siembra/siembra.validacion.ts` |
+| Persistencia y evento de siembra | `backend/src/siembra/siembra.service.ts` |
+| Endpoints de siembra | `backend/src/siembra/siembra.routes.ts` |
 | Contratos de eventos | `backend/src/events/types.ts` |
 | Sesión en el cliente | `frontend/src/app/core/auth.service.ts` |
 | Interceptor y 401 | `frontend/src/app/core/auth.interceptor.ts` |

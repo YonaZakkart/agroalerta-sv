@@ -25,10 +25,12 @@ Contrato HTTP real al 24 de noviembre de 2026. Todas las rutas devuelven JSON. E
 | GET | `/viabilidad/distritos/:id` | Bearer | Viabilidad CENTA del distrito. |
 | GET | `/clima/distritos/:id` | Bearer | Última condición climática guardada. |
 | POST | `/clima/actualizar` | Bearer | Fuerza la actualización del clima. |
+| POST | `/siembras` | Bearer | Registra una siembra del usuario. |
+| GET | `/siembras` | Bearer | Lista las siembras del usuario. |
 
 Rutas inexistentes → 404 JSON. JSON mal formado → 400 JSON. Error no controlado → 500 genérico.
 
-**Sin endpoints de siembra todavía:** el frontend de 4-B llama a `POST /siembras`, pero la ruta se implementa en 4-D. Hasta entonces responde 404. La estimación de costos de 4-C es una función pura, no un endpoint.
+**Endpoints de siembra:** `POST /siembras` y `GET /siembras` existen desde 4-D. La estimación de costos de 4-C sigue siendo una función pura, no un endpoint.
 
 ---
 
@@ -383,7 +385,103 @@ Ordenado por `nombreNormalizado`. **500** si falla la base.
 
 ---
 
-## 7. Variables de entorno
+## 7. Siembra
+
+Ambas rutas requieren `Authorization: Bearer <token>` y solo operan sobre las siembras del usuario del token. No hay `GET /siembras/:id`; la colección ya viene filtrada por dueño.
+
+### `POST /siembras`
+
+**Cuerpo:**
+
+```json
+{
+  "distritoId": 1304,
+  "cultivo": "MAIZ",
+  "estado": "POR_SEMBRAR",
+  "fechaSiembra": "2026-11-24",
+  "areaMz": 3.5,
+  "cantidadSemilla": 45,
+  "unidadSemilla": "LIBRAS",
+  "alquilaTerreno": false,
+  "usaMaquinaria": true,
+  "usaRiego": false,
+  "inversionTotalUsd": 1900,
+  "costoSemillaUsd": 120,
+  "costoMaquinariaUsd": 300
+}
+```
+
+- `cultivo`: `MAIZ`, `FRIJOL` o `MAICILLO`.
+- `estado`: `POR_SEMBRAR` o `SEMBRADO`.
+- `fechaSiembra`: `AAAA-MM-DD`. `SEMBRADO` no puede ser futura; `POR_SEMBRAR` no puede ser pasada. La comparación usa la fecha de El Salvador.
+- `areaMz`: entre 0.01 y 999 999.99, máximo dos decimales.
+- `cantidadSemilla` y `unidadSemilla` van juntas o ninguna. Unidad: `LIBRAS` o `BOLSAS`.
+- `inversionTotalUsd`: obligatoria, no negativa, máximo dos decimales.
+- Los `costo*Usd` son opcionales, no negativos y con máximo dos decimales.
+- `alquilaTerreno`, `usaMaquinaria` y `usaRiego` son booleanos; si se omiten, valen `false`.
+- **Decisión MVP:** la suma del desglose puede superar `inversionTotalUsd`. El formulario ya lo advierte; no se rechaza.
+
+**201:**
+
+```json
+{
+  "siembra": {
+    "id": 1,
+    "distritoId": 1304,
+    "distrito": { "id": 1304, "nombre": "Chilanga", "municipio": { "id": 2, "nombre": "Morazán Sur" } },
+    "cultivo": "MAIZ",
+    "estado": "POR_SEMBRAR",
+    "fechaSiembra": "2026-11-24",
+    "areaMz": 3.5,
+    "cantidadSemilla": 45,
+    "unidadSemilla": "LIBRAS",
+    "alquilaTerreno": false,
+    "usaMaquinaria": true,
+    "usaRiego": false,
+    "inversionTotalUsd": 1900,
+    "costoSemillaUsd": 120,
+    "costoAlquilerUsd": null,
+    "costoMaquinariaUsd": 300,
+    "costoRiegoUsd": null,
+    "costoOtrosUsd": null,
+    "creadoEn": "2026-11-24T18:00:00.000Z"
+  }
+}
+```
+
+Después de persistir, se emite `SiembraRegistrada` con `{ siembraId, usuarioId, distritoId, cultivo, areaMz, fecha }` mediante `emitirSeguro`. Si un listener falla, la siembra ya guardada se devuelve igual.
+
+**Errores:**
+
+| Código | Caso |
+|---|---|
+| 400 | Cuerpo inválido; `detalles` es un array de mensajes. |
+| 401 | Sin token o token inválido/expirado. |
+| 404 | `distritoId` no existe. |
+| 429 | Límite de 30 peticiones por minuto por IP. |
+| 500 | Error interno. |
+
+### `GET /siembras`
+
+**200:**
+
+```json
+{ "siembras": [ { "id": 1, "cultivo": "MAIZ", "areaMz": 3.5, "fechaSiembra": "2026-11-24" } ] }
+```
+
+Devuelve el mismo DTO de `POST /siembras`, ordenado por `creadoEn` descendente. Solo incluye las siembras del usuario del token.
+
+**Errores:**
+
+| Código | Caso |
+|---|---|
+| 401 | Sin token o token inválido/expirado. |
+| 429 | Límite de 30 peticiones por minuto por IP. |
+| 500 | Error interno. |
+
+---
+
+## 8. Variables de entorno
 
 | Variable | Obligatoria | Valor de desarrollo | Notas |
 |---|---|---|---|
@@ -400,12 +498,13 @@ Ordenado por `nombreNormalizado`. **500** si falla la base.
 
 ---
 
-## 8. Límites de peticiones
+## 9. Límites de peticiones
 
 | Ruta | Límite | Ventana |
 |---|---|---|
 | `/auth/login`, `/auth/registro`, `/auth/reenviar-verificacion` | 20 | 15 min |
 | `/clima/actualizar` | 6 | 10 min |
 | `/clima` (lectura) | 60 | 1 min |
+| `/siembras` | 30 | 1 min |
 
 Son límites **en memoria y por proceso**. No sustituyen un límite compartido entre instancias.

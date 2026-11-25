@@ -19,6 +19,7 @@ index.ts
 ├── /viabilidad                  consulta CENTA
 ├── /distritos                   catálogo público
 ├── /clima                       condición guardada y actualización
+├── /siembras                    registro y listado del usuario
 ├── rutaNoEncontrada
 └── manejarErrores
 ```
@@ -134,17 +135,22 @@ Eventos actuales:
 | `AgricultorRegistrado` | Al crear un usuario | `usuarioId`, `correo`, `distrito`, `distritoId`, `fechaRegistro` |
 | `ActualizacionMeteorologica` | En cada consulta con lluvia del último día completo | `distritoId`, `fecha`, `precipitacionMm`, `fuente` |
 | `CondicionClimaticaActualizada` | Solo cuando cambia la condición evaluada | `distritoId`, `condicion`, `condicionAnterior`, `precipitacionAcumuladaMm`, `fecha` |
-| `SiembraRegistrada` | Definido en 3-0a; se emitirá en 4-D | `siembraId`, `usuarioId`, `distritoId`, `cultivo`, `areaMz`, `fecha` |
+| `SiembraRegistrada` | Al guardar una siembra (4-D) | `siembraId`, `usuarioId`, `distritoId`, `cultivo`, `areaMz`, `fecha` |
 
 ### 2.7 `siembra/` y `estimacion/`
 
-- `siembra/` sigue vacío: 4-A solo agregó el modelo y 4-B solo el frontend. Los endpoints y el evento llegan en 4-D.
+- `siembra/` contiene los endpoints de 4-D:
+  - `siembra.validacion.ts`: validación pura del cuerpo de `POST /siembras`, con el contrato `{ error, detalles }`.
+  - `siembra.dto.ts`: mapeo de `Decimal` y fechas al contrato público; no filtra tipos de Prisma.
+  - `siembra.service.ts`: comprueba el distrito, persiste, emite `SiembraRegistrada` con `emitirSeguro` y lista solo las siembras del dueño.
+  - `siembra.routes.ts`: `crearSiembraRouter(deps)` para probar el contrato HTTP sin MySQL, más el router real montado en `/siembras`.
+  - `siembra.pruebas.ts` y `siembra.routes.pruebas.ts`: pruebas sin red ni base.
 - `estimacion/` contiene la estimación de costos de 4-C:
   - `referencia.ts`: tabla F3 con precios, dosis, fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). Es la única fuente de valores.
   - `estimar-costos.ts`: función pura `estimarCostos(cultivo, areaMz, opciones)`. Redondea hacia arriba las unidades compradas (lb, QQ, jornal) y prorratea los servicios por manzana.
   - `index.ts`: API pública del módulo.
   - `estimar-costos.pruebas.ts`: pruebas sin red ni base de datos.
-- No hay router ni endpoint de estimación en 4-C; el módulo se consume desde código (4-D / 5-B).
+- No hay endpoint de estimación todavía: 4-C se consume desde código (5-B) o desde una integración posterior.
 
 ---
 
@@ -186,7 +192,7 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run build` | Compila a `dist/`. |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm start` | Ejecuta `dist/index.js`. |
-| `npm test` | Encadena las 19 pruebas sin red. |
+| `npm test` | Encadena las 21 pruebas sin red. |
 | `npm run db:generate` | `prisma generate`. |
 | `npm run db:migrate` | `prisma migrate dev`. |
 | `npm run db:studio` | `prisma studio`. |
@@ -196,14 +202,16 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run clima:probar` | Prueba manual contra Open-Meteo. |
 | `npm run clima:clasificar` | Clasifica los distritos y muestra el resultado. |
 | `npm run pruebas:estimacion` | Pruebas de la estimación de costos (4-C), sin red ni base. |
+| `npm run pruebas:siembra` | Validación, DTO y servicio de siembra (4-D), sin red ni base. |
+| `npm run pruebas:siembra-http` | Contrato HTTP de `/siembras` con servicios falsos y token firmado. |
 
 ---
 
 ## 6. Pruebas
 
-- 19 archivos `*.pruebas.ts` / `*.prueba.ts`.
+- 21 archivos `*.pruebas.ts` / `*.prueba.ts`.
 - Se ejecutan con `ts-node-dev --transpile-only`, sin red ni MySQL.
-- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición y estimación de costos.
+- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición, estimación de costos y siembra (validación, servicio y contrato HTTP).
 - El orquestador tiene una prueba de integración con dobles (`orquestador.prueba.ts`).
 
 ---
@@ -219,6 +227,8 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 - La autenticación no revoca tokens.
 - La estimación de costos usa precios del ciclo 2022-2023 y no incluye costos indirectos ni transporte de cosecha.
 - No hay endpoint de estimación todavía: 4-C es una función pura.
+- `GET /siembras` no pagina: devuelve todas las siembras del usuario.
+- La suma del desglose de una siembra puede superar `inversionTotalUsd` (decisión MVP).
 - El backend no sirve el frontend; en desarrollo se usa el proxy de Angular.
 
 Ver `adr/` y `gotchas.md` para el detalle.

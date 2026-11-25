@@ -44,7 +44,7 @@
 |---|---|---|
 | **Hito 1** — demo mínima con datos reales | 6-0, 6-A, 6-B: login, registro y dashboard con viabilidad real | ✅ cerrado |
 | **Hito 2** — clima real | 3-0 a 3-D, 6-D (Clima Zonal) y encabezado con clima | ✅ cerrado (3 completo; 6-D implementado) |
-| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | 🟡 en curso: 4-A, 4-B y 4-C hechos; 4-D pendiente |
+| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | 🟡 en curso: Parte 4 cerrada; faltan 5-A a 5-D, 6-C y 6-E |
 | **Hito 4** — cierre | Parte 7 | ⏳ pendiente |
 
 Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección 5). Hay que conseguirlos desde ya.
@@ -58,7 +58,7 @@ Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección
 | 1 | Frontend base y autenticación: 6-0, 6-A | ✅ |
 | 2 | Frontend dashboard: 6-B, luego 6-D y 6-E | 6-B y 6-D ✅; 6-E ⏳ |
 | 3 | Backend de clima: 3-0 y 3-A a 3-D | ✅ |
-| 4 | Datos de referencia y siembra: documento de datos, 4-A y 4-C | 4-A, 4-B y 4-C ✅; 4-D ⏳ |
+| 4 | Datos de referencia y siembra: documento de datos, 4-A y 4-C | 4-A a 4-D ✅ |
 
 ---
 
@@ -103,7 +103,7 @@ Job con `setInterval` que arranca con el servidor y tolera fallos de red; `GET /
 | 4-A | Modelo de Siembra y migración: usuario, distrito, cultivo, estado, fecha, área en manzanas, semilla, alquiler, maquinaria, riego, inversión | M | ✅ |
 | 4-B | Formulario de siembra en Angular, diseño de `dashboard_base.html`, dos grupos (agronómico y técnico), estimado de inversión previo | L | ✅ (sin el estimado previo) |
 | 4-C | Estimación de costos: precios promedio y dosis por manzana, redondeo hacia arriba, con fuente y fecha | M | ✅ |
-| 4-D | Evento `SiembraRegistrada` e historial: `POST /siembras` y `GET /siembras` protegidos | M | ⏳ |
+| 4-D | Evento `SiembraRegistrada` e historial: `POST /siembras` y `GET /siembras` protegidos | M | ✅ |
 
 **Archivos compartidos:** `schema.prisma`, `migrations/`, `events/types.ts`, `index.ts`.
 

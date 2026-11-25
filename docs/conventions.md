@@ -28,7 +28,7 @@ backend/src/
 ├── viabilidad/       consulta de CENTA, catálogo de distritos y scripts de datos
 ├── clima/            Open-Meteo, normales, clasificación, orquestador, job y endpoint
 ├── events/           bus y contratos de eventos
-├── siembra/          vacío: 4-D agrega rutas y servicio
+├── siembra/          validación, servicio y endpoints de 4-D
 └── estimacion/       estimación de costos de 4-C (referencia, función pura y pruebas)
 ```
 
