@@ -125,7 +125,7 @@ F1 y F4 ya existen (MAG 2022-2023); F2 sigue parcial. Los factores climáticos d
 | A7 | Separar `app` de `listen` | Necesario para pruebas de API sin abrir puerto (Parte 7). |
 | A8 | Endpoint de estimación de costos | 4-C es una función pura; falta exponerla o integrarla para que el formulario muestre el estimado. |
 | A9 | Paginación de `GET /siembras` | Hoy devuelve todas las siembras del usuario; suficiente para el MVP, revisar si el historial crece. |
-| A10 | Persistencia y reporte de 5-D | 5-B calcula en memoria/log; falta guardar y exponer la estimación. |
+| A10 | Paginación de `GET /estimaciones` | Hoy devuelve todo el historial del usuario; suficiente para el MVP. |
 
 ---
 

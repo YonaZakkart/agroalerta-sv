@@ -135,13 +135,18 @@ backend/
         ├── proyeccion.ts         proyección 5-B (F1/F4 y clima)
         ├── recomendacion.ts      semáforo y motivos de 5-C
         ├── viabilidad-referencia.ts referencia CENTA para 5-C
+        ├── reporte.dto.ts        contrato del reporte 5-D
+        ├── reporte.service.ts    guardar/listar estimaciones
+        ├── estimaciones.routes.ts GET /estimaciones
         ├── registro.ts           une el bus real con los listeners
         ├── index.ts              API pública del módulo
         ├── estimar-costos.pruebas.ts
         ├── listeners.pruebas.ts
         ├── recalculo.pruebas.ts
         ├── proyeccion.pruebas.ts
-        └── recomendacion.pruebas.ts
+        ├── recomendacion.pruebas.ts
+        ├── reporte.pruebas.ts
+        └── estimaciones.routes.pruebas.ts
 ```
 
 ### Archivos de prueba del backend
@@ -158,7 +163,7 @@ src/clima/clima.pruebas.ts, clasificacion.pruebas.ts,
          job.pruebas.ts, normales-archivo.pruebas.ts,
          orquestador.prueba.ts
 src/estimacion/estimar-costos.pruebas.ts
-src/estimacion/listeners.pruebas.ts, recalculo.pruebas.ts, proyeccion.pruebas.ts, recomendacion.pruebas.ts
+src/estimacion/listeners.pruebas.ts, recalculo.pruebas.ts, proyeccion.pruebas.ts, recomendacion.pruebas.ts, reporte.pruebas.ts, estimaciones.routes.pruebas.ts
 src/siembra/siembra.pruebas.ts, siembra.routes.pruebas.ts
 ```
 
@@ -228,6 +233,7 @@ frontend/
    - `/distritos` → catálogo público
    - `/clima` → clima
    - `/siembras` → registro y listado de siembras
+   - `/estimaciones` → historial de reportes
 5. `rutaNoEncontrada` y `manejarErrores` al final.
 6. `iniciarListenersEstimacion()` registra los listeners de 5-A en el bus.
 7. `app.listen`; en el callback se inicia el job de clima si `CLIMA_JOB_ACTIVO !== "false"`.
@@ -279,6 +285,8 @@ frontend/
 | Proyección de rendimiento e ingresos (5-B) | `backend/src/estimacion/proyeccion.ts` |
 | Recomendaciones por riesgo (5-C) | `backend/src/estimacion/recomendacion.ts` |
 | Referencia CENTA para 5-C | `backend/src/estimacion/viabilidad-referencia.ts` |
+| Persistencia del reporte (5-D) | `backend/src/estimacion/reporte.service.ts` |
+| Endpoint de estimaciones | `backend/src/estimacion/estimaciones.routes.ts` |
 | Registro de listeners al arrancar | `backend/src/estimacion/registro.ts` |
 | Validación de siembra (4-D) | `backend/src/siembra/siembra.validacion.ts` |
 | Persistencia y evento de siembra | `backend/src/siembra/siembra.service.ts` |

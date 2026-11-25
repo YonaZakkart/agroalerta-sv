@@ -27,6 +27,7 @@ Contrato HTTP real al 24 de noviembre de 2026. Todas las rutas devuelven JSON. E
 | POST | `/clima/actualizar` | Bearer | Fuerza la actualización del clima. |
 | POST | `/siembras` | Bearer | Registra una siembra del usuario. |
 | GET | `/siembras` | Bearer | Lista las siembras del usuario. |
+| GET | `/estimaciones` | Bearer | Historial de estimaciones del usuario. |
 
 Rutas inexistentes → 404 JSON. JSON mal formado → 400 JSON. Error no controlado → 500 genérico.
 
@@ -481,7 +482,63 @@ Devuelve el mismo DTO de `POST /siembras`, ordenado por `creadoEn` descendente. 
 
 ---
 
-## 8. Variables de entorno
+## 8. Estimaciones
+
+### `GET /estimaciones`
+
+**Auth:** Bearer. Devuelve el historial de reportes del usuario autenticado, más reciente primero. No recalcula nada.
+
+**200:**
+
+```json
+{
+  "estimaciones": [
+    {
+      "id": 1,
+      "siembraId": 10,
+      "distritoId": 1304,
+      "cultivo": "MAIZ",
+      "estado": "SEMBRADO",
+      "areaMz": 1,
+      "fechaSiembra": "2026-11-24",
+      "condicion": "INVIERNO_ACEPTABLE",
+      "nivelSequia": null,
+      "fechaDatos": "2026-11-23",
+      "actualizadoEn": "2026-11-24T12:00:00.000Z",
+      "rendimientoBaseQqPorMz": 58.22,
+      "factorClimatico": 1,
+      "rendimientoEstimadoQqPorMz": 58.22,
+      "produccionEstimadaQq": 58.22,
+      "precioVentaQqUsd": 30.74,
+      "ingresoEstimadoUsd": 1789.68,
+      "nivelRiesgo": "VERDE",
+      "titulo": "Riesgo bajo",
+      "mensaje": "La condición climática del distrito es favorable.",
+      "motivos": ["Condición climática: INVIERNO_ACEPTABLE; datos al 2026-11-23."],
+      "viabilidad": null,
+      "supuestos": [],
+      "calculadoEn": "2026-11-24T18:00:00.000Z"
+    }
+  ]
+}
+```
+
+- La **última estimación** de una siembra es la primera fila de ese `siembraId`.
+- El **historial** son todas las filas.
+- `motivos`, `viabilidad` y `supuestos` viajan como JSON; el DTO ya los entrega como objetos/arreglos.
+- No hay paginación todavía: devuelve todo el historial del usuario.
+
+**Errores:**
+
+| Código | Caso |
+|---|---|
+| 401 | Sin token o token inválido/expirado. |
+| 429 | Límite de 60 peticiones por minuto por IP. |
+| 500 | Error interno. |
+
+---
+
+## 9. Variables de entorno
 
 | Variable | Obligatoria | Valor de desarrollo | Notas |
 |---|---|---|---|
@@ -498,7 +555,7 @@ Devuelve el mismo DTO de `POST /siembras`, ordenado por `creadoEn` descendente. 
 
 ---
 
-## 9. Límites de peticiones
+## 10. Límites de peticiones
 
 | Ruta | Límite | Ventana |
 |---|---|---|
@@ -506,5 +563,6 @@ Devuelve el mismo DTO de `POST /siembras`, ordenado por `creadoEn` descendente. 
 | `/clima/actualizar` | 6 | 10 min |
 | `/clima` (lectura) | 60 | 1 min |
 | `/siembras` | 30 | 1 min |
+| `/estimaciones` | 60 | 1 min |
 
 Son límites **en memoria y por proceso**. No sustituyen un límite compartido entre instancias.

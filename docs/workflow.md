@@ -103,12 +103,12 @@ Desde `backend/`:
 
 ```bash
 npm run typecheck     # tsc --noEmit
-npm test              # 25 archivos de pruebas, sin red
+npm test              # 27 archivos de pruebas, sin red
 npm run build         # tsc
 npm run dev           # arranca en http://localhost:3000
 ```
 
-`npm test` encadena las pruebas de configuración, HTTP, seguridad, eventos, viabilidad, clima, estimación de costos, siembra, listeners, proyección y recomendaciones. No necesitan MySQL ni Internet: usan datos de ejemplo y dobles de prueba. Si una prueba de clima empieza a fallar por red, es un error de diseño de la prueba, no del entorno.
+`npm test` encadena las pruebas de configuración, HTTP, seguridad, eventos, viabilidad, clima, estimación de costos, siembra, listeners, proyección, recomendaciones y reporte persistido. No necesitan MySQL ni Internet: usan datos de ejemplo y dobles de prueba. Si una prueba de clima empieza a fallar por red, es un error de diseño de la prueba, no del entorno.
 
 Pruebas manuales mínimas del flujo base (con el backend y MySQL arriba):
 
@@ -256,4 +256,4 @@ No se usa `npm audit fix` ni `npm audit fix --force`: puede mover versiones fija
 - `main` contiene las Partes 0, 1, 2, 3 y 4, el Hito 1, 6-D (Clima Zonal), el pulido responsive y el arreglo de `takeUntilDestroyed`.
 - La documentación está consolidada en `.md`; los antiguos `.txt` se retiraron, salvo `docs/4-A-doc.txt`, que se integró en `history/branches/4-siembra.md` y queda pendiente de retirar.
 - Los archivos `backend/data/centa/raw/*.csv` pueden aparecer como modificados por diferencias de fin de línea (CRLF/LF). **No se stagean** y no forman parte de ningún cambio funcional.
-- La Parte 4 está cerrada; 5-A (listeners), 5-B (proyección) y 5-C (recomendaciones) están hechos. Faltan 5-D, 6-C, 6-E y la Parte 7.
+- Las Partes 4 y 5 están cerradas. Faltan 6-C (historial), 6-E (estimación real) y la Parte 7.

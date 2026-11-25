@@ -1,8 +1,8 @@
 # Historia — Parte 5: estimación y recomendaciones
 
 - **Periodo:** 24 de noviembre de 2026 en adelante
-- **Ramas:** `feat/5-a-listeners`, `feat/5-b-proyeccion`, `feat/5-c-recomendaciones`
-- **Estado:** 5-A, 5-B y 5-C implementados; 5-D pendiente.
+- **Ramas:** `feat/5-a-listeners`, `feat/5-b-proyeccion`, `feat/5-c-recomendaciones`, `feat/5-d-persistencia`
+- **Estado:** 5-A a 5-D implementados; Parte 5 cerrada.
 - **Fuente:** `git log` y el código en `main`.
 
 ## Resumen
@@ -12,6 +12,7 @@
 | 5-A | `feat/5-a-listeners` | Yona | #58 | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
 | 5-B | `feat/5-b-proyeccion` | Yona | #59 | Proyección pura de rendimiento e ingresos con F1/F4 y factores climáticos supuestos |
 | 5-C | `feat/5-c-recomendaciones` | Yona | #60 | Semáforo verde/amarillo/rojo con motivos y referencia CENTA |
+| 5-D | `feat/5-d-persistencia` | Yona | #61 | Modelo `Estimacion`, persistencia y `GET /estimaciones` |
 
 ---
 
@@ -126,17 +127,55 @@
 
 ---
 
+## 5-D — Persistencia y reporte
+
+**Rama:** `feat/5-d-persistencia` · **Responsable:** Yona · **25 de noviembre de 2026** · PR #61
+
+**Qué se hizo:**
+
+- Modelo `Estimacion` → `estimaciones` con `NivelRiesgo` y migración `20261125201048_add_estimaciones`.
+  - Guarda una instantánea: siembra, cultivo, estado, área, fecha, condición, proyección, recomendación, motivos, viabilidad y supuestos.
+  - Índices por (`usuarioId`, `calculadoEn`) y (`siembraId`, `calculadoEn`).
+- `reporte.service.ts`: `guardarEstimacion` inserta una fila por cálculo; `listarEstimaciones` devuelve el historial del usuario.
+- `reporte.dto.ts`: convierte `Decimal`, fechas y JSON al contrato público.
+- `estimaciones.routes.ts`: `GET /estimaciones` con `requireAuth`; solo el dueño.
+- `recalculo.ts`: después de proyectar y recomendar, guarda el reporte y registra su `id` en el log.
+- `index.ts`: monta `/estimaciones` con límite de 60 peticiones/minuto.
+- Pruebas: 4 casos de DTO y 3 HTTP (200/401/500).
+
+**Decisiones MVP:**
+
+1. **Una fila por cálculo.** El historial son todas las filas; la última estimación es la más reciente de cada `siembraId`.
+2. **Instantánea, no referencia viva.** Se guardan cultivo, área, fecha, condición y proyección para que el reporte no cambie si la siembra o el clima cambian después.
+3. **`distritoId` sin FK.** Es un snapshot; si el catálogo cambia, el reporte histórico sigue legible.
+4. **Sin paginación.** `GET /estimaciones` devuelve todo el historial del usuario; suficiente para el MVP.
+5. **La persistencia no bloquea el evento.** Si guardar falla, el listener lo registra y continúa.
+
+**Verificación:** `npm run typecheck`, `npm run pruebas:reporte` (4/4), `npm run pruebas:estimaciones-http` (3/3), `npm test` (27 archivos), `npm run build` y `npx prisma migrate dev --name add_estimaciones` aplicado sobre MySQL local.
+
+**Pendientes que deja:**
+
+- 6-E: mostrar la última estimación en el dashboard.
+- 6-C: vista de historial.
+- Paginación de `GET /estimaciones` si el historial crece.
+- Prueba de integración real de guardar/listar con MySQL y un usuario verificado.
+
+---
+
 ## Archivos compartidos
 
 | Archivo | Punto | Riesgo |
 |---|---|---|
 | `backend/src/index.ts` | 5-A | Registro de listeners al arrancar. |
-| `backend/package.json` | 5-A / 5-B / 5-C | Cadena de `npm test`. |
+| `backend/package.json` | 5-A a 5-D | Cadena de `npm test`. |
+| `backend/prisma/schema.prisma` | 5-D | Modelo `Estimacion` y `NivelRiesgo`. |
+| `backend/prisma/migrations/` | 5-D | Migración `add_estimaciones`. |
+| `backend/src/index.ts` | 5-A / 5-D | Listeners y ruta `/estimaciones`. |
 
 ---
 
 ## Qué sigue
 
-**5-D — Persistencia y reporte:** guardar la proyección y la recomendación, y exponerlas con `requireAuth`.
+**6-E — Estimación real en el dashboard:** reemplazar el panel vacío por la última estimación persistida.
 
-**Después:** 6-E (estimación real en el dashboard) y 6-C (historial).
+**Después:** 6-C (historial) y la Parte 7 (despliegue).
