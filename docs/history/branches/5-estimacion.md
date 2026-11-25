@@ -11,7 +11,7 @@
 |---|---|---|---|---|
 | 5-A | `feat/5-a-listeners` | Yona | #58 | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
 | 5-B | `feat/5-b-proyeccion` | Yona | #59 | Proyección pura de rendimiento e ingresos con F1/F4 y factores climáticos supuestos |
-| 5-C | `feat/5-c-recomendaciones` | Yona | por abrir | Semáforo verde/amarillo/rojo con motivos y referencia CENTA |
+| 5-C | `feat/5-c-recomendaciones` | Yona | #60 | Semáforo verde/amarillo/rojo con motivos y referencia CENTA |
 
 ---
 
@@ -93,7 +93,7 @@
 
 ## 5-C — Recomendaciones
 
-**Rama:** `feat/5-c-recomendaciones` · **Responsable:** Yona · **24 de noviembre de 2026** · PR por abrir
+**Rama:** `feat/5-c-recomendaciones` · **Responsable:** Yona · **24 de noviembre de 2026** · PR #60
 
 **Qué se hizo:**
 
