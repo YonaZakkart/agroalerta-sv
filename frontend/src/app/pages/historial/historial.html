@@ -1,0 +1,75 @@
+<section class="historial">
+  <header class="historial__cabecera">
+    <div>
+      <h1>Historial de evaluaciones</h1>
+      <p>Tus siembras y la última estimación calculada para cada una.</p>
+    </div>
+    <a routerLink="/siembra" class="btn-primary">Registrar siembra</a>
+  </header>
+
+  @if (error()) {
+  <div class="alerta alerta-error" role="alert">
+    <p>No se pudo cargar el historial.</p>
+    <button type="button" class="btn-primary" (click)="cargar()">Reintentar</button>
+  </div>
+  } @else if (cargando()) {
+  <p class="vacio" role="status" aria-live="polite">Cargando historial...</p>
+  } @else if (items().length === 0) {
+  <div class="vacio">
+    <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+    <p>Aún no tienes siembras registradas</p>
+    <span>Registra una siembra para que el sistema calcule rendimiento, ingreso y recomendación.</span>
+    <a routerLink="/siembra" class="btn-primary">Registrar siembra</a>
+  </div>
+  } @else {
+  <div class="lista">
+    @for (item of items(); track item.siembra.id) {
+    <article class="item">
+      <header class="item__cabecera">
+        <div>
+          <h2>{{ etiquetaCultivo(item.siembra.cultivo) }}</h2>
+          <p>{{ item.siembra.distrito.nombre }} · {{ item.siembra.areaMz | number: '1.0-2' }} mz</p>
+        </div>
+        <span class="estado">{{ etiquetaEstado(item.siembra.estado) }}</span>
+      </header>
+
+      <p class="meta">
+        Fecha: {{ item.siembra.fechaSiembra }} ·
+        Inversión declarada: {{ item.siembra.inversionTotalUsd | currency: 'USD' : 'symbol' : '1.0-2' }}
+      </p>
+
+      @if (item.estimacion; as e) {
+      <div class="riesgo" [attr.data-nivel]="e.nivelRiesgo">
+        <span class="riesgo-punto" aria-hidden="true"></span>
+        <div>
+          <strong>{{ e.titulo }}</strong>
+          <p>{{ e.mensaje }}</p>
+        </div>
+        <span class="riesgo-nivel">{{ e.nivelRiesgo }}</span>
+      </div>
+
+      <div class="metricas">
+        <div><span>Producción</span><strong>{{ e.produccionEstimadaQq | number: '1.0-2' }} qq</strong></div>
+        <div><span>Ingreso</span><strong>{{ e.ingresoEstimadoUsd | currency: 'USD' : 'symbol' : '1.0-2' }}</strong></div>
+        <div><span>Rendimiento</span><strong>{{ e.rendimientoEstimadoQqPorMz | number: '1.0-2' }} qq/mz</strong></div>
+        <div><span>Precio</span><strong>{{ e.precioVentaQqUsd | currency: 'USD' : 'symbol' : '1.0-2' }}/qq</strong></div>
+      </div>
+
+      <p class="meta">Calculado {{ e.calculadoEn | date: 'dd/MM/yyyy HH:mm' }} · Clima: {{ detalleClima(item) }}</p>
+
+      <details class="motivos">
+        <summary>¿Por qué esta recomendación?</summary>
+        <ul>
+          @for (motivo of e.motivos; track $index) { <li>{{ motivo }}</li> }
+        </ul>
+      </details>
+      } @else {
+      <p class="sin-estimacion">
+        Todavía no hay estimación para esta siembra. Se calcula al registrarla o cuando cambia el clima del distrito.
+      </p>
+      }
+    </article>
+    }
+  </div>
+  }
+</section>
