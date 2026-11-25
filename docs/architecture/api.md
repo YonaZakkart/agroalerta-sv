@@ -1,6 +1,6 @@
 # API del backend
 
-Contrato HTTP real al 14 de noviembre de 2026. Todas las rutas devuelven JSON. El sobre de error es siempre:
+Contrato HTTP real al 24 de noviembre de 2026. Todas las rutas devuelven JSON. El sobre de error es siempre:
 
 ```json
 { "error": "…", "detalles": "… o [ … ]" }
@@ -27,6 +27,8 @@ Contrato HTTP real al 14 de noviembre de 2026. Todas las rutas devuelven JSON. E
 | POST | `/clima/actualizar` | Bearer | Fuerza la actualización del clima. |
 
 Rutas inexistentes → 404 JSON. JSON mal formado → 400 JSON. Error no controlado → 500 genérico.
+
+**Sin endpoints de siembra todavía:** el frontend de 4-B llama a `POST /siembras`, pero la ruta se implementa en 4-D. Hasta entonces responde 404. La estimación de costos de 4-C es una función pura, no un endpoint.
 
 ---
 

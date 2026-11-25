@@ -103,12 +103,12 @@ Desde `backend/`:
 
 ```bash
 npm run typecheck     # tsc --noEmit
-npm test              # 18 archivos de pruebas, sin red
+npm test              # 19 archivos de pruebas, sin red
 npm run build         # tsc
 npm run dev           # arranca en http://localhost:3000
 ```
 
-`npm test` encadena las pruebas de configuración, HTTP, seguridad, eventos, viabilidad y clima. No necesitan MySQL ni Internet: usan datos de ejemplo y dobles de prueba. Si una prueba de clima empieza a fallar por red, es un error de diseño de la prueba, no del entorno.
+`npm test` encadena las pruebas de configuración, HTTP, seguridad, eventos, viabilidad, clima y estimación de costos. No necesitan MySQL ni Internet: usan datos de ejemplo y dobles de prueba. Si una prueba de clima empieza a fallar por red, es un error de diseño de la prueba, no del entorno.
 
 Pruebas manuales mínimas del flujo base (con el backend y MySQL arriba):
 
@@ -251,7 +251,7 @@ No se usa `npm audit fix` ni `npm audit fix --force`: puede mover versiones fija
 
 ## 9. Situación actual del repositorio
 
-- `main` contiene las Partes 0, 1 y 2, el Hito 1, la Parte 3 completa, 6-D (Clima Zonal), el pulido responsive y el arreglo de `takeUntilDestroyed`.
-- La documentación está consolidada en `.md`; los antiguos `.txt` se retiraron.
+- `main` contiene las Partes 0, 1, 2 y 3, el Hito 1, 6-D (Clima Zonal), el pulido responsive, el arreglo de `takeUntilDestroyed` y los puntos 4-A, 4-B y 4-C de la Parte 4.
+- La documentación está consolidada en `.md`; los antiguos `.txt` se retiraron, salvo `docs/4-A-doc.txt`, que se integró en `history/branches/4-siembra.md` y queda pendiente de retirar.
 - Los archivos `backend/data/centa/raw/*.csv` pueden aparecer como modificados por diferencias de fin de línea (CRLF/LF). **No se stagean** y no forman parte de ningún cambio funcional.
-- Las Partes 4 y 5, 6-C, 6-E y la Parte 7 siguen pendientes. La decisión D1 está aprobada, así que 4-A puede comenzar.
+- La Parte 4 sigue en curso: 4-D (endpoints y evento) es el siguiente. Las Partes 5, 6-C, 6-E y 7 siguen pendientes.

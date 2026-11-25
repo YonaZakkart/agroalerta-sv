@@ -142,7 +142,7 @@ Calcular la normal con un periodo más largo o con varias fuentes, y comparar. H
 
 ### 5.4 Historial de precios
 
-Guardar los precios de F3 y F4 con fecha para que la estimación use el precio vigente y se pueda auditar después.
+Guardar los precios de F3 y F4 con fecha para que la estimación use el precio vigente y se pueda auditar después. F3 ya lleva fuente y fecha en `backend/src/estimacion/referencia.ts`; falta F4 y un historial de versiones, no solo el valor actual.
 
 ---
 

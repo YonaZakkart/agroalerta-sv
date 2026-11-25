@@ -1,6 +1,6 @@
 # Pendientes abiertos
 
-- **Corte:** 14 de noviembre de 2026
+- **Corte:** 24 de noviembre de 2026
 - **Qué entra aquí:** lo que falta, lo que está bloqueado y lo que necesita una decisión del equipo.
 - **Qué NO entra aquí:** el plan ordenado (está en `continuacion.md`) ni las mejoras opcionales (están en `ideas.md`).
 
@@ -20,21 +20,25 @@ Cada pendiente indica **qué bloquea**, **quién decide** y **dónde está el de
 | D6 | ¿Se adopta Prettier? | Todo el código | No por ahora; el formato se respeta por archivo. | ⏳ Pendiente |
 | D7 | ¿Se acepta el alias `sorgo` para `cultivo`? | API de viabilidad | No; CENTA lo llama sorgo y el proyecto maicillo. Si se acepta, va en la ruta. | ⏳ Pendiente |
 | D8 | ¿Se cambia `GET /auth/verificar/:token` por `POST`? | Seguridad | Sí, antes de producción: un GET queda en historiales y logs. | ⏳ Pendiente |
+| D9 | ¿Se define el peso de una bolsa de semilla? | 4-D, estimación en `BOLSAS` | Declarar un supuesto con fuente o restringir la unidad a `LIBRAS`. 4-C usa libras y no convierte. | ⏳ Pendiente |
+| D10 | ¿Se guarda `inversionEstimadaUsd` en `Siembra`? | 4-D / 5-B | No por ahora: 4-C no persiste. Si se guarda, es otra migración. | ⏳ Pendiente |
 
-**D1–D4 quedaron aprobadas el 14 de noviembre de 2026** con la propuesta indicada. D1 desbloquea la Parte 4: 4-A puede comenzar porque el modelo ya incluye `distritoId`; el selector de distrito se implementa en 4-B. El detalle de ejecución está en `continuacion.md`.
+**D1–D4 quedaron aprobadas el 14 de noviembre de 2026** con la propuesta indicada. D1 desbloqueó la Parte 4: 4-A, 4-B y 4-C ya están hechos; el siguiente es 4-D. El detalle de ejecución está en `continuacion.md` y en `history/branches/4-siembra.md`.
 
 ---
 
-## 2. Datos de referencia que no existen
+## 2. Datos de referencia
 
-Bloquean la estimación. Deben tener **fuente, fecha, formato y contrato**.
+F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con precios del ciclo 2022-2023. Deben tener **fuente, fecha, formato y contrato**.
 
 | Clave | Dato | Uso | Estado |
 |---|---|---|---|
 | **F1** | Rendimiento estándar por cultivo (maíz, frijol, maicillo) en qq/mz | 5-B | ❌ No conseguido |
 | **F2** | Umbrales de lluvia y ventanas de primera/postrera | 3-B | ⚠️ Parcial: solo supuestos |
-| **F3** | Precios de insumos, dosis por manzana, jornales, alquiler, maquinaria y riego | 4-C | ❌ No conseguido |
+| **F3** | Precios de insumos, dosis por manzana, jornales, alquiler, maquinaria y riego | 4-C | ✅ Obtenido (MAG 2022-2023); revisar vigencia |
 | **F4** | Precio de venta por quintal | 5-B | ❌ No conseguido |
+
+**F3:** contrato en `data/Info_Datos_Precios.md`; implementación en `backend/src/estimacion/referencia.ts`. Los precios son promedios del ciclo 2022-2023, no una cotización actual. Actualizarlos a un ciclo más reciente sigue pendiente.
 
 **Fuentes candidatas:** guías técnicas de CENTA por cultivo y publicaciones de precios del MAG.
 
@@ -99,6 +103,8 @@ Bloquean la estimación. Deben tener **fuente, fecha, formato y contrato**.
 | F-6 | Pruebas de componentes y E2E | Solo hay pruebas de servicios, guards e interceptor. |
 | F-7 | Prueba en teléfono real, Safari/iOS y lector de pantalla | No se ha hecho. |
 | F-8 | Decidir el guard inverso y la validación de vigencia | `invitadoGuard` y descarte de tokens vencidos ya existen; falta revisar el caso de token vencido al entrar al dashboard. |
+| F-9 | Mostrar el estimado de inversión en el formulario de siembra | Depende de 4-D o de una tabla compartida; 4-C ya tiene los precios, pero el formulario sigue mostrando el aviso. |
+| F-10 | Enlace a `/siembra` en el sidebar | La ruta y el formulario existen desde 4-B, pero no hay entrada de navegación. |
 
 ---
 
@@ -113,6 +119,8 @@ Bloquean la estimación. Deben tener **fuente, fecha, formato y contrato**.
 | A5 | Job y cerrojo compartidos | El job y el cerrojo funcionan en un solo proceso. |
 | A6 | Validación de longitud de `DUI_PEPPER` | Ya se valida el mínimo de 32 al arrancar (PR #44); confirmar que la documentación lo refleja. |
 | A7 | Separar `app` de `listen` | Necesario para pruebas de API sin abrir puerto (Parte 7). |
+| A8 | Endpoint de estimación de costos | 4-C es una función pura; falta exponerla o integrarla en 4-D para que el formulario muestre el estimado. |
+| A9 | Validaciones de negocio de 4-D | `cantidadSemilla` y `unidadSemilla` juntas, suma del desglose ≤ total, área > 0, fecha coherente con estado, distrito existente y cultivo válido. |
 
 ---
 
@@ -122,8 +130,10 @@ Bloquean la estimación. Deben tener **fuente, fecha, formato y contrato**.
 |---|---|---|
 | DOC1 | Actualizar `docs/data/Info_Datos_Clima.md` (`EXCESO`) | Requiere acuerdo del equipo. |
 | DOC2 | Actualizar `docs/data/Info_Datos_CENTA.md` (coordenadas) | Requiere acuerdo del equipo. |
-| DOC3 | Registrar cada punto cerrado en `history/branches/` | Regla de mantenimiento. |
+| DOC3 | Registrar cada punto cerrado en `history/branches/` | Regla de mantenimiento. 4-A, 4-B y 4-C ya están en `4-siembra.md`. |
 | DOC4 | Revisar este archivo en cada cierre de hito | Lo que se cumple se elimina y queda en el historial. |
+| DOC5 | Retirar `docs/4-A-doc.txt` | Su contenido se integró en `history/branches/4-siembra.md`; el `.txt` contradice la regla de que los `.md` son la única fuente viva. |
+| DOC6 | Actualizar F3 a un ciclo más reciente | Hoy los precios son del ciclo 2022-2023; ver `data/Info_Datos_Precios.md`. |
 
 ---
 
@@ -134,5 +144,7 @@ Para evitar confusiones:
 - **La verificación simulada** es una decisión consciente, no un olvido.
 - **La estimación vacía** en el dashboard es correcta hasta que exista la Parte 5.
 - **El clima «Sin evaluar»** es un estado válido fuera de época.
+- **Los precios F3 de 2022-2023** son un dato oficial con su fecha; lo que falta es actualizarlos, no inventarlos.
+- **La estimación sin costos indirectos** es una decisión de 4-C: es un piso de costos directos, no el total del MAG.
 - **Los CSV crudos marcados como modificados** son ruido de fin de línea, no un cambio.
 - **La ausencia de lint** es una decisión del equipo, no un fallo de configuración.

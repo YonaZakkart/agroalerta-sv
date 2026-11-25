@@ -80,6 +80,24 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 - **Causa:** casi siempre es el puerto 3306 ocupado (ver 1.3), no el código.
 - **Solución:** revisar `docker ps`, `netstat`/`ss` y la cadena `DATABASE_URL` antes de tocar Prisma.
 
+### 2.5 `npm test` se corta en `pruebas:http` en Windows
+
+- **Síntoma:** `npm run pruebas:http` imprime sus casos y termina con `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 94`; como `npm test` encadena con `&&`, la cadena se corta.
+- **Causa:** `http-errores.pruebas.ts` llama `process.exit()` justo después de `servidor.close()`; en Windows eso dispara la aserción de libuv. No es un fallo del código de la prueba.
+- **Solución:** correr los grupos por separado en Windows. La corrección (`process.exitCode` en lugar de `process.exit`) está pendiente en un PR aparte; en Linux la cadena corre completa.
+
+### 2.6 El editor guarda una versión vieja de `schema.prisma`
+
+- **Síntoma:** el editor muestra un schema sin el último bloque, o al guardar avisa “El contenido del archivo es más reciente”; `prisma migrate dev` dice “in sync” y no crea la migración.
+- **Causa:** después de cambiar de rama, el editor conserva una copia en memoria desactualizada.
+- **Solución:** elegir “Revertir”/“Comparar” (no “Sobrescribir”), cerrar las pestañas de `schema.prisma`, `git restore backend/prisma/schema.prisma`, reabrir y editar. Antes de migrar, `git diff --stat backend/prisma/schema.prisma` debe mostrar solo inserciones. Si `migrate dev` no dice “Applying migration …”, la migración nueva no se creó.
+
+### 2.7 Repositorio dentro de OneDrive
+
+- **Síntoma:** Git ve copias viejas, bloqueos o cambios que no se guardaron.
+- **Causa:** OneDrive sincroniza en segundo plano y puede interferir con `.git`.
+- **Solución:** mover el repositorio fuera de OneDrive (por ejemplo `C:\dev\agroalerta-sv`) o pausar la sincronización mientras se trabaja.
+
 ---
 
 ## 3. Frontend
@@ -193,6 +211,11 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 
 - **Regla:** los cambios de fin de línea en `backend/data/centa/raw/*.csv` no forman parte de ninguna tarea. `git restore` y seguir.
 
+### 5.6 `docs/4-A-doc.txt` sigue en el repositorio
+
+- **Causa:** la documentación de 4-A se entregó como `.txt` después de que el proyecto acordara que los `.md` son la única fuente viva.
+- **Solución:** su contenido se integró en `history/branches/4-siembra.md`. El `.txt` queda pendiente de retirar (DOC5 en `tasks/pendiente.md`); no usarlo como fuente nueva.
+
 ---
 
 ## 6. Seguridad y dependencias
@@ -211,3 +234,22 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 
 - **Riesgo:** devuelve el token de verificación en la respuesta del registro.
 - **Solución:** en producción debe estar en `false` (o ausente). El flujo real de correo sigue pendiente.
+
+---
+
+## 7. Datos y precios
+
+### 7.1 Los precios F3 son del ciclo 2022-2023
+
+- **Causa:** el informe más reciente que se consiguió del MAG es el de costos de producción 2022-2023, publicado el 21 de febrero de 2024.
+- **Solución:** la fecha viaja en cada línea de la estimación. No presentar el total como cotización actual; actualizar `backend/src/estimacion/referencia.ts` cuando haya un informe más nuevo.
+
+### 7.2 El riego de 4-C es un supuesto
+
+- **Causa:** el informe del MAG solo trae cuota de agua para arroz bajo riego; no hay dato oficial para maíz, frijol ni maicillo.
+- **Solución:** la línea de riego se marca `SUPUESTO` y lleva su nota. No cambiarla a `OFICIAL` sin una fuente para los tres cultivos.
+
+### 7.3 El estimado no incluye costos indirectos ni transporte de cosecha
+
+- **Causa:** 4-C cubre costos directos y alquiler; administración, imprevistos, intereses y transporte interno quedan fuera.
+- **Solución:** no comparar el total de la estimación con el “costo total” del MAG como si fueran equivalentes. El detalle está en `data/Info_Datos_Precios.md`.
