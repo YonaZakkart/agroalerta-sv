@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–5 cerradas, Hito 1 cerrado, 6-D y 6-E implementados. Siguiente: 6-C y Parte 7.
+- **Estado del proyecto:** Partes 0–5 cerradas, Hito 1 cerrado y 6-C, 6-D y 6-E implementados. Siguiente: Parte 7.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -120,7 +120,7 @@
 
 ### 6-C — Historial de evaluaciones
 
-**Depende de:** 4-D y 5-D. **Tamaño:** M.
+**Depende de:** 4-D y 5-D (listos). **Estado:** ✅ hecho. **Tamaño:** M.
 
 - Vista nueva con la lista de siembras y sus estimaciones.
 - Estados de carga, vacío y error; sin datos de ejemplo.
@@ -173,10 +173,9 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 6-C (historial).
-2. Parte 7.
+1. Parte 7 (cierre y despliegue).
 
-La Parte 5 está cerrada y 6-E ya muestra la estimación real en el dashboard. Queda 6-C y el cierre.
+Las Partes 4 y 5 están cerradas; 6-C, 6-D y 6-E están implementados. Queda la Parte 7.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

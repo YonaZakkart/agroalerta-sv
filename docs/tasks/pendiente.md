@@ -99,7 +99,6 @@ F1 y F4 ya existen (MAG 2022-2023); F2 sigue parcial. Los factores climáticos d
 
 | # | Pendiente | Detalle |
 |---|---|---|
-| F-1 | 6-C Historial | Depende de 4-D y 5-D. |
 | F-3 | Vista de Configuración | Parte de 6-D; solo lectura salvo decisión contraria. |
 | F-4 | Atribución de Open-Meteo y GeoNames | Requisito de licencia; el backend ya devuelve la de Open-Meteo. |
 | F-5 | Favicon y logotipo propios | Hoy se usa el favicon por defecto de Angular. |

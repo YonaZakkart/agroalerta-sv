@@ -35,6 +35,11 @@ export const routes: Routes = [
         title: 'Registrar siembra | AgroAlerta',
         loadComponent: () => import('./pages/siembra/siembra').then((m) => m.Siembra),
       },
+      {
+        path: 'historial',
+        title: 'Historial | AgroAlerta',
+        loadComponent: () => import('./pages/historial/historial').then((m) => m.Historial),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

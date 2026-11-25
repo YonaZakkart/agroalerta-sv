@@ -1,7 +1,7 @@
 # AgroAlerta Morazán
 
 Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador. Combina la viabilidad de cultivo por distrito (referencia CENTA), la condición climática por distrito (Open-Meteo) y los datos de siembra del agricultor para estimar rendimiento, riesgo y recomendaciones.
-Avance actual: autenticación, catálogo, viabilidad de cultivo, clima por distrito, siembra y listeners de estimación en el backend; login, registro, dashboard y formulario de siembra en el frontend. Las Partes 4 y 5 están cerradas: siembra, listeners, proyección, recomendaciones y reporte persistido. El dashboard ya muestra la estimación real; faltan el historial (6-C) y el despliegue. El detalle está en [`docs/INDEX.md`](docs/INDEX.md).
+Avance actual: autenticación, catálogo, viabilidad de cultivo, clima por distrito, siembra y listeners de estimación en el backend; login, registro, dashboard y formulario de siembra en el frontend. Las Partes 4 y 5 están cerradas: siembra, listeners, proyección, recomendaciones y reporte persistido. El dashboard ya muestra la estimación real y el historial está disponible; falta el despliegue. El detalle está en [`docs/INDEX.md`](docs/INDEX.md).
 
 ## Stack
 

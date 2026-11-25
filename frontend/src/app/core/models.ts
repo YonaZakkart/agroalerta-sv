@@ -195,3 +195,36 @@ export const CULTIVO_A_ENUM: Record<Cultivo, CultivoSiembra> = {
   frijol: 'FRIJOL',
   maicillo: 'MAICILLO',
 };
+
+// ---- Siembra registrada (GET /siembras, 4-D). Snapshot que usa el historial (6-C).
+export interface Siembra {
+  id: number;
+  distritoId: number;
+  distrito: Distrito;
+  cultivo: CultivoSiembra;
+  estado: EstadoSiembra;
+  fechaSiembra: string; // AAAA-MM-DD
+  areaMz: number;
+  cantidadSemilla: number | null;
+  unidadSemilla: UnidadSemilla | null;
+  alquilaTerreno: boolean;
+  usaMaquinaria: boolean;
+  usaRiego: boolean;
+  inversionTotalUsd: number;
+  costoSemillaUsd: number | null;
+  costoAlquilerUsd: number | null;
+  costoMaquinariaUsd: number | null;
+  costoRiegoUsd: number | null;
+  costoOtrosUsd: number | null;
+  creadoEn: string;
+}
+
+export interface RespuestaSiembras {
+  siembras: Siembra[];
+}
+
+export interface ItemHistorial {
+  siembra: Siembra;
+  /** Última estimación de esa siembra; null si todavía no se ha calculado. */
+  estimacion: Estimacion | null;
+}

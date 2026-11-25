@@ -27,6 +27,7 @@ main.ts
 | `/` → `/dashboard` | `Shell` + `Dashboard` | `authGuard` | Client |
 | `/clima-zonal` | `Shell` + `ClimaZonal` | `authGuard` | Client |
 | `/siembra` | `Shell` + `Siembra` | `authGuard` | Client |
+| `/historial` | `Shell` + `Historial` | `authGuard` | Client |
 | `**` | redirige a `''` | — | Client |
 
 - `authGuard`: si no hay sesión vigente, redirige a `/login`.
@@ -51,6 +52,7 @@ main.ts
 | `clima.service.ts` | `GET /clima/distritos/:id` y `POST /clima/actualizar`. |
 | `siembra.service.ts` | `POST /siembras` (4-B; el endpoint existe desde 4-D). |
 | `estimacion.service.ts` | `GET /estimaciones` (6-E); historial del usuario. |
+| `historial.service.ts` | Combina `GET /siembras` y `GET /estimaciones` para la vista de historial. |
 | `errores.ts` | `mensajesDeError()` y timeout HTTP. |
 
 ### Sesión
@@ -128,6 +130,13 @@ Panel de acceso para login y registro: lado visual con degradado, pestañas y pr
 - Maneja carga y error por distrito, con reintento individual.
 - `null` se muestra como “Sin evaluar”, no como error.
 
+### `Historial` (6-C)
+
+- Carga siembras y estimaciones con `HistorialService`.
+- Muestra una tarjeta por siembra con su última estimación: semáforo, producción, ingreso, rendimiento, precio, motivos y clima usado.
+- Si una siembra no tiene estimación, muestra el aviso correspondiente.
+- Estados de carga, error con reintento y vacío con enlace a `/siembra`. Sin datos de ejemplo.
+
 ### `Siembra` (4-B)
 
 - Formulario reactivo con dos grupos: agronómico (cultivo, distrito, estado, fecha y área) y técnico (alquiler, maquinaria, riego, inversión total y desglose).
@@ -170,7 +179,7 @@ Los formularios muestran los mensajes en pantalla; no se usan `alert()`.
 ## 8. Pruebas
 
 - Vitest vía `ng test`.
-- 10 archivos y 31 casos: `app.spec.ts`, `auth.guard.spec.ts`, `auth.interceptor.spec.ts`, `auth.service.spec.ts`, `estimacion.service.spec.ts`, `errores.spec.ts`, `perfil.service.spec.ts`, `token.spec.ts`, `hosts.spec.ts` y `puerto.spec.ts`.
+- 11 archivos y 33 casos: `app.spec.ts`, `auth.guard.spec.ts`, `auth.interceptor.spec.ts`, `auth.service.spec.ts`, `estimacion.service.spec.ts`, `historial.service.spec.ts`, `errores.spec.ts`, `perfil.service.spec.ts`, `token.spec.ts`, `hosts.spec.ts` y `puerto.spec.ts`.
 - Se prueban servicios, guards, interceptor y utilidades; no hay E2E.
 - No dependen de red ni de almacenamiento real.
 
@@ -184,5 +193,5 @@ Los formularios muestran los mensajes en pantalla; no se usan `alert()`.
 - El SSR no se usa para datos.
 - Faltan pruebas de componentes y E2E.
 - El formulario de siembra no tiene prueba de componente, enlace en el sidebar ni estimado de inversión visible.
-- `6-C` (Historial) y la vista de Configuración siguen pendientes; 6-E ya está en el dashboard.
+- La vista de Configuración sigue pendiente; 6-C y 6-E ya están implementados.
 - La atribución de Open-Meteo debe mostrarse en la interfaz (pendiente).
