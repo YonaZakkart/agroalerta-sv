@@ -14,7 +14,7 @@
 | 6-A fix | `fix/6-a-styles-duplicado` | Bloque CSS duplicado eliminado |
 | 6-B | `feat/6-b-layout-dashboard` | Shell con perfil y dashboard con viabilidad real |
 | 6-D | `feat/hito2-clima-zonal` (PR #48) | Vista Clima Zonal y clima en el encabezado |
-| 6-E | `feat/6-e-dashboard-estimacion` | Estimación real en el dashboard |
+| 6-E | `feat/6-e-dashboard-estimacion` | PR #62 | Estimación real en el dashboard |
 | Pulido | `feat/frontend-responsive-polish` (PR #49) | Tokens de espaciado y colores semánticos |
 | Fix | `fix/ng0203-takeuntil-destroyed` (PR #50) | `DestroyRef` en `takeUntilDestroyed` |
 
@@ -115,7 +115,7 @@ La vista muestra condición, nivel de sequía, días secos, acumulado, normal, r
 
 ## 6-E — Estimación real en el dashboard
 
-**Rama:** `feat/6-e-dashboard-estimacion` · **Responsable:** Yona · **25 de noviembre de 2026** · PR por abrir
+**Rama:** `feat/6-e-dashboard-estimacion` · **Responsable:** Yona · **25 de noviembre de 2026** · PR #62
 
 **Qué se hizo:**
 
