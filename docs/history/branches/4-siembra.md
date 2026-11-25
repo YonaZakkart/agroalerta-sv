@@ -12,7 +12,7 @@
 | 4-A | `feat/4-a-modelo-siembra` | Requeno | #53 | Modelo `Siembra`, tres enums y migración `add_siembras` |
 | 4-A docs | `docs/4-a-modelo-siembra` | Requeno | #54 | Documentación en `.txt`; se integra a `.md` en esta rama |
 | 4-B | `feat/4-b-formulario-siembra` | Josué | #55 | Ruta `/siembra`, servicio y formulario Angular |
-| 4-C | `feat/4-c-estimacion-costos` | Yona | por abrir | Tabla F3, función pura y pruebas |
+| 4-C | `feat/4-c-estimacion-costos` | Yona | #56 | Tabla F3, función pura y pruebas |
 
 **Decisión previa:** D1 (14/11/2026) aprobó que la siembra permita elegir el distrito, con el del perfil como valor inicial. No se hereda el distrito que se explora en el dashboard.
 
