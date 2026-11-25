@@ -4,9 +4,9 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
   importFileExtension = ""
 }
 
@@ -16,19 +16,20 @@ datasource db {
 
 // Parte 1 — Autenticación
 model Usuario {
-  id             Int      @id @default(autoincrement())
-  nombres        String   @db.VarChar(100)
-  apellidos      String   @db.VarChar(100)
-  correo         String   @unique @db.VarChar(255)
-  contrasenaHash String   @map("contrasena_hash") @db.VarChar(255)
-  duiHash        String   @unique @map("dui_hash") @db.Char(64)
-  distritoId     Int      @map("distrito_id")
-  distrito       Distrito @relation(fields: [distritoId], references: [id])
-  verificado     Boolean  @default(false)
-  tokenVerificacion       String?   @unique @map("token_verificacion") @db.VarChar(64)
-  tokenVerificacionExpira DateTime? @map("token_verificacion_expira")
-  fechaRegistro  DateTime @default(now()) @map("fecha_registro")
-  siembras       Siembra[]
+  id                      Int          @id @default(autoincrement())
+  nombres                 String       @db.VarChar(100)
+  apellidos               String       @db.VarChar(100)
+  correo                  String       @unique @db.VarChar(255)
+  contrasenaHash          String       @map("contrasena_hash") @db.VarChar(255)
+  duiHash                 String       @unique @map("dui_hash") @db.Char(64)
+  distritoId              Int          @map("distrito_id")
+  distrito                Distrito     @relation(fields: [distritoId], references: [id])
+  verificado              Boolean      @default(false)
+  tokenVerificacion       String?      @unique @map("token_verificacion") @db.VarChar(64)
+  tokenVerificacionExpira DateTime?    @map("token_verificacion_expira")
+  fechaRegistro           DateTime     @default(now()) @map("fecha_registro")
+  siembras                Siembra[]
+  estimaciones            Estimacion[]
 
   @@map("usuarios")
 }
@@ -36,7 +37,7 @@ model Usuario {
 // Parte 2 — Viabilidad (datos de referencia CENTA)
 enum TipoCapa {
   POTENCIAL // valor mayor = mejor
-  RIESGO    // valor mayor = peor
+  RIESGO // valor mayor = peor
 }
 
 model Municipio {
@@ -49,13 +50,13 @@ model Municipio {
 
 model Distrito {
   // Código CENTA (Id_Muni de los exports, 1301 a 1326). Llave natural, sin autoincrement.
-  id                Int         @id
-  nombre            String      @db.VarChar(100)
-  nombreNormalizado String      @unique @map("nombre_normalizado") @db.VarChar(100)
-  municipioId       Int         @map("municipio_id")
-  latitud           Decimal?    @db.Decimal(9, 6)
-  longitud          Decimal?    @db.Decimal(9, 6)
-  municipio         Municipio   @relation(fields: [municipioId], references: [id])
+  id                Int                @id
+  nombre            String             @db.VarChar(100)
+  nombreNormalizado String             @unique @map("nombre_normalizado") @db.VarChar(100)
+  municipioId       Int                @map("municipio_id")
+  latitud           Decimal?           @db.Decimal(9, 6)
+  longitud          Decimal?           @db.Decimal(9, 6)
+  municipio         Municipio          @relation(fields: [municipioId], references: [id])
   areas             AreaClase[]
   usuarios          Usuario[]
   condicion         CondicionDistrito?
@@ -134,7 +135,6 @@ model CondicionDistrito {
   @@map("condiciones_distrito")
 }
 
-
 // ------------------------------------------------------------
 // Parte 4 — Siembra (4-A)
 // ------------------------------------------------------------
@@ -180,9 +180,62 @@ model Siembra {
 
   creadoEn DateTime @default(now()) @map("creado_en")
 
-  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
-  distrito Distrito @relation(fields: [distritoId], references: [id])
+  usuario      Usuario      @relation(fields: [usuarioId], references: [id])
+  distrito     Distrito     @relation(fields: [distritoId], references: [id])
+  estimaciones Estimacion[]
 
   @@index([usuarioId, creadoEn])
   @@map("siembras")
+}
+
+// ------------------------------------------------------------
+// Parte 5 — Estimación (5-D)
+// ------------------------------------------------------------
+enum NivelRiesgo {
+  VERDE
+  AMARILLO
+  ROJO
+}
+
+// Reporte histórico de una estimación. Guarda una instantánea de la siembra,
+// la proyección de 5-B y la recomendación de 5-C para no recalcular al leer.
+model Estimacion {
+  id         Int @id @default(autoincrement())
+  siembraId  Int @map("siembra_id")
+  usuarioId  Int @map("usuario_id")
+  // Snapshot del distrito: no FK para conservar el reporte aunque cambie el catálogo.
+  distritoId Int @map("distrito_id")
+
+  cultivo      Cultivo
+  estado       EstadoSiembra
+  areaMz       Decimal       @map("area_mz") @db.Decimal(8, 2)
+  fechaSiembra DateTime      @map("fecha_siembra") @db.Date
+
+  condicion     CondicionClima?
+  nivelSequia   NivelSequia?
+  fechaDatos    DateTime?       @map("fecha_datos") @db.Date
+  actualizadoEn DateTime?       @map("actualizado_en")
+
+  rendimientoBaseQqPorMz     Decimal @map("rendimiento_base_qq_por_mz") @db.Decimal(8, 2)
+  factorClimatico            Decimal @map("factor_climatico") @db.Decimal(5, 3)
+  rendimientoEstimadoQqPorMz Decimal @map("rendimiento_estimado_qq_por_mz") @db.Decimal(8, 2)
+  produccionEstimadaQq       Decimal @map("produccion_estimada_qq") @db.Decimal(12, 2)
+  precioVentaQqUsd           Decimal @map("precio_venta_qq_usd") @db.Decimal(10, 2)
+  ingresoEstimadoUsd         Decimal @map("ingreso_estimado_usd") @db.Decimal(12, 2)
+
+  nivelRiesgo NivelRiesgo @map("nivel_riesgo")
+  titulo      String      @db.VarChar(100)
+  mensaje     String      @db.VarChar(500)
+  motivos     Json
+  viabilidad  Json?
+  supuestos   Json
+
+  calculadoEn DateTime @default(now()) @map("calculado_en")
+
+  siembra Siembra @relation(fields: [siembraId], references: [id])
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, calculadoEn])
+  @@index([siembraId, calculadoEn])
+  @@map("estimaciones")
 }

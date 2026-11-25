@@ -5,6 +5,7 @@ import type { DecimalLike } from "../siembra/siembra.dto";
 import { proyectarEstimacion } from "./proyeccion";
 import { recomendar } from "./recomendacion";
 import { leerViabilidadReferencia } from "./viabilidad-referencia";
+import { guardarEstimacion } from "./reporte.service";
 
 // Recálculo de la estimación (5-A/5-B). Los listeners llaman a estas funciones
 // cuando hay una siembra nueva o cambia la condición de un distrito.
@@ -95,10 +96,11 @@ async function solicitarCalculo(contexto: ContextoEstimacion): Promise<void> {
   const proyeccion = proyectarEstimacion(contexto);
   const viabilidad = await leerViabilidadReferencia(contexto.distritoId, contexto.cultivo);
   const recomendacion = recomendar(proyeccion, viabilidad);
+  const estimacion = await guardarEstimacion(proyeccion, recomendacion);
   console.log(
-    `[estimacion] siembra ${proyeccion.siembraId}: riesgo ${recomendacion.nivel} ` +
-      `(${recomendacion.titulo}); ${proyeccion.produccionEstimadaQq} qq, ` +
-      `ingreso estimado $${proyeccion.ingresoEstimadoUsd.toFixed(2)}. ` +
+    `[estimacion] reporte ${estimacion.id} de la siembra ${proyeccion.siembraId}: ` +
+      `riesgo ${recomendacion.nivel} (${recomendacion.titulo}); ` +
+      `${proyeccion.produccionEstimadaQq} qq, ingreso estimado $${proyeccion.ingresoEstimadoUsd.toFixed(2)}. ` +
       `Motivos: ${recomendacion.motivos.join(" | ")}`,
   );
 }

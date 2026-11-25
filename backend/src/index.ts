@@ -8,6 +8,7 @@ import { distritosRouter } from "./viabilidad/distritos.routes";
 import { climaRouter } from "./clima/clima.routes";
 import { siembraRouter } from "./siembra/siembra.routes";
 import { iniciarListenersEstimacion } from "./estimacion/registro";
+import { estimacionesRouter } from "./estimacion/estimaciones.routes";
 import { actualizarClima } from "./clima/orquestador";
 import { iniciarJobClima, leerIntervaloJob } from "./clima/job";
 import type { JobClima } from "./clima/job";
@@ -53,6 +54,7 @@ const limitarClima = crearLimitador({
 });
 const limitarLecturaClima = crearLimitador({ limite: 60, ventanaMs: 60_000 });
 const limitarSiembras = crearLimitador({ limite: 30, ventanaMs: 60_000 });
+const limitarEstimaciones = crearLimitador({ limite: 60, ventanaMs: 60_000 });
 
 app.use("/auth/login", limitarAcceso);
 app.use("/auth/registro", limitarAcceso);
@@ -60,6 +62,7 @@ app.use("/auth/reenviar-verificacion", limitarAcceso);
 app.use("/clima/actualizar", limitarClima);
 app.use("/clima", limitarLecturaClima);
 app.use("/siembras", limitarSiembras);
+app.use("/estimaciones", limitarEstimaciones);
 
 // /health/live solo confirma que el proceso responde (para reinicios).
 // /health comprueba la base y devuelve 503 si no contesta.
@@ -87,6 +90,8 @@ app.use("/distritos", distritosRouter);
 app.use("/clima", climaRouter);
 
 app.use("/siembras", siembraRouter);
+
+app.use("/estimaciones", estimacionesRouter);
 
 app.use(rutaNoEncontrada);
 app.use(manejarErrores);
