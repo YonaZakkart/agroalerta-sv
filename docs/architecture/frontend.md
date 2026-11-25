@@ -50,6 +50,7 @@ main.ts
 | `viabilidad.service.ts` | `GET /viabilidad/distritos/:id?cultivo=…`. |
 | `clima.service.ts` | `GET /clima/distritos/:id` y `POST /clima/actualizar`. |
 | `siembra.service.ts` | `POST /siembras` (4-B; el endpoint existe desde 4-D). |
+| `estimacion.service.ts` | `GET /estimaciones` (6-E); historial del usuario. |
 | `errores.ts` | `mensajesDeError()` y timeout HTTP. |
 
 ### Sesión
@@ -116,7 +117,7 @@ Panel de acceso para login y registro: lado visual con degradado, pestañas y pr
 - Selector de distrito; por defecto, el del perfil.
 - Consulta la viabilidad del distrito y cultivo, con `switchMap` para descartar respuestas viejas.
 - Muestra KPI, capas, clases, clase dominante, área en ha/mz y porcentaje.
-- El panel de estimación está vacío y rotulado como pendiente: **no muestra valores de ejemplo como reales**.
+- Panel de estimación real: carga `GET /estimaciones`, filtra la última del cultivo y distrito seleccionados y muestra semáforo, producción, ingreso, rendimiento, precio, motivos y referencia CENTA. Si no hay estimación, muestra un estado vacío con enlace a `/siembra`. **No usa cifras de ejemplo.**
 - Si `/auth/yo` falla, muestra un aviso con reintento.
 - Navegación por teclado en el radiogroup de cultivos.
 
@@ -169,7 +170,7 @@ Los formularios muestran los mensajes en pantalla; no se usan `alert()`.
 ## 8. Pruebas
 
 - Vitest vía `ng test`.
-- 9 archivos y 30 casos: `app.spec.ts`, `auth.guard.spec.ts`, `auth.interceptor.spec.ts`, `auth.service.spec.ts`, `errores.spec.ts`, `perfil.service.spec.ts`, `token.spec.ts`, `hosts.spec.ts` y `puerto.spec.ts`.
+- 10 archivos y 31 casos: `app.spec.ts`, `auth.guard.spec.ts`, `auth.interceptor.spec.ts`, `auth.service.spec.ts`, `estimacion.service.spec.ts`, `errores.spec.ts`, `perfil.service.spec.ts`, `token.spec.ts`, `hosts.spec.ts` y `puerto.spec.ts`.
 - Se prueban servicios, guards, interceptor y utilidades; no hay E2E.
 - No dependen de red ni de almacenamiento real.
 
@@ -183,5 +184,5 @@ Los formularios muestran los mensajes en pantalla; no se usan `alert()`.
 - El SSR no se usa para datos.
 - Faltan pruebas de componentes y E2E.
 - El formulario de siembra no tiene prueba de componente, enlace en el sidebar ni estimado de inversión visible.
-- `6-C` (Historial), `6-E` (estimación real) y la vista de Configuración siguen pendientes.
+- `6-C` (Historial) y la vista de Configuración siguen pendientes; 6-E ya está en el dashboard.
 - La atribución de Open-Meteo debe mostrarse en la interfaz (pendiente).

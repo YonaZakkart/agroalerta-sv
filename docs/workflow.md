@@ -129,7 +129,7 @@ Desde `frontend/`:
 
 ```bash
 npm run typecheck     # tsc app + spec
-npm test              # ng test (Vitest), 9 archivos y 30 casos
+npm test              # ng test (Vitest), 10 archivos y 31 casos
 npm run build         # ng build
 npm start             # ng serve en http://localhost:4200
 ```
@@ -256,4 +256,4 @@ No se usa `npm audit fix` ni `npm audit fix --force`: puede mover versiones fija
 - `main` contiene las Partes 0, 1, 2, 3 y 4, el Hito 1, 6-D (Clima Zonal), el pulido responsive y el arreglo de `takeUntilDestroyed`.
 - La documentación está consolidada en `.md`; los antiguos `.txt` se retiraron, salvo `docs/4-A-doc.txt`, que se integró en `history/branches/4-siembra.md` y queda pendiente de retirar.
 - Los archivos `backend/data/centa/raw/*.csv` pueden aparecer como modificados por diferencias de fin de línea (CRLF/LF). **No se stagean** y no forman parte de ningún cambio funcional.
-- Las Partes 4 y 5 están cerradas. Faltan 6-C (historial), 6-E (estimación real) y la Parte 7.
+- Las Partes 4 y 5 están cerradas y 6-E (estimación real) está hecho. Faltan 6-C (historial) y la Parte 7.

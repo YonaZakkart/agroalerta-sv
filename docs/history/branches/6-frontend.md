@@ -2,7 +2,7 @@
 
 - **Periodo:** 31 de octubre a 14 de noviembre de 2026
 - **Fuente:** `docs/Estado_Proyecto_Pt2.txt`, sección «Parte 6», y `git log` de `main`
-- **Estado:** 6-0, 6-A y 6-B ✅ (Hito 1); 6-D ✅; 6-C, 6-E y Configuración ⏳
+- **Estado:** 6-0, 6-A, 6-B (Hito 1), 6-D y 6-E ✅; 6-C y Configuración ⏳
 
 ## Resumen
 
@@ -14,6 +14,7 @@
 | 6-A fix | `fix/6-a-styles-duplicado` | Bloque CSS duplicado eliminado |
 | 6-B | `feat/6-b-layout-dashboard` | Shell con perfil y dashboard con viabilidad real |
 | 6-D | `feat/hito2-clima-zonal` (PR #48) | Vista Clima Zonal y clima en el encabezado |
+| 6-E | `feat/6-e-dashboard-estimacion` | Estimación real en el dashboard |
 | Pulido | `feat/frontend-responsive-polish` (PR #49) | Tokens de espaciado y colores semánticos |
 | Fix | `fix/ng0203-takeuntil-destroyed` (PR #50) | `DestroyRef` en `takeUntilDestroyed` |
 
@@ -112,6 +113,26 @@ La vista muestra condición, nivel de sequía, días secos, acumulado, normal, r
 
 ---
 
+## 6-E — Estimación real en el dashboard
+
+**Rama:** `feat/6-e-dashboard-estimacion` · **Responsable:** Yona · **25 de noviembre de 2026** · PR por abrir
+
+**Qué se hizo:**
+
+- `core/estimacion.service.ts`: `GET /estimaciones` y mapa del contrato.
+- `core/models.ts`: tipos `Estimacion`, `NivelRiesgo`, `SupuestoEstimacion`, `ViabilidadReferencia` y `CULTIVO_A_ENUM`.
+- `Dashboard`: carga el historial una vez, filtra la **última estimación del cultivo y distrito seleccionados** y la muestra en el panel.
+- El panel muestra semáforo, título/mensaje, producción, ingreso, rendimiento, precio, clima, motivos, referencia CENTA y fecha de cálculo.
+- Si no hay estimación, estado vacío con enlace a `/siembra`. Si falla la carga, error con reintento.
+- No se usa ninguna cifra de `dashboard_base.html` como dato real.
+- Pruebas: `estimacion.service.spec.ts` (1 caso).
+
+**Decisión MVP:** el dashboard no recalcula; lee el reporte persistido por 5-D. La estimación se crea por el listener cuando se registra una siembra o cambia el clima; si aún no existe, el estado vacío lo explica.
+
+**Verificación:** `npm run typecheck`, `npm test` (10 archivos, 31 casos) y `npm run build` en verde. El build mantiene los avisos de presupuesto de CSS de shell y clima-zonal; el dashboard también supera el presupuesto de 4 kB por 733 bytes.
+
+---
+
 ## Pulido responsive
 
 **Rama:** `feat/frontend-responsive-polish` · **PR #49**
@@ -135,11 +156,11 @@ Es un cambio solo de estilos: no altera comportamiento ni contratos.
 
 ---
 
-## Estado al 14 de noviembre de 2026
+## Estado al 25 de noviembre de 2026
 
-- Cuatro vistas: login, registro, dashboard y clima zonal.
+- Cuatro vistas: login, registro, dashboard y clima zonal; además, formulario de siembra.
 - Sesión con `sessionStorage`, interceptor, guards, timeout y mensajes de error.
-- Viabilidad y clima reales; estimación vacía.
-- 9 archivos de pruebas y 30 casos.
+- Viabilidad, clima y estimación reales en el dashboard.
+- 10 archivos de pruebas y 31 casos.
 - Sin pruebas de componentes ni E2E; sin favicon propio; sin atribución visible de Open-Meteo ni GeoNames.
-- Pendientes: 6-C (Historial), 6-E (estimación real) y Configuración.
+- Pendientes: 6-C (Historial) y Configuración.

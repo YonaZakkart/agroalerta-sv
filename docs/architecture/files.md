@@ -201,6 +201,7 @@ frontend/
         │   ├── viabilidad.service.ts
         │   ├── clima.service.ts
         │   ├── siembra.service.ts
+        │   ├── estimacion.service.ts
         │   ├── errores.ts        mensajesDeError()
         │   └── *.spec.ts         pruebas de servicios, guards y utilidades
         ├── layout/
@@ -209,7 +210,7 @@ frontend/
         └── pages/
             ├── login/
             ├── registro/
-            ├── dashboard/        viabilidad real y panel de estimación vacío
+            ├── dashboard/        viabilidad real y estimación persistida
             ├── clima-zonal/      condición por distrito
             └── siembra/          formulario de siembra (4-B)
 ```
@@ -298,4 +299,5 @@ frontend/
 | Dashboard | `frontend/src/app/pages/dashboard/` |
 | Clima Zonal | `frontend/src/app/pages/clima-zonal/` |
 | Formulario de siembra | `frontend/src/app/pages/siembra/` |
+| Estimación en el dashboard | `frontend/src/app/pages/dashboard/`, `core/estimacion.service.ts` |
 | Estilos globales | `frontend/src/styles.css` |
