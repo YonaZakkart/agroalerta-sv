@@ -29,7 +29,7 @@ backend/src/
 ├── clima/            Open-Meteo, normales, clasificación, orquestador, job y endpoint
 ├── events/           bus y contratos de eventos
 ├── siembra/          validación, servicio y endpoints de 4-D
-└── estimacion/       costos 4-C, listeners 5-A, proyección 5-B y recomendaciones 5-C
+└── estimacion/       costos 4-C, listeners 5-A, proyección 5-B, recomendaciones 5-C y reporte 5-D
 ```
 
 - Un módulo expone su API pública en `index.ts` cuando otros módulos la consumen (`clima/index.ts`).

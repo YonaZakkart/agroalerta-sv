@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado y 5-A/5-B/5-C hechos. Siguiente: 5-D.
+- **Estado del proyecto:** Partes 0–5 cerradas, Hito 1 cerrado y 6-D implementado. Siguiente: 6-E y 6-C.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -107,11 +107,12 @@
 
 ### 5-D — Persistencia y reporte
 
-**Depende de:** 5-B y 5-C (listos). **Estado:** siguiente. **Tamaño:** M.
+**Depende de:** 5-B y 5-C (listos). **Estado:** ✅ hecho. **Tamaño:** M.
 
 - Guardar el reporte, la última estimación y el historial.
 - Exponer `GET /estimaciones` (o el recurso que se acuerde) con `requireAuth`.
 - **Criterio de aceptación:** el dashboard y el historial pueden leer el reporte sin recalcular.
+- **Resultado:** `estimaciones` guarda una fila por cálculo y `GET /estimaciones` devuelve el historial del usuario; la última es la primera fila de cada siembra.
 
 ---
 
@@ -171,12 +172,11 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 5-D (persistencia y reporte).
-2. 6-E (una sola cifra real vale más que tres vistas).
-3. 6-C (historial).
-4. Parte 7.
+1. 6-E (una sola cifra real vale más que tres vistas).
+2. 6-C (historial).
+3. Parte 7.
 
-5-A, 5-B y 5-C ya están hechos: los eventos disparan el recálculo, la proyección calcula rendimiento e ingreso y la recomendación asigna un semáforo con motivos.
+La Parte 5 está cerrada: los eventos disparan el recálculo, la proyección calcula rendimiento e ingreso, la recomendación asigna un semáforo y el reporte queda persistido.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

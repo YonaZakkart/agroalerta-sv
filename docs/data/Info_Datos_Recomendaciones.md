@@ -74,6 +74,6 @@ recomendar(
 
 - **Umbrales no oficiales.** La asignación de semáforo por condición/nivel es una decisión del equipo; validarla con CENTA o un agrónomo (B8 en `tasks/pendiente.md`).
 - **No es un veredicto de la parcela.** La condición y la viabilidad son distritales; la parcela puede comportarse distinto.
-- **Sin persistencia ni interfaz.** El resultado se registra en el log; 5-D y 6-E lo guardan y muestran.
+- **Persistencia desde 5-D.** El reporte se guarda en `estimaciones` y se lee con `GET /estimaciones`; falta la interfaz (6-E/6-C).
 - **Sin costos ni margen.** 5-C no combina la estimación de costos de 4-C.
 - **La viabilidad puede faltar.** Sin CENTA, la recomendación sigue con clima y proyección.

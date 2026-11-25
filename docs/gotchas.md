@@ -259,6 +259,11 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 - **Causa:** el `<input type="date">` del formulario trabaja con la fecha local del agricultor; usar UTC rechazaría “hoy” por la noche.
 - **Solución:** `hoyEnElSalvador()` en `siembra.validacion.ts` es la única comparación de fechas de siembra. No cambiarla a `toISOString().slice(0, 10)` sin revisar el caso de las 18:00 CST.
 
+### 7.8 `GET /estimaciones` devuelve todo el historial, sin paginar
+
+- **Causa:** decisión MVP de 5-D. Cada recálculo inserta una fila y el endpoint devuelve todas las del usuario, más reciente primero.
+- **Solución:** no asumir un límite; si el historial crece, agregar paginación o un `take` acordado (A10). La última estimación de una siembra es la primera fila de ese `siembraId`.
+
 ### 7.7 El semáforo de 5-C no es un veredicto sobre la parcela
 
 - **Causa:** el semáforo se decide con la condición climática distrital; la viabilidad de CENTA también es distrital.

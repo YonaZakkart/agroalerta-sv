@@ -141,7 +141,7 @@ Salida:
 - **Una ficha por cultivo.** No se distingue nivel tecnológico ni temporada.
 - **Factor climático no específico por cultivo.** Es una simplificación; maíz, frijol y maicillo no pierden igual.
 - **Sin costos ni margen.** 5-B proyecta rendimiento e ingreso; la estimación de costos es 4-C.
-- **Sin persistencia.** El resultado se registra en el log; 5-D lo guarda y lo expone.
+- **Persistencia desde 5-D.** El reporte se guarda en `estimaciones` y se lee con `GET /estimaciones`; falta mostrarlo en la interfaz (6-E).
 - **Sin interfaz.** 6-E mostrará la estimación real cuando 5-D exista.
 - **Sin evaluación climática = sin ajuste.** No es un dato; es una decisión para no penalizar distritos fuera de época.
 
