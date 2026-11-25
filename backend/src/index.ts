@@ -6,6 +6,7 @@ import { perfilRouter } from "./auth/perfil.routes";
 import { viabilidadRouter } from "./viabilidad/viabilidad.routes";
 import { distritosRouter } from "./viabilidad/distritos.routes";
 import { climaRouter } from "./clima/clima.routes";
+import { siembraRouter } from "./siembra/siembra.routes";
 import { actualizarClima } from "./clima/orquestador";
 import { iniciarJobClima, leerIntervaloJob } from "./clima/job";
 import type { JobClima } from "./clima/job";
@@ -50,12 +51,14 @@ const limitarClima = crearLimitador({
   mensaje: "La actualización del clima es costosa; espera unos minutos antes de reintentar",
 });
 const limitarLecturaClima = crearLimitador({ limite: 60, ventanaMs: 60_000 });
+const limitarSiembras = crearLimitador({ limite: 30, ventanaMs: 60_000 });
 
 app.use("/auth/login", limitarAcceso);
 app.use("/auth/registro", limitarAcceso);
 app.use("/auth/reenviar-verificacion", limitarAcceso);
 app.use("/clima/actualizar", limitarClima);
 app.use("/clima", limitarLecturaClima);
+app.use("/siembras", limitarSiembras);
 
 // /health/live solo confirma que el proceso responde (para reinicios).
 // /health comprueba la base y devuelve 503 si no contesta.
@@ -81,6 +84,8 @@ app.use("/viabilidad", viabilidadRouter);
 app.use("/distritos", distritosRouter);
 
 app.use("/clima", climaRouter);
+
+app.use("/siembras", siembraRouter);
 
 app.use(rutaNoEncontrada);
 app.use(manejarErrores);
