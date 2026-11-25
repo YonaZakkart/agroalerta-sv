@@ -19,13 +19,13 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 | Parte 3 — clima | ✅ Cerrada | 3-0a/b/c, 3-A, 3-B, 3-C y 3-D, incluido el job periódico |
 | 6-D — Clima Zonal | ✅ Implementado | Vista por distrito y condición en el encabezado |
 | Parte 4 — siembra | ✅ Cerrada | 4-A a 4-D: modelo, formulario, costos, endpoints y evento |
-| Parte 5 — estimación | ⏳ Pendiente | Listeners, proyección, recomendaciones y reporte |
+| Parte 5 — estimación | 🟡 En curso | 5-A: listeners y contexto; 5-B a 5-D pendientes |
 | 6-C / 6-E | ⏳ Pendientes | Historial y estimación real en el dashboard |
 | Parte 7 — despliegue | ⏳ Pendiente | Docker de producción, TLS, CORS final y pruebas E2E |
 
-**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, y estimación de costos como función pura con precios del MAG.
+**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, estimación de costos como función pura y listeners EDA que reaccionan a siembra y clima.
 
-**Lo que todavía no existe:** mostrar el estimado de costos en la interfaz, estimar rendimiento o ingresos, recomendaciones automáticas, historial y despliegue.
+**Lo que todavía no existe:** la proyección real de rendimiento e ingresos, mostrar el estimado en la interfaz, recomendaciones automáticas, historial y despliegue.
 
 ---
 
@@ -71,6 +71,7 @@ docs/
 │   │   ├── 2-viabilidad.md
 │   │   ├── 3-clima.md
 │   │   ├── 4-siembra.md      4-A a 4-D
+│   │   ├── 5-estimacion.md   5-A y siguientes
 │   │   ├── 6-frontend.md
 │   │   └── cierre-y-pendientes.md
 │   └── bugs-resueltos.md     Incidencias reales, causa y solución
@@ -117,6 +118,11 @@ docs/
 - [`data/Info_Datos_Precios.md`](data/Info_Datos_Precios.md) (F3)
 - [`architecture/data.md`](architecture/data.md), sección del modelo `Siembra`
 
+### “Voy a tocar la estimación y las recomendaciones”
+- [`history/branches/5-estimacion.md`](history/branches/5-estimacion.md)
+- [`architecture/backend.md`](architecture/backend.md), sección de listeners
+- [`tasks/continuacion.md`](tasks/continuacion.md), Parte 5
+
 ### “¿Qué sigue?”
 - [`tasks/continuacion.md`](tasks/continuacion.md)
 - [`tasks/pendiente.md`](tasks/pendiente.md)
@@ -150,6 +156,7 @@ docs/
 | **Clase** | Subdivisión de una capa (por ejemplo, potencial alto, medio o bajo). Cada combinación distrito–capa–clase tiene un área en hectáreas. |
 | **Condición climática** | `SEQUIA`, `EXCESO_LLUVIA` o `INVIERNO_ACEPTABLE`; `null` cuando el distrito está fuera de la época evaluable. |
 | **Evento** | Mensaje interno del bus (`AgricultorRegistrado`, `ActualizacionMeteorologica`, `CondicionClimaticaActualizada`, `SiembraRegistrada`). |
+| **Listener** | Función suscrita al bus que reacciona a un evento. No debe lanzar ni bloquear al emisor; captura sus propios rechazos. |
 | **Siembra** | Registro de un cultivo en un distrito: estado, fecha, área en manzanas e inversión declarada. Modelo de 4-A, formulario de 4-B y endpoints de 4-D. |
 | **F3** | Precios y dosis de referencia del MAG para estimar costos (4-C). Cada valor lleva fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). |
 | **EDA** | Event-Driven Architecture: el sistema reacciona a eventos en lugar de esperar que el usuario pida un recálculo. |

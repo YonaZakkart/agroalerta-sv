@@ -130,8 +130,13 @@ backend/
     └── estimacion/
         ├── referencia.ts         tabla F3 con fuente, fecha y tipo
         ├── estimar-costos.ts     función pura estimarCostos()
+        ├── listeners.ts          listeners de 5-A y captura de errores
+        ├── recalculo.ts          contexto y recálculo por siembra/distrito
+        ├── registro.ts           une el bus real con los listeners
         ├── index.ts              API pública del módulo
-        └── estimar-costos.pruebas.ts
+        ├── estimar-costos.pruebas.ts
+        ├── listeners.pruebas.ts
+        └── recalculo.pruebas.ts
 ```
 
 ### Archivos de prueba del backend
@@ -148,6 +153,7 @@ src/clima/clima.pruebas.ts, clasificacion.pruebas.ts,
          job.pruebas.ts, normales-archivo.pruebas.ts,
          orquestador.prueba.ts
 src/estimacion/estimar-costos.pruebas.ts
+src/estimacion/listeners.pruebas.ts, recalculo.pruebas.ts
 src/siembra/siembra.pruebas.ts, siembra.routes.pruebas.ts
 ```
 
@@ -218,9 +224,10 @@ frontend/
    - `/clima` → clima
    - `/siembras` → registro y listado de siembras
 5. `rutaNoEncontrada` y `manejarErrores` al final.
-6. `app.listen`; en el callback se inicia el job de clima si `CLIMA_JOB_ACTIVO !== "false"`.
-7. `servidor.on("error")` maneja puerto ocupado y otros fallos de arranque.
-8. `SIGTERM`/`SIGINT` ejecutan el cierre ordenado.
+6. `iniciarListenersEstimacion()` registra los listeners de 5-A en el bus.
+7. `app.listen`; en el callback se inicia el job de clima si `CLIMA_JOB_ACTIVO !== "false"`.
+8. `servidor.on("error")` maneja puerto ocupado y otros fallos de arranque.
+9. `SIGTERM`/`SIGINT` ejecutan el cierre ordenado.
 
 ## 5. Orden de carga del frontend
 
@@ -262,6 +269,9 @@ frontend/
 | Job periódico | `backend/src/clima/job.ts` |
 | Estimación de costos (4-C) | `backend/src/estimacion/estimar-costos.ts` |
 | Precios y dosis F3 | `backend/src/estimacion/referencia.ts` |
+| Listeners de estimación (5-A) | `backend/src/estimacion/listeners.ts` |
+| Recálculo por siembra/distrito | `backend/src/estimacion/recalculo.ts` |
+| Registro de listeners al arrancar | `backend/src/estimacion/registro.ts` |
 | Validación de siembra (4-D) | `backend/src/siembra/siembra.validacion.ts` |
 | Persistencia y evento de siembra | `backend/src/siembra/siembra.service.ts` |
 | Endpoints de siembra | `backend/src/siembra/siembra.routes.ts` |
