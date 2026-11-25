@@ -1,23 +1,12 @@
 import "dotenv/config";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
+// Neon/Postgres: Prisma 7 usa un driver adapter. En Render (Node de larga vida)
+// se usa node-postgres con la URL pooled de Neon; las migraciones usan
+// DATABASE_URL_UNPOOLED (conexión directa).
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-    throw new Error("DATABASE_URL no está definida");
-}
+if (!connectionString) throw new Error("DATABASE_URL no está definida");
 
-const url = new URL(connectionString);
-
-const adapter = new PrismaMariaDb({
-    host: url.hostname,
-    port: Number(url.port) || 3306,
-    user: decodeURIComponent(url.username),
-    password: decodeURIComponent(url.password),
-    database: url.pathname.slice(1),
-    // MySQL 8.4 usa caching_sha2_password; sin TLS el conector necesita esto
-    // para la autenticación completa. Solo en desarrollo: en producción usar TLS.
-    allowPublicKeyRetrieval: process.env.NODE_ENV !== "production",
-});
-
+const adapter = new PrismaPg({ connectionString });
 export const prisma = new PrismaClient({ adapter });

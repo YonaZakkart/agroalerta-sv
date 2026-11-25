@@ -168,3 +168,10 @@ El catálogo completo está en [`docs/gotchas.md`](docs/gotchas.md). Los más co
 - `npm install` falla con `Cannot read properties of null (reading 'edgesOut')`: es un bug de npm. Usa `npm install --legacy-peer-deps`.
 - `prisma migrate dev` falla con `P3014`: el contenedor es anterior al script de privilegios. Corre `docker compose down -v` y `docker compose up -d db` (borra los datos locales) y repite los pasos 7 y 8.
 - El backend aborta al arrancar diciendo que falta `JWT_SECRET` o `DUI_PEPPER`: es a propósito. Complétalos en `backend/.env` (paso 5).
+
+## Despliegue
+
+- **Neon Postgres** (branch `production`): `DATABASE_URL` pooled y `DATABASE_URL_UNPOOLED` para migraciones.
+- **Render** (backend): root `backend`, build `npm ci --legacy-peer-deps && npx prisma generate && npm run build`, start `npm start`, health `/health`.
+- **Vercel** (frontend): root `frontend`, build `npm run build`, output `dist/frontend/browser`; `vercel.json` redirige `/api` a Render.
+- Detalle y variables: [`docs/deployment.md`](docs/deployment.md).

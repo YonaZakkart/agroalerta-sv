@@ -22,7 +22,7 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 | Parte 5 — estimación | ✅ Cerrada | 5-A a 5-D: listeners, proyección, recomendaciones y reporte persistido |
 | 6-C | ✅ Implementado | Historial de evaluaciones |
 | 6-E | ✅ Implementado | Estimación real en el dashboard |
-| Parte 7 — despliegue | ⏳ Pendiente | Docker de producción, TLS, CORS final y pruebas E2E |
+| Parte 7 — despliegue | 🟡 En curso | Neon/Postgres y configuración Render/Vercel listos; falta verificar en las plataformas y release |
 
 **Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, estimación de costos como función pura, listeners EDA que reaccionan a siembra y clima, proyección de rendimiento e ingresos con supuestos declarados, recomendaciones por riesgo con referencia de CENTA, reporte persistido, estimación real en el dashboard e historial de evaluaciones.
 
@@ -36,6 +36,7 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 docs/
 ├── INDEX.md                  ← usted está aquí
 ├── workflow.md               Cómo se trabaja: ramas, PR, pruebas, cierre de un punto
+├── deployment.md             Neon, Render, Vercel y release
 ├── conventions.md            Reglas de código, datos, API, frontend y documentación
 ├── gotchas.md                Trampas activas y problemas conocidos (leer antes de tocar código)
 │

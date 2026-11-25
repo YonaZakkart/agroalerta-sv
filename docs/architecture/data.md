@@ -1,6 +1,6 @@
 # Datos, modelo y migraciones
 
-El backend usa MySQL 8.4 con Prisma 7.10.0. Los datos vienen de cuatro fuentes:
+El backend usa **Postgres en Neon** con Prisma 7.10.0 y `@prisma/adapter-pg`. Los datos vienen de cuatro fuentes:
 
 1. **CENTA** — viabilidad agrícola por distrito, cargada desde CSV versionados.
 2. **Open-Meteo** — lluvia diaria y normal de 30 días, consultada en tiempo de ejecución.
@@ -197,7 +197,8 @@ enum NivelRiesgo { VERDE AMARILLO ROJO }
 | `20261102032958_add_coordenadas_distrito` | `latitud` y `longitud` en `distritos`. |
 | `20261107143412_add_condicion_distrito` | `condiciones_distrito` y sus enums. |
 | `20261116035128_add_siembras` | `siembras` y sus enums (`Cultivo`, `EstadoSiembra`, `UnidadSemilla`). |
-| `20261125201048_add_estimaciones` | `estimaciones`, `NivelRiesgo` y sus índices. |
+| `20261125201048_add_estimaciones` | `estimaciones`, `NivelRiesgo` y sus índices (histórico MySQL en `migrations-mysql/`). |
+| `20261125_init_postgres` | Baseline Postgres para Neon: todo el esquema actual. |
 
 Reglas:
 
