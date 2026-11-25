@@ -28,8 +28,8 @@ backend/src/
 ├── viabilidad/       consulta de CENTA, catálogo de distritos y scripts de datos
 ├── clima/            Open-Meteo, normales, clasificación, orquestador, job y endpoint
 ├── events/           bus y contratos de eventos
-├── siembra/          vacío hasta la Parte 4
-└── estimacion/       vacío hasta la Parte 5
+├── siembra/          vacío: 4-D agrega rutas y servicio
+└── estimacion/       estimación de costos de 4-C (referencia, función pura y pruebas)
 ```
 
 - Un módulo expone su API pública en `index.ts` cuando otros módulos la consumen (`clima/index.ts`).
@@ -83,6 +83,7 @@ Contrato único de error:
 - Las migraciones se generan con `npx prisma migrate dev` desde `backend/`, se revisan y se versionan.
 - No se corre `npx prisma format` sobre un archivo compartido si va a reordenar bloques ajenos: ensucia el diff.
 - Para sumar áreas `Decimal`, se convierte a milésimas de hectárea (enteros) y se redondea al final. No se suman `number` flotantes de áreas.
+- Los montos de la estimación de costos se calculan en centavos enteros y se redondean hacia arriba; no se suman dólares flotantes.
 - Las consultas que devuelven datos al cliente seleccionan campos explícitos; nunca se devuelve `contrasenaHash`, `duiHash` ni tokens internos.
 - Los scripts de carga son idempotentes y transaccionales.
 
@@ -135,7 +136,7 @@ frontend/src/app/
 ├── app.routes.server.ts              RenderMode.Client en "**"
 ├── core/                             servicios, modelos, guards, interceptor, utilidades
 ├── layout/                           auth-shell y shell
-└── pages/                            login, registro, dashboard, clima-zonal
+└── pages/                            login, registro, dashboard, clima-zonal, siembra
 ```
 
 - Componentes **standalone**; no se usan `NgModule`.

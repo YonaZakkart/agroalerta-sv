@@ -1,7 +1,7 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–3 cerradas, Hito 1 cerrado, 6-D implementado. Decisión D1 aprobada: **4-A puede comenzar**.
-- **Última actualización:** 14 de noviembre de 2026
+- **Estado del proyecto:** Partes 0–3 cerradas, Hito 1 cerrado, 6-D implementado y 4-A, 4-B y 4-C hechos. Siguiente: 4-D.
+- **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
 ---
@@ -20,7 +20,7 @@
 **D1 (14/11/2026):** la siembra **permite elegir el distrito**, con el del perfil como valor inicial.
 
 - Una siembra ocurre en un lugar concreto; heredar el distrito que el usuario estaba explorando en el dashboard es riesgoso.
-- **Consecuencia:** 4-A ya puede comenzar, porque el modelo de siembra incluye `distritoId` de todos modos. La decisión solo afecta al formulario de 4-B.
+- **Consecuencia:** 4-A pudo comenzar porque el modelo de siembra incluye `distritoId` de todos modos. La decisión solo afectaba al formulario de 4-B, ya implementado.
 - **Estado:** resuelta. No bloquea la Parte 4.
 
 ---
@@ -29,7 +29,7 @@
 
 ### 4-A — Modelo de Siembra
 
-**Depende de:** nada nuevo (Usuario y Distrito existen). **Estado:** puede comenzar; D1 ya está decidida. **Tamaño:** M.
+**Depende de:** nada nuevo (Usuario y Distrito existen). **Estado:** ✅ hecho (PR #53). **Tamaño:** M.
 
 - Agregar al final de `schema.prisma`, bajo un comentario de sección:
   - `Siembra`: `id`, `usuarioId`, `distritoId`, `cultivo`, `estado`, `fechaSiembra`, `areaMz`, y los campos de inversión (semilla, alquiler, maquinaria, riego, otros).
@@ -41,7 +41,7 @@
 
 ### 4-B — Formulario de siembra
 
-**Depende de:** 4-A y 6-0 (listo). **Tamaño:** L.
+**Depende de:** 4-A y 6-0 (listo). **Estado:** ✅ hecho (PR #55); el estimado de inversión previo queda pendiente de integración. **Tamaño:** L.
 
 - Vista nueva en `pages/siembra/`, ruta hija del `Shell` protegida por `authGuard`.
 - Dos grupos: datos agronómicos (cultivo, distrito, fecha, área) y datos técnicos (semilla, alquiler, maquinaria, riego).
@@ -53,7 +53,7 @@
 
 ### 4-C — Estimación de costos
 
-**Depende de:** F3 (precios y dosis). **Tamaño:** M.
+**Depende de:** F3 (precios y dosis). **Estado:** ✅ hecho. F3 obtenido del MAG 2022-2023; contrato en `data/Info_Datos_Precios.md`. **Tamaño:** M.
 
 - Tabla o archivo de referencia con precios promedio, dosis por manzana, jornales, alquiler, maquinaria y riego.
 - Cada valor con **fuente y fecha**; lo que no se consiga se declara supuesto.
@@ -63,7 +63,7 @@
 
 ### 4-D — Endpoints y evento
 
-**Depende de:** 4-A. **Tamaño:** M.
+**Depende de:** 4-A (listo). **Estado:** siguiente. **Tamaño:** M.
 
 - `POST /siembras` y `GET /siembras` con `requireAuth`; solo el dueño ve sus siembras.
 - Validación de entrada con el contrato `{ error, detalles }`.
@@ -168,12 +168,13 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 4-A y 4-D (sin siembra no hay nada que estimar).
+1. 4-D (sin endpoints no hay siembra que estimar).
 2. 5-A y 5-B con supuestos declarados.
 3. 6-E (una sola cifra real vale más que tres vistas).
-4. 4-C con precios reales.
-5. 5-C y 6-C.
-6. Parte 7.
+4. 5-C y 6-C.
+5. Parte 7.
+
+4-A, 4-B y 4-C ya están hechos. 4-C quedó con precios reales del MAG 2022-2023.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

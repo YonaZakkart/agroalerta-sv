@@ -1,6 +1,6 @@
 # Árbol de archivos y orden de carga
 
-Estado real del repositorio al 14 de noviembre de 2026. No se listan `node_modules/`, `dist/`, `.angular/` ni `backend/src/generated/` porque no se versionan.
+Estado real del repositorio al 24 de noviembre de 2026. No se listan `node_modules/`, `dist/`, `.angular/` ni `backend/src/generated/` porque no se versionan.
 
 ---
 
@@ -57,6 +57,7 @@ backend/
 │       ├── 20261030231036/              Usuario.distrito_id con FK
 │       ├── 20261102032958_add_coordenadas_distrito/
 │       ├── 20261107143412_add_condicion_distrito/
+│       ├── 20261116035128_add_siembras/
 │       └── migration_lock.toml
 └── src/
     ├── index.ts                  composición de Express y arranque
@@ -118,8 +119,12 @@ backend/
     │   ├── bus.ts                instancia única de EventEmitter
     │   ├── emitir.ts             emitirSeguro()
     │   └── types.ts              nombres y payloads de eventos
-    ├── siembra/                  vacío hasta la Parte 4
-    └── estimacion/               vacío hasta la Parte 5
+    ├── siembra/                  vacío: 4-D agrega rutas y servicio
+    └── estimacion/
+        ├── referencia.ts         tabla F3 con fuente, fecha y tipo
+        ├── estimar-costos.ts     función pura estimarCostos()
+        ├── index.ts              API pública del módulo
+        └── estimar-costos.pruebas.ts
 ```
 
 ### Archivos de prueba del backend
@@ -135,6 +140,7 @@ src/clima/clima.pruebas.ts, clasificacion.pruebas.ts,
          distritos-solicitados.pruebas.ts, errores-http.pruebas.ts,
          job.pruebas.ts, normales-archivo.pruebas.ts,
          orquestador.prueba.ts
+src/estimacion/estimar-costos.pruebas.ts
 ```
 
 ---
@@ -170,6 +176,7 @@ frontend/
         │   ├── distritos.service.ts
         │   ├── viabilidad.service.ts
         │   ├── clima.service.ts
+        │   ├── siembra.service.ts
         │   ├── errores.ts        mensajesDeError()
         │   └── *.spec.ts         pruebas de servicios, guards y utilidades
         ├── layout/
@@ -179,7 +186,8 @@ frontend/
             ├── login/
             ├── registro/
             ├── dashboard/        viabilidad real y panel de estimación vacío
-            └── clima-zonal/      condición por distrito
+            ├── clima-zonal/      condición por distrito
+            └── siembra/          formulario de siembra (4-B)
 ```
 
 ---
@@ -211,7 +219,7 @@ frontend/
 2. `app.config.ts` registra el router, la hidratación del cliente y `HttpClient` con `withFetch()` y `authInterceptor`.
 3. `app.routes.ts` resuelve la ruta:
    - `/login` y `/registro` con `invitadoGuard`.
-   - Área protegida con `Shell` y `authGuard`; hijos `/dashboard` y `/clima-zonal`.
+   - Área protegida con `Shell` y `authGuard`; hijos `/dashboard`, `/clima-zonal` y `/siembra`.
    - `''` redirige a `/dashboard`; `**` redirige a `''`.
 4. `Shell` carga el perfil (`GET /auth/yo`) y el clima del distrito del usuario para el encabezado.
 5. Cada página carga sus datos con su servicio; el interceptor agrega el token y maneja el 401.
@@ -243,10 +251,13 @@ frontend/
 | Clasificación climática | `backend/src/clima/clasificacion.ts` |
 | Orquestación y eventos | `backend/src/clima/orquestador.ts` |
 | Job periódico | `backend/src/clima/job.ts` |
+| Estimación de costos (4-C) | `backend/src/estimacion/estimar-costos.ts` |
+| Precios y dosis F3 | `backend/src/estimacion/referencia.ts` |
 | Contratos de eventos | `backend/src/events/types.ts` |
 | Sesión en el cliente | `frontend/src/app/core/auth.service.ts` |
 | Interceptor y 401 | `frontend/src/app/core/auth.interceptor.ts` |
 | Rutas y guards | `frontend/src/app/app.routes.ts`, `core/auth.guard.ts` |
 | Dashboard | `frontend/src/app/pages/dashboard/` |
 | Clima Zonal | `frontend/src/app/pages/clima-zonal/` |
+| Formulario de siembra | `frontend/src/app/pages/siembra/` |
 | Estilos globales | `frontend/src/styles.css` |

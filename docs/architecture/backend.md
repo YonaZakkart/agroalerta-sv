@@ -138,7 +138,13 @@ Eventos actuales:
 
 ### 2.7 `siembra/` y `estimacion/`
 
-Vacías. Reservadas para las Partes 4 y 5.
+- `siembra/` sigue vacío: 4-A solo agregó el modelo y 4-B solo el frontend. Los endpoints y el evento llegan en 4-D.
+- `estimacion/` contiene la estimación de costos de 4-C:
+  - `referencia.ts`: tabla F3 con precios, dosis, fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). Es la única fuente de valores.
+  - `estimar-costos.ts`: función pura `estimarCostos(cultivo, areaMz, opciones)`. Redondea hacia arriba las unidades compradas (lb, QQ, jornal) y prorratea los servicios por manzana.
+  - `index.ts`: API pública del módulo.
+  - `estimar-costos.pruebas.ts`: pruebas sin red ni base de datos.
+- No hay router ni endpoint de estimación en 4-C; el módulo se consume desde código (4-D / 5-B).
 
 ---
 
@@ -180,7 +186,7 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run build` | Compila a `dist/`. |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm start` | Ejecuta `dist/index.js`. |
-| `npm test` | Encadena las 18 pruebas sin red. |
+| `npm test` | Encadena las 19 pruebas sin red. |
 | `npm run db:generate` | `prisma generate`. |
 | `npm run db:migrate` | `prisma migrate dev`. |
 | `npm run db:studio` | `prisma studio`. |
@@ -189,14 +195,15 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run clima:normales` | Regenera `normales_lluvia_30d.json`. |
 | `npm run clima:probar` | Prueba manual contra Open-Meteo. |
 | `npm run clima:clasificar` | Clasifica los distritos y muestra el resultado. |
+| `npm run pruebas:estimacion` | Pruebas de la estimación de costos (4-C), sin red ni base. |
 
 ---
 
 ## 6. Pruebas
 
-- 18 archivos `*.pruebas.ts` / `*.prueba.ts`.
+- 19 archivos `*.pruebas.ts` / `*.prueba.ts`.
 - Se ejecutan con `ts-node-dev --transpile-only`, sin red ni MySQL.
-- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación y cambio de condición.
+- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición y estimación de costos.
 - El orquestador tiene una prueba de integración con dobles (`orquestador.prueba.ts`).
 
 ---
@@ -210,6 +217,8 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 - No hay envío real de correo.
 - El DUI no valida dígito verificador.
 - La autenticación no revoca tokens.
+- La estimación de costos usa precios del ciclo 2022-2023 y no incluye costos indirectos ni transporte de cosecha.
+- No hay endpoint de estimación todavía: 4-C es una función pura.
 - El backend no sirve el frontend; en desarrollo se usa el proxy de Angular.
 
 Ver `adr/` y `gotchas.md` para el detalle.

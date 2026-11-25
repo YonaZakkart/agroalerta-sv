@@ -1,10 +1,11 @@
 # Datos, modelo y migraciones
 
-El backend usa MySQL 8.4 con Prisma 7.10.0. Los datos vienen de tres fuentes:
+El backend usa MySQL 8.4 con Prisma 7.10.0. Los datos vienen de cuatro fuentes:
 
 1. **CENTA** — viabilidad agrícola por distrito, cargada desde CSV versionados.
 2. **Open-Meteo** — lluvia diaria y normal de 30 días, consultada en tiempo de ejecución.
-3. **Registro de usuarios** — datos personales y sesión.
+3. **Registro de usuarios y siembras** — datos personales, sesión y siembras del agricultor.
+4. **MAG** — precios y dosis de referencia para la estimación de costos (F3), versionados como tabla TypeScript.
 
 ---
 
@@ -14,7 +15,10 @@ El backend usa MySQL 8.4 con Prisma 7.10.0. Los datos vienen de tres fuentes:
 Municipio 1 ─── * Distrito 1 ─── * AreaClase * ─── 1 ClaseCapa * ─── 1 Capa
                      │
                      ├── * Usuario
+                     ├── * Siembra
                      └── 1 CondicionDistrito
+
+Usuario 1 ─── * Siembra * ─── 1 Distrito
 ```
 
 ### `Usuario` → `usuarios`
@@ -97,12 +101,44 @@ Municipio 1 ─── * Distrito 1 ─── * AreaClase * ─── 1 ClaseCapa
 | `actualizadoEn` | DateTime | Momento de la consulta. |
 | `condicionDesde` | DateTime, nullable | Cuándo empezó la condición vigente. |
 
+### `Siembra` → `siembras`
+
+Agregada en 4-A. Una siembra pertenece a un usuario y a un distrito; el distrito se elige en el formulario (D1), no se hereda del dashboard.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `id` | Int, PK, autoincrement | |
+| `usuarioId` | Int, FK → `Usuario.id` | ON DELETE RESTRICT. |
+| `distritoId` | Int, FK → `Distrito.id` | ON DELETE RESTRICT. |
+| `cultivo` | `Cultivo` | `MAIZ`, `FRIJOL` o `MAICILLO`. |
+| `estado` | `EstadoSiembra` | `POR_SEMBRAR` o `SEMBRADO`. |
+| `fechaSiembra` | Date | Cuándo sembró o cuándo planea sembrar, según `estado`. |
+| `areaMz` | Decimal(8,2) | Manzanas. |
+| `cantidadSemilla` | Decimal(10,2), nullable | Opcional; si existe, `unidadSemilla` también. |
+| `unidadSemilla` | `UnidadSemilla?` | `LIBRAS` o `BOLSAS`. |
+| `alquilaTerreno` | Boolean, default false | |
+| `usaMaquinaria` | Boolean, default false | |
+| `usaRiego` | Boolean, default false | |
+| `inversionTotalUsd` | Decimal(10,2) | Obligatoria; lo que declara el agricultor, todo incluido. |
+| `costoSemillaUsd` | Decimal(10,2), nullable | Desglose opcional. |
+| `costoAlquilerUsd` | Decimal(10,2), nullable | Desglose opcional. |
+| `costoMaquinariaUsd` | Decimal(10,2), nullable | Desglose opcional. |
+| `costoRiegoUsd` | Decimal(10,2), nullable | Desglose opcional. |
+| `costoOtrosUsd` | Decimal(10,2), nullable | Desglose opcional. |
+| `creadoEn` | DateTime, default now | |
+| — | index(`usuarioId`, `creadoEn`) | Para `GET /siembras` por dueño (4-D). |
+
+El esquema no obliga a que `cantidadSemilla` y `unidadSemilla` vayan juntas ni a que la suma del desglose no supere `inversionTotalUsd`: esas reglas se validan en 4-D.
+
 ### Enums
 
 ```prisma
 enum TipoCapa { POTENCIAL RIESGO }
 enum CondicionClima { SEQUIA EXCESO_LLUVIA INVIERNO_ACEPTABLE }
 enum NivelSequia { DEBIL MODERADA FUERTE SEVERA }
+enum Cultivo { MAIZ FRIJOL MAICILLO }
+enum EstadoSiembra { POR_SEMBRAR SEMBRADO }
+enum UnidadSemilla { LIBRAS BOLSAS }
 ```
 
 ---
@@ -117,6 +153,7 @@ enum NivelSequia { DEBIL MODERADA FUERTE SEVERA }
 | `20261030231036` | `usuarios.distrito` (texto) → `distrito_id` con FK. |
 | `20261102032958_add_coordenadas_distrito` | `latitud` y `longitud` en `distritos`. |
 | `20261107143412_add_condicion_distrito` | `condiciones_distrito` y sus enums. |
+| `20261116035128_add_siembras` | `siembras` y sus enums (`Cultivo`, `EstadoSiembra`, `UnidadSemilla`). |
 
 Reglas:
 
@@ -151,6 +188,15 @@ Generados por `npm run datos:limpiar`:
 
 - `coordenadas_distritos.csv` — 26 coordenadas con fuente y fecha.
 - `normales_lluvia_30d.json` — normal de lluvia de 30 días por distrito; 365 claves por distrito.
+
+### Precios y dosis de referencia (F3)
+
+No hay CSV ni JSON: la tabla vive en `backend/src/estimacion/referencia.ts`, porque cada rubro necesita su tipo (`OFICIAL` / `SUPUESTO`), su fuente y su fecha. El contrato completo está en [`docs/data/Info_Datos_Precios.md`](../data/Info_Datos_Precios.md).
+
+- Fuente: MAG/DGEA/DEA, *Costos de producción de cultivos agrícolas*, ciclo 2022-2023 (publicado el 21 de febrero de 2024).
+- Fichas usadas: maíz semitecnificado, frijol de invierno y sorgo semi-tecnificado (maicillo).
+- La estimación se calcula con `estimarCostos()` en `backend/src/estimacion/estimar-costos.ts`.
+- No se guarda en la base: 4-C no agrega columnas ni migraciones.
 
 ### Ciclo de actualización
 
@@ -198,6 +244,14 @@ Se usa para:
 - Los porcentajes se redondean a 1 decimal; las manzanas, a 2.
 - La clase dominante se decide con las áreas exactas, no con porcentajes redondeados. En empate gana la clase de menor `valor`.
 
+### Estimación de costos (4-C)
+
+- La dosis de cada insumo se multiplica por el área en manzanas.
+- Semilla (lb), fertilizantes (QQ) y mano de obra (jornal) se redondean **hacia arriba** a la unidad comprada.
+- Maquinaria, alquiler y riego se cobran por manzana: se prorratean por el área y se redondean a centavos hacia arriba. No se redondean a pases enteros.
+- El total se calcula en centavos para evitar ruido de coma flotante.
+- La estimación no incluye costos indirectos (administración, imprevistos, intereses) ni el transporte interno de la cosecha. Es un piso de costos directos, no el costo total del MAG.
+
 ---
 
 ## 6. Invariantes
@@ -208,6 +262,8 @@ Se usa para:
 - `AreaClase` es única por (`distritoId`, `claseId`).
 - `ClaseCapa` es única por (`capaId`, `valor`).
 - `CondicionDistrito` tiene como máximo una fila por distrito.
+- Una `Siembra` siempre tiene `usuarioId` y `distritoId` válidos.
+- `inversionTotalUsd` es obligatoria; el desglose es opcional y no puede superar el total (se valida en 4-D).
 - La carga de CENTA no debe dejar distritos sin sus 12 áreas esperadas.
 
 ---

@@ -4,7 +4,7 @@
 - **Fecha:** 31 de octubre de 2026
 - **Fuente original:** el `Mapa_v2.txt` retirado; este documento es la versión vigente.
 - **Estado:** vigente. Las Partes 0, 1 y 2 conservan su registro en `history/branches/`.
-- **Última revisión de estado:** 14 de noviembre de 2026
+- **Última revisión de estado:** 24 de noviembre de 2026
 
 > Este documento ordena el Mapa v2 y marca el avance real. Ante una contradicción, prevalece el código y se anota aquí.
 
@@ -40,11 +40,11 @@
 
 ## 2. Hitos
 
-| Hito | Contenido | Estado al 14/11/2026 |
+| Hito | Contenido | Estado al 24/11/2026 |
 |---|---|---|
 | **Hito 1** — demo mínima con datos reales | 6-0, 6-A, 6-B: login, registro y dashboard con viabilidad real | ✅ cerrado |
 | **Hito 2** — clima real | 3-0 a 3-D, 6-D (Clima Zonal) y encabezado con clima | ✅ cerrado (3 completo; 6-D implementado) |
-| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | ⏳ pendiente |
+| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | 🟡 en curso: 4-A, 4-B y 4-C hechos; 4-D pendiente |
 | **Hito 4** — cierre | Parte 7 | ⏳ pendiente |
 
 Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección 5). Hay que conseguirlos desde ya.
@@ -58,7 +58,7 @@ Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección
 | 1 | Frontend base y autenticación: 6-0, 6-A | ✅ |
 | 2 | Frontend dashboard: 6-B, luego 6-D y 6-E | 6-B y 6-D ✅; 6-E ⏳ |
 | 3 | Backend de clima: 3-0 y 3-A a 3-D | ✅ |
-| 4 | Datos de referencia y siembra: documento de datos, 4-A y 4-C | ⏳ |
+| 4 | Datos de referencia y siembra: documento de datos, 4-A y 4-C | 4-A, 4-B y 4-C ✅; 4-D ⏳ |
 
 ---
 
@@ -96,18 +96,18 @@ Job con `setInterval` que arranca con el servidor y tolera fallos de red; `GET /
 
 ### Parte 4 — Siembra + formulario detallado
 
-**Dependencias:** Usuario y Viabilidad (listos); 4-C necesita precios (F3); 4-B necesita 6-0.
+**Dependencias:** Usuario y Viabilidad (listos); F3 ya está para 4-C; 4-B necesita 6-0.
 
 | Punto | Contenido | Tamaño | Estado |
 |---|---|---|---|
-| 4-A | Modelo de Siembra y migración: usuario, distrito, cultivo, estado, fecha, área en manzanas, semilla, alquiler, maquinaria, riego, inversión | M | ⏳ |
-| 4-B | Formulario de siembra en Angular, diseño de `dashboard_base.html`, dos grupos (agronómico y técnico), estimado de inversión previo | L | ⏳ |
-| 4-C | Estimación de costos: precios promedio y dosis por manzana, redondeo hacia arriba, con fuente y fecha | M | ⏳ |
+| 4-A | Modelo de Siembra y migración: usuario, distrito, cultivo, estado, fecha, área en manzanas, semilla, alquiler, maquinaria, riego, inversión | M | ✅ |
+| 4-B | Formulario de siembra en Angular, diseño de `dashboard_base.html`, dos grupos (agronómico y técnico), estimado de inversión previo | L | ✅ (sin el estimado previo) |
+| 4-C | Estimación de costos: precios promedio y dosis por manzana, redondeo hacia arriba, con fuente y fecha | M | ✅ |
 | 4-D | Evento `SiembraRegistrada` e historial: `POST /siembras` y `GET /siembras` protegidos | M | ⏳ |
 
 **Archivos compartidos:** `schema.prisma`, `migrations/`, `events/types.ts`, `index.ts`.
 
-**Decisión pendiente:** si el formulario usa el distrito registrado o permite elegir otro.
+**Decisión resuelta:** D1 (14/11/2026) permite elegir el distrito, con el del perfil como valor inicial. Implementado en 4-B.
 
 ---
 
@@ -164,7 +164,7 @@ Job con `setInterval` que arranca con el servidor y tolera fallos de red; `GET /
 
 ## 5. Datos de referencia que no están en CENTA
 
-Bloquean 3-B, 4-C y 5-B. Deben documentarse con fuente, fecha, formato y contrato.
+Bloquean 3-B, 4-C y 5-B. Deben documentarse con fuente, fecha, formato y contrato. Al 24/11/2026, F3 ya está; F1 y F4 siguen pendientes.
 
 | Clave | Dato | Uso |
 |---|---|---|
@@ -172,6 +172,8 @@ Bloquean 3-B, 4-C y 5-B. Deben documentarse con fuente, fecha, formato y contrat
 | **F2** | Umbrales de lluvia para sequía, exceso o invierno aceptable; ventanas de primera y postrera | 3-B (parcial) |
 | **F3** | Precios promedio de insumos, dosis por manzana, jornales, alquiler, maquinaria y riego | 4-C |
 | **F4** | Precio de venta por quintal | 5-B |
+
+**F3 obtenido:** MAG/DGEA/DEA, *Costos de producción de cultivos agrícolas*, ciclo 2022-2023. Contrato en `docs/data/Info_Datos_Precios.md`; tabla en `backend/src/estimacion/referencia.ts`. Los precios no son vigentes: hay que actualizarlos a un ciclo más reciente.
 
 Fuentes candidatas: guías técnicas de CENTA por cultivo y publicaciones de precios del MAG. Todo valor lleva fuente y fecha. Si un dato no se consigue, se presenta como **supuesto declarado**, nunca como dato oficial.
 
@@ -186,7 +188,7 @@ Fuentes candidatas: guías técnicas de CENTA por cultivo y publicaciones de pre
 | C3 — Eventos | 3-0a | ✅ |
 | D1 — Capa sensible a mayúsculas y cultivo no | Ajuste en viabilidad | ✅ normalización |
 | Bloque E — Pruebas automatizadas | 7-C | ⏳ (hay pruebas unitarias, faltan E2E) |
-| Bloque F — Datos de referencia | Sección 5 | ⏳ |
+| Bloque F — Datos de referencia | Sección 5 | ⚠️ F3 obtenido; F1 y F4 pendientes |
 | Bloque G — Documentación | Rama `docs` después de cada hito | ✅ (esta reorganización) |
 
 **Fuera de alcance por ahora:** envío real de correo, validación del dígito verificador del DUI, `GET /health` con verificación de base (ya implementado en PR #44), decisión sobre Prettier.
@@ -199,6 +201,7 @@ Fuentes candidatas: guías técnicas de CENTA por cultivo y publicaciones de pre
 2. Lo que se muestre de CENTA se cita como referencia distrital.
 3. Lo simulado (verificación sin correo) se declara en la presentación.
 4. La atribución de Open-Meteo y GeoNames debe mostrarse donde se usen sus datos.
+5. El estimado de costos de 4-C usa precios del ciclo 2022-2023 y se rotula como referencia con su fecha, no como cotización actual.
 
 ---
 

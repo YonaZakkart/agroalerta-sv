@@ -26,6 +26,7 @@ main.ts
 | `/registro` | `Registro` | `invitadoGuard` | Client |
 | `/` → `/dashboard` | `Shell` + `Dashboard` | `authGuard` | Client |
 | `/clima-zonal` | `Shell` + `ClimaZonal` | `authGuard` | Client |
+| `/siembra` | `Shell` + `Siembra` | `authGuard` | Client |
 | `**` | redirige a `''` | — | Client |
 
 - `authGuard`: si no hay sesión vigente, redirige a `/login`.
@@ -48,6 +49,7 @@ main.ts
 | `distritos.service.ts` | `GET /distritos`. |
 | `viabilidad.service.ts` | `GET /viabilidad/distritos/:id?cultivo=…`. |
 | `clima.service.ts` | `GET /clima/distritos/:id` y `POST /clima/actualizar`. |
+| `siembra.service.ts` | `POST /siembras` (4-B; el endpoint llega en 4-D). |
 | `errores.ts` | `mensajesDeError()` y timeout HTTP. |
 
 ### Sesión
@@ -81,7 +83,7 @@ Panel de acceso para login y registro: lado visual con degradado, pestañas y pr
 
 Área protegida:
 
-- Sidebar con navegación (`Dashboard`, `Clima Zonal`, y entradas futuras deshabilitadas).
+- Sidebar con navegación (`Dashboard`, `Clima Zonal`); `Siembra` tiene ruta pero todavía no enlace.
 - Header con nombre corto, iniciales, clima compacto del distrito y cierre de sesión.
 - Carga el perfil una vez y el clima del distrito para el encabezado.
 - Si `/auth/yo` falla, muestra un aviso con reintento.
@@ -124,6 +126,15 @@ Panel de acceso para login y registro: lado visual con degradado, pestañas y pr
 - Muestra condición (`Sequía`, `Exceso de lluvia`, `Invierno aceptable`, `Sin evaluar`), nivel de sequía, días secos, acumulado, normal, razón y fechas.
 - Maneja carga y error por distrito, con reintento individual.
 - `null` se muestra como “Sin evaluar”, no como error.
+
+### `Siembra` (4-B)
+
+- Formulario reactivo con dos grupos: agronómico (cultivo, distrito, estado, fecha y área) y técnico (alquiler, maquinaria, riego, inversión total y desglose).
+- El distrito del perfil es el valor inicial; el usuario puede cambiarlo (D1).
+- Validaciones: fecha coherente con el estado, semilla completa (cantidad y unidad juntas), área entre 0.01 y 999 999.99 y aviso si el desglose supera la inversión total.
+- Envía a `POST /siembras` con `SiembraService`; el endpoint todavía no existe (4-D), así que el envío falla hasta que se implemente.
+- El estimado de inversión no se muestra: el aviso dice que llegará cuando exista la integración con 4-C.
+- La ruta `/siembra` existe, pero todavía no tiene enlace en el sidebar.
 
 ---
 
@@ -171,5 +182,6 @@ Los formularios muestran los mensajes en pantalla; no se usan `alert()`.
 - No hay refresh token.
 - El SSR no se usa para datos.
 - Faltan pruebas de componentes y E2E.
+- El formulario de siembra no tiene prueba de componente, enlace en el sidebar ni estimado de inversión visible.
 - `6-C` (Historial), `6-E` (estimación real) y la vista de Configuración siguen pendientes.
 - La atribución de Open-Meteo debe mostrarse en la interfaz (pendiente).

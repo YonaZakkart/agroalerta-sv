@@ -3,8 +3,8 @@
 Este directorio reúne todo lo que necesita una persona para entender, levantar y continuar el proyecto **AgroAlerta Morazán**: una plataforma web orientada a eventos para prevención de riesgos agrícolas en Morazán, El Salvador.
 
 - **Repositorio:** `agroalerta-sv` (privado)
-- **Documentación:** consolidada en `.md`; los antiguos `.txt` se retiraron.
-- **Última actualización de este índice:** 14 de noviembre de 2026
+- **Documentación:** consolidada en `.md`; los antiguos `.txt` se retiraron, salvo `docs/4-A-doc.txt`, ya integrado en `history/branches/4-siembra.md` y pendiente de retirar.
+- **Última actualización de este índice:** 24 de noviembre de 2026
 
 ---
 
@@ -18,14 +18,14 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 | Hito 1 — frontend mínimo | ✅ Cerrado | 6-0, 6-A y 6-B: login, registro y dashboard con datos reales |
 | Parte 3 — clima | ✅ Cerrada | 3-0a/b/c, 3-A, 3-B, 3-C y 3-D, incluido el job periódico |
 | 6-D — Clima Zonal | ✅ Implementado | Vista por distrito y condición en el encabezado |
-| Parte 4 — siembra | ⏳ Pendiente | Modelo, formulario, costos e historial |
+| Parte 4 — siembra | 🟡 En curso | 4-A, 4-B y 4-C hechos; 4-D pendiente |
 | Parte 5 — estimación | ⏳ Pendiente | Listeners, proyección, recomendaciones y reporte |
 | 6-C / 6-E | ⏳ Pendientes | Historial y estimación real en el dashboard |
 | Parte 7 — despliegue | ⏳ Pendiente | Docker de producción, TLS, CORS final y pruebas E2E |
 
-**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito y condición climática en el encabezado.
+**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, modelo y formulario de siembra (sin endpoint todavía) y estimación de costos como función pura con precios del MAG.
 
-**Lo que todavía no existe:** registrar una siembra, estimar rendimiento o ingresos, recomendaciones automáticas, historial y despliegue.
+**Lo que todavía no existe:** guardar una siembra desde la API, mostrar el estimado de costos en la interfaz, estimar rendimiento o ingresos, recomendaciones automáticas, historial y despliegue.
 
 ---
 
@@ -50,7 +50,8 @@ docs/
 │   ├── Info_Datos_CENTA.md
 │   ├── Info_Datos_Clima.md
 │   ├── Info_Datos_Coordenadas.md
-│   └── Info_Datos_OpenMeteo.md
+│   ├── Info_Datos_OpenMeteo.md
+│   └── Info_Datos_Precios.md Precios y dosis de referencia (F3, 4-C)
 │
 ├── roadmap/                  Plan de desarrollo
 │   ├── mapa_v1.md            Mapa inicial (Partes 0 a 7), histórico
@@ -69,6 +70,7 @@ docs/
 │   │   ├── 1-autenticacion.md
 │   │   ├── 2-viabilidad.md
 │   │   ├── 3-clima.md
+│   │   ├── 4-siembra.md      4-A, 4-B y 4-C
 │   │   ├── 6-frontend.md
 │   │   └── cierre-y-pendientes.md
 │   └── bugs-resueltos.md     Incidencias reales, causa y solución
@@ -110,6 +112,11 @@ docs/
 - [`adr/3-B.md`](adr/3-B.md) y [`adr/3-C.md`](adr/3-C.md)
 - [`history/branches/3-clima.md`](history/branches/3-clima.md)
 
+### “Voy a tocar la siembra o la estimación de costos”
+- [`history/branches/4-siembra.md`](history/branches/4-siembra.md)
+- [`data/Info_Datos_Precios.md`](data/Info_Datos_Precios.md) (F3)
+- [`architecture/data.md`](architecture/data.md), sección del modelo `Siembra`
+
 ### “¿Qué sigue?”
 - [`tasks/continuacion.md`](tasks/continuacion.md)
 - [`tasks/pendiente.md`](tasks/pendiente.md)
@@ -124,8 +131,8 @@ docs/
 
 ## 4. Reglas de esta documentación
 
-1. **Los `.md` son la única fuente viva.** Los antiguos `.txt` se retiraron al consolidar la documentación; su contenido histórico quedó resumido en `history/` y `roadmap/`.
-2. **Los contratos de `data/` no se modifican sin acuerdo del equipo.** `Info_Datos_CENTA.md`, `Info_Datos_Clima.md`, `Info_Datos_Coordenadas.md` e `Info_Datos_OpenMeteo.md` describen fuentes externas y umbrales; un cambio ahí afecta código y pruebas.
+1. **Los `.md` son la única fuente viva.** Los antiguos `.txt` se retiraron al consolidar la documentación; su contenido histórico quedó resumido en `history/` y `roadmap/`. La única excepción es `docs/4-A-doc.txt`, ya integrado en `history/branches/4-siembra.md` y pendiente de retirar.
+2. **Los contratos de `data/` no se modifican sin acuerdo del equipo.** `Info_Datos_CENTA.md`, `Info_Datos_Clima.md`, `Info_Datos_Coordenadas.md`, `Info_Datos_OpenMeteo.md` e `Info_Datos_Precios.md` describen fuentes externas y umbrales; un cambio ahí afecta código y pruebas.
 3. **Un cambio de código que altere el comportamiento actualiza su documento.** Si cambia un endpoint, se actualiza `architecture/api.md`; si cambia el modelo, `architecture/data.md`; si aparece una trampa nueva, `gotchas.md`.
 4. **Una decisión importante se registra como ADR.** No hace falta un ADR para cada detalle, pero sí para elecciones difíciles de revertir: autenticación, persistencia, eventos, fuente de datos y despliegue.
 5. **La documentación se escribe en español.** Nombres de código, endpoints, variables de entorno y comandos se mantienen tal cual están en el repositorio.
@@ -143,6 +150,8 @@ docs/
 | **Clase** | Subdivisión de una capa (por ejemplo, potencial alto, medio o bajo). Cada combinación distrito–capa–clase tiene un área en hectáreas. |
 | **Condición climática** | `SEQUIA`, `EXCESO_LLUVIA` o `INVIERNO_ACEPTABLE`; `null` cuando el distrito está fuera de la época evaluable. |
 | **Evento** | Mensaje interno del bus (`AgricultorRegistrado`, `ActualizacionMeteorologica`, `CondicionClimaticaActualizada`, `SiembraRegistrada`). |
+| **Siembra** | Registro de un cultivo en un distrito: estado, fecha, área en manzanas e inversión declarada. Modelo de 4-A; formulario de 4-B. |
+| **F3** | Precios y dosis de referencia del MAG para estimar costos (4-C). Cada valor lleva fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). |
 | **EDA** | Event-Driven Architecture: el sistema reacciona a eventos en lugar de esperar que el usuario pida un recálculo. |
 | **CENTA** | Fuente de los datos de viabilidad agrícola. No tiene API pública; se usan exportaciones CSV. |
 | **Open-Meteo** | API climática usada para la lluvia por distrito. Requiere atribución (CC BY 4.0). |
