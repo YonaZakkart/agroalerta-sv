@@ -2,7 +2,7 @@
 
 - **Periodo:** 31 de octubre a 14 de noviembre de 2026
 - **Fuente:** `docs/Estado_Proyecto_Pt2.txt`, sección «Parte 6», y `git log` de `main`
-- **Estado:** 6-0, 6-A, 6-B (Hito 1), 6-D y 6-E ✅; 6-C y Configuración ⏳
+- **Estado:** 6-0, 6-A, 6-B (Hito 1), 6-C, 6-D y 6-E ✅; Configuración ⏳
 
 ## Resumen
 
@@ -15,6 +15,7 @@
 | 6-B | `feat/6-b-layout-dashboard` | Shell con perfil y dashboard con viabilidad real |
 | 6-D | `feat/hito2-clima-zonal` (PR #48) | Vista Clima Zonal y clima en el encabezado |
 | 6-E | `feat/6-e-dashboard-estimacion` | PR #62 | Estimación real en el dashboard |
+| 6-C | `feat/6-c-historial` | Historial de siembras y estimaciones |
 | Pulido | `feat/frontend-responsive-polish` (PR #49) | Tokens de espaciado y colores semánticos |
 | Fix | `fix/ng0203-takeuntil-destroyed` (PR #50) | `DestroyRef` en `takeUntilDestroyed` |
 
@@ -133,6 +134,28 @@ La vista muestra condición, nivel de sequía, días secos, acumulado, normal, r
 
 ---
 
+## 6-C — Historial de evaluaciones
+
+**Rama:** `feat/6-c-historial` · **Responsable:** Yona · **25 de noviembre de 2026** · PR por abrir
+
+**Qué se hizo:**
+
+- `core/historial.service.ts`: combina `GET /siembras` y `GET /estimaciones`; la primera estimación de cada siembra es la más reciente.
+- `SiembraService.listar()` y tipos `Siembra`, `RespuestaSiembras` e `ItemHistorial`.
+- Vista `/historial` con una tarjeta por siembra:
+  - cultivo, distrito, área, fecha, estado e inversión declarada;
+  - última estimación con semáforo, producción, ingreso, rendimiento, precio, clima y motivos;
+  - aviso cuando la siembra todavía no tiene estimación.
+- Estados de carga, error con reintento y vacío con enlace a `/siembra`. Sin datos de ejemplo.
+- Enlace «Historial» habilitado en el sidebar.
+- Pruebas: `historial.service.spec.ts` (2 casos).
+
+**Decisión MVP:** el historial no recalcula; lee los reportes persistidos y muestra la última estimación de cada siembra. No hay paginación ni detalle por estimación individual.
+
+**Verificación:** `npm run typecheck`, `npm test` (11 archivos, 33 casos) y `npm run build` en verde.
+
+---
+
 ## Pulido responsive
 
 **Rama:** `feat/frontend-responsive-polish` · **PR #49**
@@ -158,9 +181,9 @@ Es un cambio solo de estilos: no altera comportamiento ni contratos.
 
 ## Estado al 25 de noviembre de 2026
 
-- Cuatro vistas: login, registro, dashboard y clima zonal; además, formulario de siembra.
+- Seis vistas: login, registro, dashboard, clima zonal, formulario de siembra e historial.
 - Sesión con `sessionStorage`, interceptor, guards, timeout y mensajes de error.
 - Viabilidad, clima y estimación reales en el dashboard.
-- 10 archivos de pruebas y 31 casos.
+- 11 archivos de pruebas y 33 casos.
 - Sin pruebas de componentes ni E2E; sin favicon propio; sin atribución visible de Open-Meteo ni GeoNames.
-- Pendientes: 6-C (Historial) y Configuración.
+- Pendientes: Configuración.

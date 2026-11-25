@@ -137,7 +137,7 @@ frontend/src/app/
 ├── app.routes.server.ts              RenderMode.Client en "**"
 ├── core/                             servicios, modelos, guards, interceptor, utilidades
 ├── layout/                           auth-shell y shell
-└── pages/                            login, registro, dashboard, clima-zonal, siembra
+└── pages/                            login, registro, dashboard, clima-zonal, siembra, historial
 ```
 
 - Componentes **standalone**; no se usan `NgModule`.

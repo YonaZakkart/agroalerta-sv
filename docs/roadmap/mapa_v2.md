@@ -44,7 +44,7 @@
 |---|---|---|
 | **Hito 1** — demo mínima con datos reales | 6-0, 6-A, 6-B: login, registro y dashboard con viabilidad real | ✅ cerrado |
 | **Hito 2** — clima real | 3-0 a 3-D, 6-D (Clima Zonal) y encabezado con clima | ✅ cerrado (3 completo; 6-D implementado) |
-| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | 🟡 en curso: Partes 4 y 5 cerradas y 6-E hecho; falta 6-C |
+| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | ✅ cerrado |
 | **Hito 4** — cierre | Parte 7 | ⏳ pendiente |
 
 Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección 5). Hay que conseguirlos desde ya.
@@ -56,7 +56,7 @@ Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección
 | Pista | Contenido | Estado |
 |---|---|---|
 | 1 | Frontend base y autenticación: 6-0, 6-A | ✅ |
-| 2 | Frontend dashboard: 6-B, luego 6-D y 6-E | 6-B, 6-D y 6-E ✅ |
+| 2 | Frontend dashboard: 6-B, luego 6-D y 6-E | 6-B, 6-D, 6-E y 6-C ✅ |
 | 3 | Backend de clima: 3-0 y 3-A a 3-D | ✅ |
 | 4 | Datos de referencia y siembra: documento de datos, 4-A y 4-C | 4-A a 4-D ✅ |
 
@@ -133,7 +133,7 @@ Job con `setInterval` que arranca con el servidor y tolera fallos de red; `GET /
 | 6-0 | Base de Angular: rutas, configuración, estilos, servicio de auth, interceptor, guards, modelos | M | ✅ |
 | 6-A | Login y registro conectados: distrito por nombre, detalles del 400, 403/409, verificación simulada | M | ✅ |
 | 6-B | Layout y dashboard: sidebar, header con usuario, KPI, viabilidad real, estimación vacía | L | ✅ |
-| 6-C | Historial de evaluaciones (depende de 4-D y 5-D) | M | ⏳ |
+| 6-C | Historial de evaluaciones (depende de 4-D y 5-D) | M | ✅ |
 | 6-D | Clima Zonal y Configuración básica (depende de 3-D) | M | ✅ Clima Zonal; Configuración ⏳ |
 | 6-E | Dashboard con estimación real (depende de 5-D) | M | ✅ |
 

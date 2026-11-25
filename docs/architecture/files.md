@@ -202,6 +202,7 @@ frontend/
         │   ├── clima.service.ts
         │   ├── siembra.service.ts
         │   ├── estimacion.service.ts
+        │   ├── historial.service.ts
         │   ├── errores.ts        mensajesDeError()
         │   └── *.spec.ts         pruebas de servicios, guards y utilidades
         ├── layout/
@@ -211,6 +212,7 @@ frontend/
             ├── login/
             ├── registro/
             ├── dashboard/        viabilidad real y estimación persistida
+            ├── historial/        siembras y su última estimación
             ├── clima-zonal/      condición por distrito
             └── siembra/          formulario de siembra (4-B)
 ```
@@ -247,7 +249,7 @@ frontend/
 2. `app.config.ts` registra el router, la hidratación del cliente y `HttpClient` con `withFetch()` y `authInterceptor`.
 3. `app.routes.ts` resuelve la ruta:
    - `/login` y `/registro` con `invitadoGuard`.
-   - Área protegida con `Shell` y `authGuard`; hijos `/dashboard`, `/clima-zonal` y `/siembra`.
+   - Área protegida con `Shell` y `authGuard`; hijos `/dashboard`, `/clima-zonal`, `/siembra` y `/historial`.
    - `''` redirige a `/dashboard`; `**` redirige a `''`.
 4. `Shell` carga el perfil (`GET /auth/yo`) y el clima del distrito del usuario para el encabezado.
 5. Cada página carga sus datos con su servicio; el interceptor agrega el token y maneja el 401.
@@ -300,4 +302,5 @@ frontend/
 | Clima Zonal | `frontend/src/app/pages/clima-zonal/` |
 | Formulario de siembra | `frontend/src/app/pages/siembra/` |
 | Estimación en el dashboard | `frontend/src/app/pages/dashboard/`, `core/estimacion.service.ts` |
+| Historial de evaluaciones | `frontend/src/app/pages/historial/`, `core/historial.service.ts` |
 | Estilos globales | `frontend/src/styles.css` |
