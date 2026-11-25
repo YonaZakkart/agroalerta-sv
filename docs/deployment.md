@@ -25,7 +25,7 @@ La migración base de Postgres es `backend/prisma/migrations/20261125_init_postg
 ## 2. Render (backend)
 
 - **Root Directory:** `backend` (confirmar en Render; si se deja la raíz del repo, `npm ci` instala el paquete de Neon y no el backend)
-- **Build Command:** `npm ci --legacy-peer-deps --include=dev && npx --no-install prisma generate && npm run build`
+- **Build Command:** `npm ci --legacy-peer-deps --include=dev --no-audit --no-fund && npx --no-install prisma generate && npm run build`
 - **Start Command:** `npm start`
 - **Health Check Path:** `/health`
 
@@ -33,6 +33,7 @@ Variables:
 
 ```text
 NODE_VERSION=22
+NPM_CONFIG_PRODUCTION=false
 DATABASE_URL=postgresql://...-pooler...neon.tech/neondb?sslmode=require
 JWT_SECRET=<32+ caracteres>
 DUI_PEPPER=<32+ caracteres>
@@ -44,7 +45,7 @@ PORT=10000
 
 No pongas `DATABASE_URL_UNPOOLED` en Render salvo que ejecutes migraciones desde el build; para migrar, corre `prisma migrate deploy` desde local apuntando a la directa.
 
-**Por qué `--include=dev`:** Render define `NODE_ENV=production`, y `npm ci` omite devDependencies por defecto. Sin `prisma` ni `typescript` locales, `npx prisma` descarga Prisma 8 y falla con `[CLI.V7_COMMAND]`; además `npm run build` no encontraría `tsc`. `npx --no-install` obliga a usar el Prisma 7 del proyecto.
+**Por qué `NPM_CONFIG_PRODUCTION=false` y `--include=dev`:** Render define `NODE_ENV=production`, y `npm ci` omite devDependencies por defecto. Sin `prisma` ni `typescript` locales, `npx prisma` descarga Prisma 8 y falla con `[CLI.V7_COMMAND]`; además `npm run build` no encontraría `tsc`. `npx --no-install` obliga a usar el Prisma 7 del proyecto.
 
 ## 3. Vercel (frontend)
 
