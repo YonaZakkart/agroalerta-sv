@@ -121,10 +121,73 @@
   <div class="card-header">
     <h2><i class="fa-solid fa-calculator" aria-hidden="true"></i> Estimación de siembra</h2>
   </div>
-  <div class="card-body vacio">
-    <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>
-    <p>Aún no disponible</p>
-    <span>La proyección de rendimiento e ingresos y las recomendaciones se activarán cuando exista el registro de
-      siembra y el monitoreo del clima</span>
+  <div class="card-body">
+    @if (cargandoEstimacion()) {
+    <p class="vacio" role="status" aria-live="polite">Cargando estimación...</p>
+    } @else if (errorEstimacion()) {
+    <div class="alerta alerta-error" role="alert">
+      <p>No se pudo cargar la estimación.</p>
+      <button type="button" class="btn-primary" (click)="cargarEstimaciones()">Reintentar</button>
+    </div>
+    } @else if (estimacionActual(); as e) {
+    <div class="riesgo" [attr.data-nivel]="e.nivelRiesgo">
+      <span class="riesgo-punto" aria-hidden="true"></span>
+      <div>
+        <strong>{{ e.titulo }}</strong>
+        <p>{{ e.mensaje }}</p>
+      </div>
+      <span class="riesgo-nivel">{{ e.nivelRiesgo }}</span>
+    </div>
+
+    <div class="metricas">
+      <div>
+        <span>Producción estimada</span>
+        <strong>{{ e.produccionEstimadaQq | number: '1.0-2' }} qq</strong>
+      </div>
+      <div>
+        <span>Ingreso estimado</span>
+        <strong>{{ e.ingresoEstimadoUsd | currency: 'USD' : 'symbol' : '1.0-2' }}</strong>
+      </div>
+      <div>
+        <span>Rendimiento</span>
+        <strong>{{ e.rendimientoEstimadoQqPorMz | number: '1.0-2' }} qq/mz</strong>
+      </div>
+      <div>
+        <span>Precio de venta</span>
+        <strong>{{ e.precioVentaQqUsd | currency: 'USD' : 'symbol' : '1.0-2' }}/qq</strong>
+      </div>
+    </div>
+
+    <p class="meta">
+      Siembra #{{ e.siembraId }} · {{ e.areaMz | number: '1.0-2' }} mz · {{ e.cultivo | lowercase }} ·
+      Calculado {{ e.calculadoEn | date: 'dd/MM/yyyy HH:mm' }}
+    </p>
+    <p class="meta">Clima: {{ detalleClima(e) }}</p>
+
+    @if (e.viabilidad; as v) {
+    <p class="nota">
+      Referencia CENTA: {{ v.capa }}, clase dominante {{ v.claseDominante | lowercase }}
+      ({{ v.porcentaje | number: '1.1-1' }} % del distrito). No es un veredicto sobre tu parcela.
+    </p>
+    }
+
+    <details class="motivos">
+      <summary>¿Por qué esta recomendación?</summary>
+      <ul>
+        @for (motivo of e.motivos; track $index) {
+        <li>{{ motivo }}</li>
+        }
+      </ul>
+    </details>
+
+    <a routerLink="/siembra" class="enlace">Registrar otra siembra</a>
+    } @else {
+    <div class="vacio">
+      <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+      <p>Aún no hay estimación para este cultivo y distrito</p>
+      <span>Registra una siembra para que el sistema calcule rendimiento e ingresos con el clima del distrito.</span>
+      <a routerLink="/siembra" class="btn-primary">Registrar siembra</a>
+    </div>
+    }
   </div>
 </section>

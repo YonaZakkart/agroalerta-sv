@@ -135,3 +135,63 @@ export interface DatosSiembra {
   costoRiegoUsd?: number;
   costoOtrosUsd?: number;
 }
+// ---- Estimación (Parte 5, 5-D). GET /estimaciones devuelve el historial del usuario.
+export type CondicionClimatica = 'SEQUIA' | 'EXCESO_LLUVIA' | 'INVIERNO_ACEPTABLE';
+export type NivelSequia = 'DEBIL' | 'MODERADA' | 'FUERTE' | 'SEVERA';
+export type NivelRiesgo = 'VERDE' | 'AMARILLO' | 'ROJO';
+
+export interface SupuestoEstimacion {
+  clave: string;
+  valor: number | string;
+  unidad: string;
+  tipo: 'OFICIAL' | 'SUPUESTO';
+  fuente: string;
+  fecha: string;
+  nota?: string;
+}
+
+export interface ViabilidadReferencia {
+  capa: string;
+  claseDominante: string;
+  porcentaje: number;
+  fuente: string | null;
+  fechaExtraccion: string | null;
+}
+
+export interface Estimacion {
+  id: number;
+  siembraId: number;
+  distritoId: number;
+  cultivo: CultivoSiembra;
+  estado: EstadoSiembra;
+  areaMz: number;
+  fechaSiembra: string; // AAAA-MM-DD
+  condicion: CondicionClimatica | null;
+  nivelSequia: NivelSequia | null;
+  fechaDatos: string | null;
+  actualizadoEn: string | null;
+  rendimientoBaseQqPorMz: number;
+  factorClimatico: number;
+  rendimientoEstimadoQqPorMz: number;
+  produccionEstimadaQq: number;
+  precioVentaQqUsd: number;
+  ingresoEstimadoUsd: number;
+  nivelRiesgo: NivelRiesgo;
+  titulo: string;
+  mensaje: string;
+  motivos: string[];
+  viabilidad: ViabilidadReferencia | null;
+  supuestos: SupuestoEstimacion[];
+  calculadoEn: string;
+}
+
+export interface RespuestaEstimaciones {
+  estimaciones: Estimacion[];
+}
+
+// El dashboard usa el cultivo en minúsculas; el backend devuelve el enum en mayúsculas.
+export const CULTIVO_A_ENUM: Record<Cultivo, CultivoSiembra> = {
+  maiz: 'MAIZ',
+  frijol: 'FRIJOL',
+  maicillo: 'MAICILLO',
+};
