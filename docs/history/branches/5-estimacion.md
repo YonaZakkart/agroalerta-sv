@@ -10,7 +10,7 @@
 | Punto | Rama | Responsable | PR | Resultado |
 |---|---|---|---|---|
 | 5-A | `feat/5-a-listeners` | Yona | #58 | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
-| 5-B | `feat/5-b-proyeccion` | Yona | por abrir | Proyección pura de rendimiento e ingresos con F1/F4 y factores climáticos supuestos |
+| 5-B | `feat/5-b-proyeccion` | Yona | #59 | Proyección pura de rendimiento e ingresos con F1/F4 y factores climáticos supuestos |
 
 ---
 
@@ -57,7 +57,7 @@
 
 ## 5-B — Proyección de rendimiento e ingresos
 
-**Rama:** `feat/5-b-proyeccion` · **Responsable:** Yona · **24 de noviembre de 2026** · PR por abrir
+**Rama:** `feat/5-b-proyeccion` · **Responsable:** Yona · **24 de noviembre de 2026** · PR #59
 
 **Qué se hizo:**
 
