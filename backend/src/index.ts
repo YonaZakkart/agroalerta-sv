@@ -7,6 +7,7 @@ import { viabilidadRouter } from "./viabilidad/viabilidad.routes";
 import { distritosRouter } from "./viabilidad/distritos.routes";
 import { climaRouter } from "./clima/clima.routes";
 import { siembraRouter } from "./siembra/siembra.routes";
+import { iniciarListenersEstimacion } from "./estimacion/registro";
 import { actualizarClima } from "./clima/orquestador";
 import { iniciarJobClima, leerIntervaloJob } from "./clima/job";
 import type { JobClima } from "./clima/job";
@@ -89,6 +90,10 @@ app.use("/siembras", siembraRouter);
 
 app.use(rutaNoEncontrada);
 app.use(manejarErrores);
+
+// Los listeners de la Parte 5 reaccionan a los eventos del bus en proceso.
+// Se registran una sola vez, antes de abrir el puerto.
+iniciarListenersEstimacion();
 
 function obtenerPuerto(): number {
   try {
