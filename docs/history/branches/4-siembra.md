@@ -13,7 +13,7 @@
 | 4-A docs | `docs/4-a-modelo-siembra` | Requeno | #54 | Documentación en `.txt`; se integra a `.md` en esta rama |
 | 4-B | `feat/4-b-formulario-siembra` | Josué | #55 | Ruta `/siembra`, servicio y formulario Angular |
 | 4-C | `feat/4-c-estimacion-costos` | Yona | #56 | Tabla F3, función pura y pruebas |
-| 4-D | `feat/4-d-endpoints-siembra` | Yona | por abrir | `POST /siembras`, `GET /siembras` y `SiembraRegistrada` |
+| 4-D | `feat/4-d-endpoints-siembra` | Yona | #57 | `POST /siembras`, `GET /siembras` y `SiembraRegistrada` |
 
 **Decisión previa:** D1 (14/11/2026) aprobó que la siembra permita elegir el distrito, con el del perfil como valor inicial. No se hereda el distrito que se explora en el dashboard.
 
@@ -113,7 +113,7 @@ Esta rama no había quedado documentada; se registra aquí.
 
 ## 4-D — Endpoints y evento
 
-**Rama:** `feat/4-d-endpoints-siembra` · **Responsable:** Yona · **24 de noviembre de 2026** · PR por abrir
+**Rama:** `feat/4-d-endpoints-siembra` · **Responsable:** Yona · **24 de noviembre de 2026** · PR #57
 
 **Qué se hizo:**
 
