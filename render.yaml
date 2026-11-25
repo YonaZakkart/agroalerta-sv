@@ -3,12 +3,14 @@ services:
     name: agroalerta-api
     runtime: node
     rootDir: backend
-    buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
+    buildCommand: npm ci --legacy-peer-deps --include=dev && npx --no-install prisma generate && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: "22"
       - key: PORT
         value: "10000"
       - key: EXPONER_TOKEN_VERIFICACION
