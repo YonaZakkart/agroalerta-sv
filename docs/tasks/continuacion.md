@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–5 cerradas, Hito 1 cerrado y 6-D implementado. Siguiente: 6-E y 6-C.
+- **Estado del proyecto:** Partes 0–5 cerradas, Hito 1 cerrado, 6-D y 6-E implementados. Siguiente: 6-C y Parte 7.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -128,11 +128,12 @@
 
 ### 6-E — Estimación real en el dashboard
 
-**Depende de:** 5-D. **Tamaño:** M.
+**Depende de:** 5-D (listo). **Estado:** ✅ hecho. **Tamaño:** M.
 
 - Reemplazar el panel vacío del dashboard por la última estimación real.
 - Si no hay estimación, mantener el estado vacío con un enlace a siembra.
 - **Criterio de aceptación:** no aparece ninguna cifra de `dashboard_base.html` como dato real.
+- **Resultado:** el dashboard carga `GET /estimaciones`, filtra la última del cultivo/distrito y muestra semáforo, producción, ingreso, motivos y CENTA; sin estimación, enlace a `/siembra`.
 
 ### Configuración (dentro de 6-D)
 
@@ -172,11 +173,10 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 6-E (una sola cifra real vale más que tres vistas).
-2. 6-C (historial).
-3. Parte 7.
+1. 6-C (historial).
+2. Parte 7.
 
-La Parte 5 está cerrada: los eventos disparan el recálculo, la proyección calcula rendimiento e ingreso, la recomendación asigna un semáforo y el reporte queda persistido.
+La Parte 5 está cerrada y 6-E ya muestra la estimación real en el dashboard. Queda 6-C y el cierre.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

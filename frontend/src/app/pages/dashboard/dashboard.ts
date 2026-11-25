@@ -1,11 +1,22 @@
-import { DecimalPipe, LowerCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe, LowerCasePipe } from '@angular/common';
 import { Component, computed, inject, signal, DestroyRef } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { EMPTY, catchError, filter, switchMap, tap } from 'rxjs';
 import { DistritosService } from '../../core/distritos.service';
 import { PerfilService } from '../../core/perfil.service';
 import { ViabilidadService } from '../../core/viabilidad.service';
-import { CULTIVOS, Cultivo, Distrito, RespuestaViabilidad, TipoCapa } from '../../core/models';
+import { EstimacionService } from '../../core/estimacion.service';
+import {
+  CULTIVO_A_ENUM,
+  CULTIVOS,
+  CondicionClimatica,
+  Cultivo,
+  Distrito,
+  Estimacion,
+  RespuestaViabilidad,
+  TipoCapa,
+} from '../../core/models';
 
 const CLAVE_CULTIVO = 'agroalerta_cultivo';
 
@@ -27,7 +38,7 @@ function leerCultivo(): Cultivo {
 }
 
 @Component({
-  imports: [DecimalPipe, LowerCasePipe],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, LowerCasePipe, RouterLink],
   selector: 'app-dashboard',
   styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
@@ -37,6 +48,7 @@ export class Dashboard {
   private readonly viabilidad = inject(ViabilidadService);
   private readonly catalogo = inject(DistritosService);
   private readonly perfilService = inject(PerfilService);
+  private readonly estimacionService = inject(EstimacionService);
 
   protected readonly perfil = this.perfilService.perfil;
   protected readonly perfilNoDisponible = this.perfilService.error;
@@ -46,9 +58,20 @@ export class Dashboard {
   protected readonly cargando = signal(true);
   protected readonly error = signal(false);
   protected readonly errorCatalogo = signal(false);
+  protected readonly estimaciones = signal<Estimacion[]>([]);
+  protected readonly cargandoEstimacion = signal(true);
+  protected readonly errorEstimacion = signal(false);
   private readonly intento = signal(0);
 
   protected readonly capas = computed(() => this.datos()?.capas ?? []);
+
+  /** Última estimación del cultivo y distrito seleccionados; la lista llega ordenada del más reciente al más viejo. */
+  protected readonly estimacionActual = computed<Estimacion | null>(() => {
+    const distrito = this.distritoActual();
+    if (!distrito) return null;
+    const cultivo = CULTIVO_A_ENUM[this.cultivo()];
+    return this.estimaciones().find((e) => e.distritoId === distrito.id && e.cultivo === cultivo) ?? null;
+  });
 
   // El distrito consultado es el elegido en el selector o, si no hay, el del perfil. Solo vive en memoria.
   protected readonly distritos = signal<Distrito[]>([]);
@@ -75,6 +98,7 @@ export class Dashboard {
   constructor() {
     // Si el catálogo falla se sigue con el distrito del perfil y se ofrece reintentar.
     this.cargarDistritos();
+    this.cargarEstimaciones();
     toObservable(this.peticion)
       .pipe(
         filter((p): p is Peticion => p !== null),
@@ -108,6 +132,34 @@ export class Dashboard {
     } catch {
       // almacenamiento no disponible: el cultivo solo vive en memoria
     }
+  }
+
+  protected cargarEstimaciones(): void {
+    this.cargandoEstimacion.set(true);
+    this.errorEstimacion.set(false);
+    this.estimacionService.listar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (lista) => {
+        this.estimaciones.set(lista);
+        this.cargandoEstimacion.set(false);
+      },
+      error: () => {
+        this.errorEstimacion.set(true);
+        this.cargandoEstimacion.set(false);
+      },
+    });
+  }
+
+  protected condicionTexto(condicion: CondicionClimatica | null): string {
+    if (condicion === 'SEQUIA') return 'Sequía';
+    if (condicion === 'EXCESO_LLUVIA') return 'Exceso de lluvia';
+    if (condicion === 'INVIERNO_ACEPTABLE') return 'Invierno aceptable';
+    return 'Sin evaluar';
+  }
+
+  protected detalleClima(estimacion: Estimacion): string {
+    const nivel = estimacion.nivelSequia ? ` (${estimacion.nivelSequia.toLowerCase()})` : '';
+    const fecha = estimacion.fechaDatos ? ` · datos al ${estimacion.fechaDatos}` : '';
+    return `${this.condicionTexto(estimacion.condicion)}${nivel}${fecha}`;
   }
 
   protected reintentar(): void {

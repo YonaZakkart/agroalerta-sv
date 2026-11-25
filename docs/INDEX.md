@@ -20,12 +20,13 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 | 6-D — Clima Zonal | ✅ Implementado | Vista por distrito y condición en el encabezado |
 | Parte 4 — siembra | ✅ Cerrada | 4-A a 4-D: modelo, formulario, costos, endpoints y evento |
 | Parte 5 — estimación | ✅ Cerrada | 5-A a 5-D: listeners, proyección, recomendaciones y reporte persistido |
-| 6-C / 6-E | ⏳ Pendientes | Historial y estimación real en el dashboard |
+| 6-C | ⏳ Pendiente | Historial de evaluaciones |
+| 6-E | ✅ Implementado | Estimación real en el dashboard |
 | Parte 7 — despliegue | ⏳ Pendiente | Docker de producción, TLS, CORS final y pruebas E2E |
 
-**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, estimación de costos como función pura, listeners EDA que reaccionan a siembra y clima, proyección de rendimiento e ingresos con supuestos declarados, recomendaciones por riesgo con referencia de CENTA y reporte persistido con historial.
+**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, estimación de costos como función pura, listeners EDA que reaccionan a siembra y clima, proyección de rendimiento e ingresos con supuestos declarados, recomendaciones por riesgo con referencia de CENTA, reporte persistido y estimación real en el dashboard.
 
-**Lo que todavía no existe:** mostrar la proyección y las recomendaciones en la interfaz, la vista de historial y el despliegue.
+**Lo que todavía no existe:** la vista de historial, la configuración y el despliegue.
 
 ---
 

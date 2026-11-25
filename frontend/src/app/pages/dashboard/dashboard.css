@@ -234,3 +234,130 @@
     align-items: start;
   }
 }
+.estimacion .card-body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.riesgo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+}
+
+.riesgo[data-nivel='VERDE'] {
+  background: var(--success-light);
+  border-color: var(--success);
+}
+
+.riesgo[data-nivel='AMARILLO'] {
+  background: var(--warning-light);
+  border-color: var(--warning);
+}
+
+.riesgo[data-nivel='ROJO'] {
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+
+.riesgo-punto {
+  width: 12px;
+  height: 12px;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.riesgo[data-nivel='VERDE'] .riesgo-punto {
+  color: var(--success);
+}
+
+.riesgo[data-nivel='AMARILLO'] .riesgo-punto {
+  color: var(--warning);
+}
+
+.riesgo[data-nivel='ROJO'] .riesgo-punto {
+  color: var(--danger);
+}
+
+.riesgo strong {
+  display: block;
+}
+
+.riesgo p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.riesgo-nivel {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.metricas div {
+  padding: var(--space-3);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.metricas span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.metricas strong {
+  font-size: 1.05rem;
+}
+
+.meta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.motivos summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--primary-dark);
+}
+
+.motivos ul {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.estimacion .enlace {
+  display: inline-block;
+}
+
+.vacio .btn-primary {
+  display: inline-block;
+  width: auto;
+  margin-top: var(--space-3);
+  padding: 0.7rem 1rem;
+  text-decoration: none;
+}
+
+@media (min-width: 600px) {
+  .metricas {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
