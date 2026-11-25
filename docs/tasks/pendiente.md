@@ -29,14 +29,16 @@ Cada pendiente indica **qué bloquea**, **quién decide** y **dónde está el de
 
 ## 2. Datos de referencia
 
-F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con precios del ciclo 2022-2023. Deben tener **fuente, fecha, formato y contrato**.
+F1 y F4 ya existen (MAG 2022-2023); F2 sigue parcial. Los factores climáticos de 5-B son supuestos declarados. Deben tener **fuente, fecha, formato y contrato**.
 
 | Clave | Dato | Uso | Estado |
 |---|---|---|---|
-| **F1** | Rendimiento estándar por cultivo (maíz, frijol, maicillo) en qq/mz | 5-B | ❌ No conseguido |
+| **F1** | Rendimiento estándar por cultivo (maíz, frijol, maicillo) en qq/mz | 5-B | ✅ Obtenido (MAG 2022-2023); revisar vigencia |
 | **F2** | Umbrales de lluvia y ventanas de primera/postrera | 3-B | ⚠️ Parcial: solo supuestos |
 | **F3** | Precios de insumos, dosis por manzana, jornales, alquiler, maquinaria y riego | 4-C | ✅ Obtenido (MAG 2022-2023); revisar vigencia |
-| **F4** | Precio de venta por quintal | 5-B | ❌ No conseguido |
+| **F4** | Precio de venta por quintal | 5-B | ✅ Obtenido (MAG 2022-2023); revisar vigencia |
+
+**F1/F4:** contrato en `data/Info_Datos_Estimacion.md`; implementación en `backend/src/estimacion/proyeccion.ts`. Los valores base son oficiales del ciclo 2022-2023; los factores de ajuste climático son **supuestos del equipo** y deben validarse con CENTA, un agrónomo o datos de campo.
 
 **F3:** contrato en `data/Info_Datos_Precios.md`; implementación en `backend/src/estimacion/referencia.ts`. Los precios son promedios del ciclo 2022-2023, no una cotización actual. Actualizarlos a un ciclo más reciente sigue pendiente.
 
@@ -72,6 +74,7 @@ F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con
 | B4 | Alias de cultivo y normalización | Ya resuelto con `normalizarNombre`; falta decidir el alias «sorgo». |
 | B5 | Respaldo y restauración | No hay estrategia; hace falta para la Parte 7. |
 | B6 | Pruebas de integración con MySQL real | Hoy las pruebas no tocan base de datos. |
+| B7 | Validar los factores climáticos de 5-B | Son supuestos del equipo (sequía 0.50–0.95, exceso 0.90); contrastar con CENTA, un agrónomo o datos de campo. |
 
 ---
 
@@ -121,7 +124,7 @@ F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con
 | A7 | Separar `app` de `listen` | Necesario para pruebas de API sin abrir puerto (Parte 7). |
 | A8 | Endpoint de estimación de costos | 4-C es una función pura; falta exponerla o integrarla para que el formulario muestre el estimado. |
 | A9 | Paginación de `GET /siembras` | Hoy devuelve todas las siembras del usuario; suficiente para el MVP, revisar si el historial crece. |
-| A10 | Proyección real de 5-B | 5-A arma el contexto y registra la solicitud; falta calcular rendimiento e ingresos con F1 y F4. |
+| A10 | Persistencia y reporte de 5-D | 5-B calcula en memoria/log; falta guardar y exponer la estimación. |
 
 ---
 
@@ -147,5 +150,6 @@ Para evitar confusiones:
 - **El clima «Sin evaluar»** es un estado válido fuera de época.
 - **Los precios F3 de 2022-2023** son un dato oficial con su fecha; lo que falta es actualizarlos, no inventarlos.
 - **La estimación sin costos indirectos** es una decisión de 4-C: es un piso de costos directos, no el total del MAG.
+- **Los factores climáticos de 5-B** son supuestos declarados con fecha; no se presentan como dato oficial.
 - **Los CSV crudos marcados como modificados** son ruido de fin de línea, no un cambio.
 - **La ausencia de lint** es una decisión del equipo, no un fallo de configuración.

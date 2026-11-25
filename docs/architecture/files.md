@@ -132,11 +132,13 @@ backend/
         ├── estimar-costos.ts     función pura estimarCostos()
         ├── listeners.ts          listeners de 5-A y captura de errores
         ├── recalculo.ts          contexto y recálculo por siembra/distrito
+        ├── proyeccion.ts         proyección 5-B (F1/F4 y clima)
         ├── registro.ts           une el bus real con los listeners
         ├── index.ts              API pública del módulo
         ├── estimar-costos.pruebas.ts
         ├── listeners.pruebas.ts
-        └── recalculo.pruebas.ts
+        ├── recalculo.pruebas.ts
+        └── proyeccion.pruebas.ts
 ```
 
 ### Archivos de prueba del backend
@@ -153,7 +155,7 @@ src/clima/clima.pruebas.ts, clasificacion.pruebas.ts,
          job.pruebas.ts, normales-archivo.pruebas.ts,
          orquestador.prueba.ts
 src/estimacion/estimar-costos.pruebas.ts
-src/estimacion/listeners.pruebas.ts, recalculo.pruebas.ts
+src/estimacion/listeners.pruebas.ts, recalculo.pruebas.ts, proyeccion.pruebas.ts
 src/siembra/siembra.pruebas.ts, siembra.routes.pruebas.ts
 ```
 
@@ -271,6 +273,7 @@ frontend/
 | Precios y dosis F3 | `backend/src/estimacion/referencia.ts` |
 | Listeners de estimación (5-A) | `backend/src/estimacion/listeners.ts` |
 | Recálculo por siembra/distrito | `backend/src/estimacion/recalculo.ts` |
+| Proyección de rendimiento e ingresos (5-B) | `backend/src/estimacion/proyeccion.ts` |
 | Registro de listeners al arrancar | `backend/src/estimacion/registro.ts` |
 | Validación de siembra (4-D) | `backend/src/siembra/siembra.validacion.ts` |
 | Persistencia y evento de siembra | `backend/src/siembra/siembra.service.ts` |

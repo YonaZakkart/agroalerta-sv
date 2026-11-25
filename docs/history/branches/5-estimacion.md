@@ -1,8 +1,8 @@
 # Historia — Parte 5: estimación y recomendaciones
 
 - **Periodo:** 24 de noviembre de 2026 en adelante
-- **Ramas:** `feat/5-a-listeners`
-- **Estado:** 5-A implementado; 5-B, 5-C y 5-D pendientes.
+- **Ramas:** `feat/5-a-listeners`, `feat/5-b-proyeccion`
+- **Estado:** 5-A y 5-B implementados; 5-C y 5-D pendientes.
 - **Fuente:** `git log` y el código en `main`.
 
 ## Resumen
@@ -10,6 +10,7 @@
 | Punto | Rama | Responsable | PR | Resultado |
 |---|---|---|---|---|
 | 5-A | `feat/5-a-listeners` | Yona | #58 | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
+| 5-B | `feat/5-b-proyeccion` | Yona | por abrir | Proyección pura de rendimiento e ingresos con F1/F4 y factores climáticos supuestos |
 
 ---
 
@@ -31,7 +32,7 @@
 - `backend/src/index.ts`: llama `iniciarListenersEstimacion()` una sola vez antes de abrir el puerto.
 - Pruebas: 6 casos de listeners y 6 de recálculo, sin red ni base de datos.
 
-**Alcance de 5-A:** los listeners disparan el recálculo y dejan el contexto listo (`siembraId`, usuario, distrito, cultivo, estado, área, fecha y condición climática). La **proyección real** es 5-B; `solicitarCalculoPendiente` solo registra la solicitud y lo dice en el log. No se inventa un rendimiento ni un ingreso en 5-A.
+**Alcance de 5-A:** los listeners disparan el recálculo y dejan el contexto listo (`siembraId`, usuario, distrito, cultivo, estado, área, fecha y condición climática). En 5-A `solicitarCalculoPendiente` solo registraba la solicitud; 5-B lo reemplazó por el cálculo real.
 
 **Decisiones MVP:**
 
@@ -54,17 +55,52 @@
 
 ---
 
+## 5-B — Proyección de rendimiento e ingresos
+
+**Rama:** `feat/5-b-proyeccion` · **Responsable:** Yona · **24 de noviembre de 2026** · PR por abrir
+
+**Qué se hizo:**
+
+- `backend/src/estimacion/proyeccion.ts`: función pura `proyectarEstimacion(contexto)`.
+  - F1 y F4 salen de las mismas fichas del MAG 2022-2023 que usa 4-C: maíz semitecnificado 58.22 qq/mz y $30.74/qq; frijol de invierno 18.17 qq/mz y $70.00/qq; maicillo semi-tecnificado 39.44 qq/mz y $30.00/qq.
+  - Ajuste climático declarado: invierno aceptable 1.00, exceso de lluvia 0.90, sequía 0.95/0.85/0.70/0.50 según nivel y 0.80 sin nivel; `null` no se ajusta.
+  - Fórmulas: rendimiento = round2(base × factor); producción = round2(rendimiento × área); ingreso = round2(producción × precio).
+  - El resultado viaja con `supuestos` (fuente, fecha y tipo `OFICIAL`/`SUPUESTO`) y con los datos del clima usados.
+- `backend/src/estimacion/recalculo.ts`: `solicitarCalculo` ahora calcula con `proyectarEstimacion` y registra el resultado en el log. No persiste: 5-D.
+- `backend/src/estimacion/proyeccion.pruebas.ts`: 14 casos, incluidos los tres valores de producción del MAG para 1 mz y los factores de sequía.
+- `docs/data/Info_Datos_Estimacion.md`: contrato de F1/F4, tabla de factores y límites.
+
+**Decisiones MVP:**
+
+1. **Datos base oficiales, ajuste supuesto.** F1/F4 son del MAG 2022-2023; los factores climáticos no tienen fuente oficial y se declaran como `SUPUESTO`.
+2. **Una ficha por cultivo.** Se reutilizan las fichas de 4-C para no mezclar tecnología ni temporada.
+3. **Sin evaluación climática = sin ajuste.** No se penaliza un distrito fuera de época.
+4. **La sequía reduce, no anula.** El factor más severo es 0.50; la sequía meteorológica no equivale a pérdida total.
+5. **Sin costos ni margen.** 5-B proyecta rendimiento e ingreso; 4-C tiene los costos y 5-C/5-D decidirán cómo combinarlos.
+6. **Sin persistencia.** El resultado se registra en el log; 5-D lo guarda y lo expone.
+
+**Verificación:** `npm run typecheck`, `npm run pruebas:proyeccion` (14/14), `npm run pruebas:listeners` (13/13 con el caso de integración 5-A→5-B), `npm test` (24 archivos) y `npm run build` en verde.
+
+**Pendientes que deja:**
+
+- 5-C: recomendaciones por riesgo.
+- 5-D: persistencia, reporte e historial.
+- Validar los factores climáticos con CENTA, un agrónomo o datos de campo.
+- Actualizar rendimiento y precio a un ciclo más reciente.
+
+---
+
 ## Archivos compartidos
 
 | Archivo | Punto | Riesgo |
 |---|---|---|
 | `backend/src/index.ts` | 5-A | Registro de listeners al arrancar. |
-| `backend/package.json` | 5-A | Cadena de `npm test`. |
+| `backend/package.json` | 5-A / 5-B | Cadena de `npm test`. |
 
 ---
 
 ## Qué sigue
 
-**5-B — Proyección de rendimiento e ingresos:** consumir `ContextoEstimacion`, aplicar F1 (rendimiento base) y F4 (precio de venta), con supuestos documentados y cálculo reproducible.
+**5-C — Recomendaciones:** semáforo verde/amarillo/rojo, citando el dato que lo origina y sin presentar la viabilidad de CENTA como veredicto de la parcela.
 
-**Después:** 5-C (recomendaciones), 5-D (persistencia y reporte), 6-E (estimación real en el dashboard) y 6-C (historial).
+**Después:** 5-D (persistencia y reporte), 6-E (estimación real en el dashboard) y 6-C (historial).

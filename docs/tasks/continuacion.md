@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado y 5-A hecho. Siguiente: 5-B.
+- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado y 5-A/5-B hechos. Siguiente: 5-C.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -87,16 +87,17 @@
 
 ### 5-B — Proyección de rendimiento e ingresos
 
-**Depende de:** F1 (rendimiento estándar) y F4 (precio de venta). **Estado:** siguiente. **Tamaño:** M.
+**Depende de:** F1 (rendimiento estándar) y F4 (precio de venta). **Estado:** ✅ hecho. F1/F4 del MAG 2022-2023 y factores climáticos supuestos; contrato en `data/Info_Datos_Estimacion.md`. **Tamaño:** M.
 
 - Rendimiento base por cultivo y área, ajustado por condición climática.
 - Los porcentajes de ajuste son **supuestos documentados**, no datos oficiales.
-- Guardar el resultado con la fecha y los insumos usados, para poder explicarlo.
+- Guardar el resultado con la fecha y los insumos usados, para poder explicarlo. En 5-B el resultado viaja con `supuestos` y fechas; 5-D lo persiste.
 - **Criterio de aceptación:** el cálculo es reproducible y no depende de la interfaz.
+- **Resultado:** `proyectarEstimacion()` es una función pura; el resultado se registra en el log y 5-D lo persistirá.
 
 ### 5-C — Recomendaciones
 
-**Depende de:** 5-B. **Tamaño:** M.
+**Depende de:** 5-B (listo). **Estado:** siguiente. **Tamaño:** M.
 
 - Semáforo verde/amarillo/rojo según riesgo.
 - La viabilidad de CENTA se cita como referencia distrital, **no** como veredicto sobre la parcela.
@@ -169,12 +170,12 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 5-B con supuestos declarados.
+1. 5-C (recomendaciones por riesgo).
 2. 6-E (una sola cifra real vale más que tres vistas).
-3. 5-C y 6-C.
+3. 6-C (historial).
 4. Parte 7.
 
-5-A ya está hecho: los eventos disparan el recálculo y dejan el contexto listo.
+5-A y 5-B ya están hechos: los eventos disparan el recálculo y la proyección calcula rendimiento e ingreso con supuestos declarados.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 
