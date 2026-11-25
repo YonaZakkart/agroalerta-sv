@@ -259,6 +259,11 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 - **Causa:** el `<input type="date">` del formulario trabaja con la fecha local del agricultor; usar UTC rechazaría “hoy” por la noche.
 - **Solución:** `hoyEnElSalvador()` en `siembra.validacion.ts` es la única comparación de fechas de siembra. No cambiarla a `toISOString().slice(0, 10)` sin revisar el caso de las 18:00 CST.
 
+### 7.7 El semáforo de 5-C no es un veredicto sobre la parcela
+
+- **Causa:** el semáforo se decide con la condición climática distrital; la viabilidad de CENTA también es distrital.
+- **Solución:** presentarlo como guía y citar los datos que lo originan. No prometer pérdida o ganancia de la parcela. La viabilidad de CENTA se cita como referencia y no cambia el nivel.
+
 ### 7.6 La proyección de 5-B mezcla datos oficiales y supuestos
 
 - **Causa:** F1/F4 son del MAG 2022-2023 (oficiales, pero del ciclo), y los factores de ajuste climático son supuestos del equipo.
