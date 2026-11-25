@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: agroalerta-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci --legacy-peer-deps && npx prisma generate && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: EXPONER_TOKEN_VERIFICACION
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: DUI_PEPPER
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
