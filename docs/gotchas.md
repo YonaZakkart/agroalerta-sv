@@ -263,3 +263,19 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 
 - **Causa:** decisión MVP de 4-D. El formulario advierte y permite guardar; rechazarlo obligaría al agricultor a inventar un total.
 - **Solución:** no “corregir” esto a un 400 sin cambiar el formulario y la decisión del equipo. Solo se validan montos no negativos.
+
+---
+
+## 8. Eventos
+
+### 8.1 `emitirSeguro` no captura rechazos de listeners async
+
+- **Síntoma:** el proceso registra un `unhandledRejection` o se cae después de emitir un evento, aunque `emitirSeguro` “captura” los errores.
+- **Causa:** `EventEmitter.emit` es síncrono. `emitirSeguro` solo captura lo que el listener lanza en ese momento; si el listener devuelve una promesa que se rechaza después, ese rechazo no pasa por el `try/catch`.
+- **Solución:** el listener debe envolver su tarea: `void tarea().catch((error) => registrarError(...))`. En 5-A esto vive en `estimacion/listeners.ts`. No devolver la promesa al bus ni confiar en `emitirSeguro` para errores asíncronos.
+
+### 8.2 Los listeners de 5-A se registran una sola vez al arrancar
+
+- **Síntoma:** un evento dispara el recálculo dos veces.
+- **Causa:** se llamó `iniciarListenersEstimacion()` más de una vez en el mismo proceso.
+- **Solución:** se llama una vez en `index.ts`, antes de `app.listen`. Si se agrega otro punto de arranque (pruebas, scripts), usar `registrarListenersEstimacion` con un bus propio, no el singleton.

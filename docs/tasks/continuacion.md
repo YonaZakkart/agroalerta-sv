@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado. Siguiente: 5-A.
+- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado y 5-A hecho. Siguiente: 5-B.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -77,16 +77,17 @@
 
 ### 5-A — Listeners
 
-**Depende de:** 4-D y 3-C (listos). **Estado:** siguiente. **Tamaño:** M.
+**Depende de:** 4-D y 3-C (listos). **Estado:** ✅ hecho. **Tamaño:** M.
 
 - Escuchar `SiembraRegistrada` y `CondicionClimaticaActualizada`.
 - Un listener no debe lanzar: `emitirSeguro` captura el error, pero el listener debe registrar y continuar.
 - **Decisiones ya tomadas:** D2 mantiene `null` para la cuarta salida de clima; D3 emite `CondicionClimaticaActualizada` en la primera clasificación de cada distrito, una sola vez; D4 no exige persistencia de N días porque el margen de 0.05 amortigua.
 - **Criterio de aceptación:** una siembra nueva dispara el cálculo; un cambio de clima recalcula solo los distritos afectados.
+- **Resultado:** los listeners arman `ContextoEstimacion` y llaman a `solicitarCalculo`. La proyección real es 5-B; 5-A no inventa rendimiento ni ingresos.
 
 ### 5-B — Proyección de rendimiento e ingresos
 
-**Depende de:** F1 (rendimiento estándar) y F4 (precio de venta). **Tamaño:** M.
+**Depende de:** F1 (rendimiento estándar) y F4 (precio de venta). **Estado:** siguiente. **Tamaño:** M.
 
 - Rendimiento base por cultivo y área, ajustado por condición climática.
 - Los porcentajes de ajuste son **supuestos documentados**, no datos oficiales.
@@ -168,12 +169,12 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 5-A y 5-B con supuestos declarados.
+1. 5-B con supuestos declarados.
 2. 6-E (una sola cifra real vale más que tres vistas).
 3. 5-C y 6-C.
 4. Parte 7.
 
-La Parte 4 está cerrada: 4-A, 4-B, 4-C y 4-D ya están en `main` (4-D en su PR).
+5-A ya está hecho: los eventos disparan el recálculo y dejan el contexto listo.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

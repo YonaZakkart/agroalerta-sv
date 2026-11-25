@@ -29,7 +29,7 @@ backend/src/
 ├── clima/            Open-Meteo, normales, clasificación, orquestador, job y endpoint
 ├── events/           bus y contratos de eventos
 ├── siembra/          validación, servicio y endpoints de 4-D
-└── estimacion/       estimación de costos de 4-C (referencia, función pura y pruebas)
+└── estimacion/       costos de 4-C y listeners/recálculo de 5-A
 ```
 
 - Un módulo expone su API pública en `index.ts` cuando otros módulos la consumen (`clima/index.ts`).
@@ -105,6 +105,7 @@ Contrato único de error:
 - Se emite **después** de persistir, para que el listener lea el estado nuevo.
 - Un evento no se emite si no hay dato válido que publicar (por ejemplo, precipitación `null`).
 - Los listeners no deben lanzar; si lo hacen, `emitirSeguro` lo registra y continúa.
+- **`emitirSeguro` no captura rechazos de promesas.** Un listener async debe hacer `void tarea().catch(...)`; si no, el rechazo queda sin manejar. Ver `estimacion/listeners.ts` (5-A).
 
 ### 2.7 Configuración y arranque
 

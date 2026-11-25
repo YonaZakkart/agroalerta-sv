@@ -121,6 +121,7 @@ F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con
 | A7 | Separar `app` de `listen` | Necesario para pruebas de API sin abrir puerto (Parte 7). |
 | A8 | Endpoint de estimación de costos | 4-C es una función pura; falta exponerla o integrarla para que el formulario muestre el estimado. |
 | A9 | Paginación de `GET /siembras` | Hoy devuelve todas las siembras del usuario; suficiente para el MVP, revisar si el historial crece. |
+| A10 | Proyección real de 5-B | 5-A arma el contexto y registra la solicitud; falta calcular rendimiento e ingresos con F1 y F4. |
 
 ---
 
