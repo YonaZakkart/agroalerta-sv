@@ -128,7 +128,9 @@ Agregada en 4-A. Una siembra pertenece a un usuario y a un distrito; el distrito
 | `creadoEn` | DateTime, default now | |
 | — | index(`usuarioId`, `creadoEn`) | Para `GET /siembras` por dueño (4-D). |
 
-El esquema no obliga a que `cantidadSemilla` y `unidadSemilla` vayan juntas ni a que la suma del desglose no supere `inversionTotalUsd`: esas reglas se validan en 4-D.
+El esquema no obliga a que `cantidadSemilla` y `unidadSemilla` vayan juntas ni a que la suma del desglose no supere `inversionTotalUsd`: esas reglas se validan en 4-D. La suma del desglose **puede** superar el total (decisión MVP); solo se validan montos no negativos.
+
+`POST /siembras` guarda una fila y emite `SiembraRegistrada` después del insert. `GET /siembras` filtra por `usuarioId`; no hay lectura de siembras ajenas.
 
 ### Enums
 
@@ -263,7 +265,8 @@ Se usa para:
 - `ClaseCapa` es única por (`capaId`, `valor`).
 - `CondicionDistrito` tiene como máximo una fila por distrito.
 - Una `Siembra` siempre tiene `usuarioId` y `distritoId` válidos.
-- `inversionTotalUsd` es obligatoria; el desglose es opcional y no puede superar el total (se valida en 4-D).
+- `inversionTotalUsd` es obligatoria; el desglose es opcional y no puede tener montos negativos. Puede superar el total (decisión MVP).
+- Una siembra solo es visible para el usuario que la creó.
 - La carga de CENTA no debe dejar distritos sin sus 12 áreas esperadas.
 
 ---

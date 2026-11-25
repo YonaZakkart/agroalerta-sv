@@ -191,4 +191,4 @@ No se edita un precio en la función de cálculo ni en el frontend: la única fu
 - **Jornal único por cultivo.** El MAG usa tarifas distintas en algunas labores de cosecha del maíz; la estimación usa la tarifa predominante.
 - **Sin costos indirectos ni transporte de cosecha.** El total es un piso de costos directos, no el costo total del MAG.
 - **Riego supuesto.** La cuota de agua es la de arroz de riego; no hay dato oficial para los tres cultivos.
-- **Sin interfaz todavía.** El formulario de 4-B muestra el aviso de que el estimado llegará después; falta el endpoint (4-D) o una tabla compartida para mostrarlo.
+- **Sin interfaz todavía.** El formulario ya registra siembras (4-D), pero no muestra el estimado; falta un endpoint o una tabla compartida para 4-C.

@@ -103,7 +103,7 @@ F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con
 | F-6 | Pruebas de componentes y E2E | Solo hay pruebas de servicios, guards e interceptor. |
 | F-7 | Prueba en teléfono real, Safari/iOS y lector de pantalla | No se ha hecho. |
 | F-8 | Decidir el guard inverso y la validación de vigencia | `invitadoGuard` y descarte de tokens vencidos ya existen; falta revisar el caso de token vencido al entrar al dashboard. |
-| F-9 | Mostrar el estimado de inversión en el formulario de siembra | Depende de 4-D o de una tabla compartida; 4-C ya tiene los precios, pero el formulario sigue mostrando el aviso. |
+| F-9 | Mostrar el estimado de inversión en el formulario de siembra | Depende de un endpoint de estimación o de una tabla compartida; 4-D ya registra siembras, pero el formulario sigue mostrando el aviso. |
 | F-10 | Enlace a `/siembra` en el sidebar | La ruta y el formulario existen desde 4-B, pero no hay entrada de navegación. |
 
 ---
@@ -119,8 +119,8 @@ F1 y F4 bloquean la proyección de 5-B; F2 sigue parcial; F3 ya existe, pero con
 | A5 | Job y cerrojo compartidos | El job y el cerrojo funcionan en un solo proceso. |
 | A6 | Validación de longitud de `DUI_PEPPER` | Ya se valida el mínimo de 32 al arrancar (PR #44); confirmar que la documentación lo refleja. |
 | A7 | Separar `app` de `listen` | Necesario para pruebas de API sin abrir puerto (Parte 7). |
-| A8 | Endpoint de estimación de costos | 4-C es una función pura; falta exponerla o integrarla en 4-D para que el formulario muestre el estimado. |
-| A9 | Validaciones de negocio de 4-D | `cantidadSemilla` y `unidadSemilla` juntas, suma del desglose ≤ total, área > 0, fecha coherente con estado, distrito existente y cultivo válido. |
+| A8 | Endpoint de estimación de costos | 4-C es una función pura; falta exponerla o integrarla para que el formulario muestre el estimado. |
+| A9 | Paginación de `GET /siembras` | Hoy devuelve todas las siembras del usuario; suficiente para el MVP, revisar si el historial crece. |
 
 ---
 

@@ -253,3 +253,13 @@ Cosas que ya costaron tiempo en este proyecto. Léalas antes de depurar desde ce
 
 - **Causa:** 4-C cubre costos directos y alquiler; administración, imprevistos, intereses y transporte interno quedan fuera.
 - **Solución:** no comparar el total de la estimación con el “costo total” del MAG como si fueran equivalentes. El detalle está en `data/Info_Datos_Precios.md`.
+
+### 7.4 La fecha de siembra se compara en `America/El_Salvador`
+
+- **Causa:** el `<input type="date">` del formulario trabaja con la fecha local del agricultor; usar UTC rechazaría “hoy” por la noche.
+- **Solución:** `hoyEnElSalvador()` en `siembra.validacion.ts` es la única comparación de fechas de siembra. No cambiarla a `toISOString().slice(0, 10)` sin revisar el caso de las 18:00 CST.
+
+### 7.5 El desglose de una siembra puede superar la inversión total
+
+- **Causa:** decisión MVP de 4-D. El formulario advierte y permite guardar; rechazarlo obligaría al agricultor a inventar un total.
+- **Solución:** no “corregir” esto a un 400 sin cambiar el formulario y la decisión del equipo. Solo se validan montos no negativos.

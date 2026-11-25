@@ -1,8 +1,8 @@
 # Historia — Parte 4: siembra y estimación de costos
 
 - **Periodo:** 15 a 24 de noviembre de 2026
-- **Ramas:** `feat/4-a-modelo-siembra`, `feat/4-b-formulario-siembra`, `feat/4-c-estimacion-costos`
-- **Estado:** 4-A, 4-B y 4-C cerrados; 4-D pendiente.
+- **Ramas:** `feat/4-a-modelo-siembra`, `feat/4-b-formulario-siembra`, `feat/4-c-estimacion-costos`, `feat/4-d-endpoints-siembra`
+- **Estado:** 4-A, 4-B y 4-C cerrados; 4-D implementado en esta rama, se cierra al mergear.
 - **Fuente:** `git log`, `docs/4-A-doc.txt` y el código en `main`.
 
 ## Resumen
@@ -13,6 +13,7 @@
 | 4-A docs | `docs/4-a-modelo-siembra` | Requeno | #54 | Documentación en `.txt`; se integra a `.md` en esta rama |
 | 4-B | `feat/4-b-formulario-siembra` | Josué | #55 | Ruta `/siembra`, servicio y formulario Angular |
 | 4-C | `feat/4-c-estimacion-costos` | Yona | #56 | Tabla F3, función pura y pruebas |
+| 4-D | `feat/4-d-endpoints-siembra` | Yona | #57 | `POST /siembras`, `GET /siembras` y `SiembraRegistrada` |
 
 **Decisión previa:** D1 (14/11/2026) aprobó que la siembra permita elegir el distrito, con el del perfil como valor inicial. No se hereda el distrito que se explora en el dashboard.
 
@@ -62,7 +63,7 @@ Esta rama no había quedado documentada; se registra aquí.
 - Validaciones: fecha coherente con el estado (`SEMBRADO` no futura, `POR_SEMBRAR` no pasada), semilla completa (cantidad y unidad juntas), área entre 0.01 y 999 999.99 y aviso si el desglose supera el total.
 - `fix(frontend): formulario de siembra compila con ReactiveFormsModule` agregó `ReactiveFormsModule` a los imports; sin él, `formGroup`, `formControlName` y `ngValue` fallaban con `NG8002`.
 
-**Lo que no se hizo:** el estimado de inversión previo. El formulario muestra el aviso «El estimado de inversión estará disponible cuando existan los precios de referencia del proyecto». Con 4-C ya existen los precios, pero todavía no hay endpoint ni tabla compartida para mostrarlos; queda para 4-D o una rama de frontend posterior.
+**Lo que no se hizo:** el estimado de inversión previo. El formulario muestra el aviso «El estimado de inversión estará disponible cuando existan los precios de referencia del proyecto». Con 4-C ya existen los precios y con 4-D el registro funciona, pero todavía no hay endpoint ni tabla compartida para mostrar el estimado; queda para una rama de frontend posterior.
 
 **Archivos compartidos tocados:** `frontend/src/app/app.routes.ts` y `frontend/src/app/core/models.ts`.
 
@@ -110,6 +111,42 @@ Esta rama no había quedado documentada; se registra aquí.
 
 ---
 
+## 4-D — Endpoints y evento
+
+**Rama:** `feat/4-d-endpoints-siembra` · **Responsable:** Yona · **24 de noviembre de 2026** · PR #57
+
+**Qué se hizo:**
+
+- `backend/src/siembra/siembra.validacion.ts`: validación pura de `POST /siembras` con el contrato `{ error, detalles }`.
+- `backend/src/siembra/siembra.dto.ts`: mapeo de `Decimal` y fechas al contrato público.
+- `backend/src/siembra/siembra.service.ts`:
+  - Comprueba que el distrito exista (404 si no).
+  - Persiste la siembra con el `usuarioId` del token.
+  - Emite `SiembraRegistrada` **después** del insert con `emitirSeguro`.
+  - `GET /siembras` filtra por `usuarioId` y ordena por `creadoEn` descendente.
+- `backend/src/siembra/siembra.routes.ts`: `POST /siembras` y `GET /siembras` con `requireAuth`. El router se crea con dependencias para probar el contrato HTTP sin MySQL.
+- `backend/src/index.ts`: monta `/siembras` y aplica un límite de 30 peticiones por minuto por IP.
+- Pruebas: `siembra.pruebas.ts` (20 casos de validación, DTO y servicio) y `siembra.routes.pruebas.ts` (8 casos HTTP: 201/200/400/401/404/500 y JSON mal formado).
+
+**Decisiones MVP:**
+
+1. **El desglose puede superar la inversión total.** El formulario ya lo advierte y permite guardar; rechazarlo obligaría al agricultor a inventar un total. Solo se validan montos no negativos.
+2. **La fecha se compara en `America/El_Salvador`**, no en UTC, para que “hoy” coincida con el `<input type="date">` del agricultor.
+3. **404 si el distrito no existe**, incluida una carrera con la FK (`P2003`).
+4. **Sin paginación y sin `GET /siembras/:id`.** La colección ya viene filtrada por dueño; el historial de 6-C puede pedir todo.
+5. **El evento lleva la fecha de siembra** (`fechaSiembra`), no la de creación del registro.
+6. **Si un listener falla, la siembra ya guardada se devuelve igual.** `emitirSeguro` captura el error y el servicio no revierte la transacción.
+
+**Verificación:** `npm run typecheck`, `npm test` (21 grupos) y `npm run build` en verde. No se probó contra MySQL real: las pruebas usan servicios falsos y un token firmado, como el resto del proyecto.
+
+**Pendientes que deja:**
+
+- Prueba de integración con MySQL real y un usuario verificado.
+- Paginación de `GET /siembras` si el historial crece.
+- Endpoint o integración para mostrar el estimado de 4-C en el formulario.
+
+---
+
 ## Archivos compartidos
 
 | Archivo | Punto | Riesgo |
@@ -118,12 +155,13 @@ Esta rama no había quedado documentada; se registra aquí.
 | `backend/prisma/migrations/` | 4-A | Las migraciones van en secuencia. |
 | `frontend/src/app/app.routes.ts` | 4-B | Rutas hijas del `Shell`. |
 | `frontend/src/app/core/models.ts` | 4-B | Contratos del frontend. |
-| `backend/package.json` | 4-C | Cadena de `npm test`. |
+| `backend/src/index.ts` | 4-D | Montaje de routers y limitadores. |
+| `backend/package.json` | 4-C / 4-D | Cadena de `npm test`. |
 
 ---
 
 ## Qué sigue
 
-**4-D — Endpoints y evento:** `POST /siembras` y `GET /siembras` con `requireAuth`, validación `{ error, detalles }`, emisión de `SiembraRegistrada` después de persistir con `emitirSeguro`, y solo el dueño ve sus siembras.
+**5-A — Listeners:** escuchar `SiembraRegistrada` y `CondicionClimaticaActualizada`, sin lanzar y sin frenar el emisor.
 
-**Después de 4-D:** 5-A (listeners), 5-B (proyección con F1 y F4), 6-E (estimación real en el dashboard) y 6-C (historial).
+**Después:** 5-B (proyección con F1 y F4), 5-C (recomendaciones), 5-D (persistencia), 6-E (estimación real en el dashboard) y 6-C (historial).
