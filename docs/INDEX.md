@@ -19,13 +19,13 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 | Parte 3 — clima | ✅ Cerrada | 3-0a/b/c, 3-A, 3-B, 3-C y 3-D, incluido el job periódico |
 | 6-D — Clima Zonal | ✅ Implementado | Vista por distrito y condición en el encabezado |
 | Parte 4 — siembra | ✅ Cerrada | 4-A a 4-D: modelo, formulario, costos, endpoints y evento |
-| Parte 5 — estimación | 🟡 En curso | 5-A: listeners y contexto; 5-B a 5-D pendientes |
+| Parte 5 — estimación | 🟡 En curso | 5-A y 5-B hechos; 5-C y 5-D pendientes |
 | 6-C / 6-E | ⏳ Pendientes | Historial y estimación real en el dashboard |
 | Parte 7 — despliegue | ⏳ Pendiente | Docker de producción, TLS, CORS final y pruebas E2E |
 
-**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, estimación de costos como función pura y listeners EDA que reaccionan a siembra y clima.
+**Lo que ya se puede demostrar:** registro con verificación simulada, login, dashboard con la viabilidad real del distrito del usuario, clima zonal por distrito, condición climática en el encabezado, formulario de siembra, registro y listado de siembras desde la API, estimación de costos como función pura, listeners EDA que reaccionan a siembra y clima, y proyección de rendimiento e ingresos con supuestos declarados.
 
-**Lo que todavía no existe:** la proyección real de rendimiento e ingresos, mostrar el estimado en la interfaz, recomendaciones automáticas, historial y despliegue.
+**Lo que todavía no existe:** persistir y mostrar la proyección en la interfaz, recomendaciones automáticas, historial y despliegue.
 
 ---
 
@@ -51,7 +51,8 @@ docs/
 │   ├── Info_Datos_Clima.md
 │   ├── Info_Datos_Coordenadas.md
 │   ├── Info_Datos_OpenMeteo.md
-│   └── Info_Datos_Precios.md Precios y dosis de referencia (F3, 4-C)
+│   ├── Info_Datos_Precios.md Precios y dosis de referencia (F3, 4-C)
+│   └── Info_Datos_Estimacion.md Rendimiento y precio de venta (F1/F4, 5-B)
 │
 ├── roadmap/                  Plan de desarrollo
 │   ├── mapa_v1.md            Mapa inicial (Partes 0 a 7), histórico
@@ -120,6 +121,7 @@ docs/
 
 ### “Voy a tocar la estimación y las recomendaciones”
 - [`history/branches/5-estimacion.md`](history/branches/5-estimacion.md)
+- [`data/Info_Datos_Estimacion.md`](data/Info_Datos_Estimacion.md) (F1/F4 y factores climáticos)
 - [`architecture/backend.md`](architecture/backend.md), sección de listeners
 - [`tasks/continuacion.md`](tasks/continuacion.md), Parte 5
 
@@ -159,6 +161,7 @@ docs/
 | **Listener** | Función suscrita al bus que reacciona a un evento. No debe lanzar ni bloquear al emisor; captura sus propios rechazos. |
 | **Siembra** | Registro de un cultivo en un distrito: estado, fecha, área en manzanas e inversión declarada. Modelo de 4-A, formulario de 4-B y endpoints de 4-D. |
 | **F3** | Precios y dosis de referencia del MAG para estimar costos (4-C). Cada valor lleva fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). |
+| **F1 / F4** | Rendimiento base y precio de venta para la proyección (5-B). Base MAG 2022-2023; el ajuste climático es un supuesto declarado. |
 | **EDA** | Event-Driven Architecture: el sistema reacciona a eventos en lugar de esperar que el usuario pida un recálculo. |
 | **CENTA** | Fuente de los datos de viabilidad agrícola. No tiene API pública; se usan exportaciones CSV. |
 | **Open-Meteo** | API climática usada para la lluvia por distrito. Requiere atribución (CC BY 4.0). |

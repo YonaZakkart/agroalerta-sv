@@ -44,7 +44,7 @@
 |---|---|---|
 | **Hito 1** — demo mínima con datos reales | 6-0, 6-A, 6-B: login, registro y dashboard con viabilidad real | ✅ cerrado |
 | **Hito 2** — clima real | 3-0 a 3-D, 6-D (Clima Zonal) y encabezado con clima | ✅ cerrado (3 completo; 6-D implementado) |
-| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | 🟡 en curso: Parte 4 cerrada y 5-A hecho; faltan 5-B a 5-D, 6-C y 6-E |
+| **Hito 3** — siembra y estimación | 4-A a 4-D, 5-A a 5-D, 6-C (Historial), 6-E (estimación real) | 🟡 en curso: Parte 4 cerrada, 5-A y 5-B hechos; faltan 5-C, 5-D, 6-C y 6-E |
 | **Hito 4** — cierre | Parte 7 | ⏳ pendiente |
 
 Los hitos 2 y 3 dependen de datos de referencia que no vienen de CENTA (sección 5). Hay que conseguirlos desde ya.
@@ -118,7 +118,7 @@ Job con `setInterval` que arranca con el servidor y tolera fallos de red; `GET /
 | Punto | Contenido | Tamaño | Estado |
 |---|---|---|---|
 | 5-A | Listeners de `SiembraRegistrada` y `CondicionClimaticaActualizada` | M | ✅ |
-| 5-B | Proyección de rendimiento base por cultivo y área, más ajuste climático; los porcentajes son supuestos documentados | M | ⏳ |
+| 5-B | Proyección de rendimiento base por cultivo y área, más ajuste climático; los porcentajes son supuestos documentados | M | ✅ |
 | 5-C | Recomendaciones por riesgo (verde, amarillo, rojo); la viabilidad de CENTA se cita como referencia distrital, no como veredicto sobre la parcela | M | ⏳ |
 | 5-D | Persistencia y exposición: reporte, última estimación e historial | M | ⏳ |
 
@@ -164,7 +164,7 @@ Job con `setInterval` que arranca con el servidor y tolera fallos de red; `GET /
 
 ## 5. Datos de referencia que no están en CENTA
 
-Bloquean 3-B, 4-C y 5-B. Deben documentarse con fuente, fecha, formato y contrato. Al 24/11/2026, F3 ya está; F1 y F4 siguen pendientes.
+Bloquean 3-B, 4-C y 5-B. Deben documentarse con fuente, fecha, formato y contrato. Al 24/11/2026, F1, F3 y F4 ya están; F2 sigue parcial.
 
 | Clave | Dato | Uso |
 |---|---|---|
@@ -174,6 +174,8 @@ Bloquean 3-B, 4-C y 5-B. Deben documentarse con fuente, fecha, formato y contrat
 | **F4** | Precio de venta por quintal | 5-B |
 
 **F3 obtenido:** MAG/DGEA/DEA, *Costos de producción de cultivos agrícolas*, ciclo 2022-2023. Contrato en `docs/data/Info_Datos_Precios.md`; tabla en `backend/src/estimacion/referencia.ts`. Los precios no son vigentes: hay que actualizarlos a un ciclo más reciente.
+
+**F1/F4 obtenidos:** mismas fichas del MAG 2022-2023. Contrato en `docs/data/Info_Datos_Estimacion.md`; implementación en `backend/src/estimacion/proyeccion.ts`. El rendimiento y el precio base son oficiales del ciclo; los factores de ajuste climático son **supuestos declarados**.
 
 Fuentes candidatas: guías técnicas de CENTA por cultivo y publicaciones de precios del MAG. Todo valor lleva fuente y fecha. Si un dato no se consigue, se presenta como **supuesto declarado**, nunca como dato oficial.
 

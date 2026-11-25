@@ -152,10 +152,11 @@ Eventos actuales:
   - `referencia.ts`: tabla F3 con precios, dosis, fuente, fecha y tipo (`OFICIAL` / `SUPUESTO`). Es la única fuente de valores.
   - `estimar-costos.ts`: función pura `estimarCostos(cultivo, areaMz, opciones)`. Redondea hacia arriba las unidades compradas (lb, QQ, jornal) y prorratea los servicios por manzana.
   - `listeners.ts`: fábrica pura de listeners y registro en un bus inyectable; captura errores síncronos y rechazos asíncronos.
-  - `recalculo.ts`: arma `ContextoEstimacion` (siembra + condición guardada) y procesa solo el distrito afectado. `solicitarCalculo` es el punto de extensión de 5-B.
+  - `recalculo.ts`: arma `ContextoEstimacion` (siembra + condición guardada) y procesa solo el distrito afectado. `solicitarCalculo` usa la proyección de 5-B.
+  - `proyeccion.ts`: función pura `proyectarEstimacion(contexto)` con F1/F4 del MAG 2022-2023 y factores climáticos declarados. Devuelve rendimiento, producción, ingreso y `supuestos`.
   - `registro.ts`: une el bus real con `recalcularSiembra` y `recalcularDistrito`; se llama una vez al arrancar.
   - `index.ts`: API pública del módulo.
-  - `estimar-costos.pruebas.ts`, `listeners.pruebas.ts` y `recalculo.pruebas.ts`: pruebas sin red ni base de datos.
+  - `estimar-costos.pruebas.ts`, `listeners.pruebas.ts`, `recalculo.pruebas.ts` y `proyeccion.pruebas.ts`: pruebas sin red ni base de datos.
 - No hay endpoint de estimación todavía: 4-C se consume desde código (5-B) o desde una integración posterior.
 
 ---
@@ -198,7 +199,7 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run build` | Compila a `dist/`. |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm start` | Ejecuta `dist/index.js`. |
-| `npm test` | Encadena las 23 pruebas sin red. |
+| `npm test` | Encadena las 24 pruebas sin red. |
 | `npm run db:generate` | `prisma generate`. |
 | `npm run db:migrate` | `prisma migrate dev`. |
 | `npm run db:studio` | `prisma studio`. |
@@ -211,14 +212,15 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run pruebas:siembra` | Validación, DTO y servicio de siembra (4-D), sin red ni base. |
 | `npm run pruebas:siembra-http` | Contrato HTTP de `/siembras` con servicios falsos y token firmado. |
 | `npm run pruebas:listeners` | Listeners de 5-A y recálculo por siembra/distrito, sin red ni base. |
+| `npm run pruebas:proyeccion` | Proyección de rendimiento e ingresos (5-B), sin red ni base. |
 
 ---
 
 ## 6. Pruebas
 
-- 23 archivos `*.pruebas.ts` / `*.prueba.ts`.
+- 24 archivos `*.pruebas.ts` / `*.prueba.ts`.
 - Se ejecutan con `ts-node-dev --transpile-only`, sin red ni MySQL.
-- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición, estimación de costos, siembra (validación, servicio y contrato HTTP) y listeners de estimación (eventos y recálculo).
+- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición, estimación de costos, siembra (validación, servicio y contrato HTTP) listeners de estimación (eventos y recálculo) y proyección de rendimiento e ingresos.
 - El orquestador tiene una prueba de integración con dobles (`orquestador.prueba.ts`).
 
 ---
@@ -236,7 +238,7 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 - No hay endpoint de estimación todavía: 4-C es una función pura.
 - `GET /siembras` no pagina: devuelve todas las siembras del usuario.
 - La suma del desglose de una siembra puede superar `inversionTotalUsd` (decisión MVP).
-- 5-A deja el cálculo como punto de extensión: arma el contexto y registra la solicitud; la proyección real es 5-B.
+- 5-B proyecta rendimiento e ingreso con datos del MAG 2022-2023 y factores climáticos supuestos; no persiste ni calcula costos.
 - Los listeners de 5-A no persisten resultados y son fire-and-forget; si el proceso se reinicia, el evento en vuelo se pierde.
 - El backend no sirve el frontend; en desarrollo se usa el proxy de Angular.
 

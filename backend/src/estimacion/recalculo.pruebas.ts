@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import { proyectarEstimacion } from "./proyeccion";
 import { recalcularDistrito, recalcularSiembra } from "./recalculo";
 import type { ContextoEstimacion, RecalculoDeps, SiembraParaEstimar } from "./recalculo";
 
@@ -93,6 +94,25 @@ async function main(): Promise<void> {
     assert.equal(c.nivelSequia, null);
     assert.equal(c.fechaDatos, null);
     assert.equal(c.actualizadoEn, null);
+  });
+
+  await prueba("el contexto de 5-A alimenta la proyección de 5-B", async () => {
+    const proyecciones: ReturnType<typeof proyectarEstimacion>[] = [];
+    const deps: RecalculoDeps = {
+      buscarSiembra: async () => siembra(42),
+      listarSiembrasPorDistrito: async () => [],
+      solicitarCalculo: (contexto) => {
+        proyecciones.push(proyectarEstimacion(contexto));
+      },
+      registrar: () => undefined,
+    };
+
+    await recalcularSiembra(42, deps);
+    assert.equal(proyecciones.length, 1);
+    assert.equal(proyecciones[0]!.cultivo, "MAIZ");
+    assert.equal(proyecciones[0]!.areaMz, 3.5);
+    assert.equal(proyecciones[0]!.factorClimatico, 0.85);
+    assert.equal(proyecciones[0]!.ingresoEstimadoUsd, 5324.78);
   });
 
   await prueba("si la siembra no existe, registra y no calcula", async () => {

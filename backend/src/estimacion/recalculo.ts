@@ -2,13 +2,13 @@ import { prisma } from "../config/prisma";
 import type { CondicionClimatica } from "../events/types";
 import type { Cultivo, EstadoSiembra, NivelSequia } from "../generated/prisma/enums";
 import type { DecimalLike } from "../siembra/siembra.dto";
+import { proyectarEstimacion } from "./proyeccion";
 
-// Recálculo de la estimación (5-A). Los listeners llaman a estas funciones
+// Recálculo de la estimación (5-A/5-B). Los listeners llaman a estas funciones
 // cuando hay una siembra nueva o cambia la condición de un distrito.
 //
-// 5-A deja preparado el contexto que necesita 5-B: siembra, distrito y última
-// condición climática guardada. solicitarCalculo es el punto de extensión; por
-// ahora registra la solicitud y no inventa una proyección.
+// 5-B calcula la proyección con `proyectarEstimacion`. Por ahora el resultado
+// se registra en el log: 5-D se encarga de persistirlo y exponerlo.
 
 export interface SiembraParaEstimar {
   id: number;
@@ -88,13 +88,13 @@ function aContexto(siembra: SiembraParaEstimar): ContextoEstimacion {
   };
 }
 
-// Punto de extensión de 5-B. No se presenta como cálculo real: solo deja
-// constancia de que el evento llegó y con qué datos se calculará.
-function solicitarCalculoPendiente(contexto: ContextoEstimacion): void {
+// Cálculo real de 5-B. No persiste: 5-D guarda el reporte y el historial.
+function solicitarCalculo(contexto: ContextoEstimacion): void {
+  const proyeccion = proyectarEstimacion(contexto);
   console.log(
-    `[estimacion] siembra ${contexto.siembraId} lista para calcular: ` +
-      `${contexto.cultivo}, ${contexto.areaMz} mz, distrito ${contexto.distritoId}, ` +
-      `clima ${contexto.condicion ?? "sin evaluar"}. La proyección llega en 5-B.`,
+    `[estimacion] siembra ${proyeccion.siembraId}: ${proyeccion.produccionEstimadaQq} qq, ` +
+      `ingreso estimado $${proyeccion.ingresoEstimadoUsd.toFixed(2)} ` +
+      `(${proyeccion.cultivo}, ${proyeccion.areaMz} mz, clima ${proyeccion.condicion ?? "sin evaluar"})`,
   );
 }
 
@@ -107,7 +107,7 @@ const depsPrisma: RecalculoDeps = {
       orderBy: { creadoEn: "asc" },
       select: SELECT_SIEMBRA_ESTIMACION,
     }),
-  solicitarCalculo: solicitarCalculoPendiente,
+  solicitarCalculo: solicitarCalculo,
   registrar: (mensaje, error) => {
     if (error === undefined) console.warn(mensaje);
     else console.error(mensaje, error);

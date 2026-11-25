@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "npm run pruebas:config && npm run pruebas:http && npm run pruebas:http-seguridad && npm run pruebas:eventos && npm run pruebas:viabilidad && npm run pruebas:clima-validacion && npm run pruebas:clima-endpoint && npm run pruebas:clima-job && npm run pruebas:clima-errores && npm run pruebas:normales && npm run pruebas:condicion && npm run pruebas:estimacion && npm run pruebas:siembra && npm run pruebas:siembra-http && npm run pruebas:listeners && npm run clima:pruebas && npm run clima:pruebas-clasificacion",
+    "test": "npm run pruebas:config && npm run pruebas:http && npm run pruebas:http-seguridad && npm run pruebas:eventos && npm run pruebas:viabilidad && npm run pruebas:clima-validacion && npm run pruebas:clima-endpoint && npm run pruebas:clima-job && npm run pruebas:clima-errores && npm run pruebas:normales && npm run pruebas:condicion && npm run pruebas:estimacion && npm run pruebas:siembra && npm run pruebas:siembra-http && npm run pruebas:listeners && npm run pruebas:proyeccion && npm run clima:pruebas && npm run clima:pruebas-clasificacion",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
@@ -34,7 +34,8 @@
     "pruebas:estimacion": "ts-node-dev --transpile-only src/estimacion/estimar-costos.pruebas.ts",
     "pruebas:siembra": "ts-node-dev --transpile-only src/siembra/siembra.pruebas.ts",
     "pruebas:siembra-http": "ts-node-dev --transpile-only src/siembra/siembra.routes.pruebas.ts",
-    "pruebas:listeners": "ts-node-dev --transpile-only src/estimacion/listeners.pruebas.ts && ts-node-dev --transpile-only src/estimacion/recalculo.pruebas.ts"
+    "pruebas:listeners": "ts-node-dev --transpile-only src/estimacion/listeners.pruebas.ts && ts-node-dev --transpile-only src/estimacion/recalculo.pruebas.ts",
+    "pruebas:proyeccion": "ts-node-dev --transpile-only src/estimacion/proyeccion.pruebas.ts"
   },
   "keywords": [],
   "author": "",
