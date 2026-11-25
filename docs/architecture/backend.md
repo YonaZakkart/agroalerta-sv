@@ -154,9 +154,11 @@ Eventos actuales:
   - `listeners.ts`: fábrica pura de listeners y registro en un bus inyectable; captura errores síncronos y rechazos asíncronos.
   - `recalculo.ts`: arma `ContextoEstimacion` (siembra + condición guardada) y procesa solo el distrito afectado. `solicitarCalculo` usa la proyección de 5-B.
   - `proyeccion.ts`: función pura `proyectarEstimacion(contexto)` con F1/F4 del MAG 2022-2023 y factores climáticos declarados. Devuelve rendimiento, producción, ingreso y `supuestos`.
+  - `recomendacion.ts`: semáforo verde/amarillo/rojo y `motivos` que citan clima, factor, proyección y referencia CENTA.
+  - `viabilidad-referencia.ts`: lee la clase dominante de CENTA del distrito como referencia; si falla, devuelve `null`.
   - `registro.ts`: une el bus real con `recalcularSiembra` y `recalcularDistrito`; se llama una vez al arrancar.
   - `index.ts`: API pública del módulo.
-  - `estimar-costos.pruebas.ts`, `listeners.pruebas.ts`, `recalculo.pruebas.ts` y `proyeccion.pruebas.ts`: pruebas sin red ni base de datos.
+  - `estimar-costos.pruebas.ts`, `listeners.pruebas.ts`, `recalculo.pruebas.ts`, `proyeccion.pruebas.ts` y `recomendacion.pruebas.ts`: pruebas sin red ni base de datos.
 - No hay endpoint de estimación todavía: 4-C se consume desde código (5-B) o desde una integración posterior.
 
 ---
@@ -199,7 +201,7 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run build` | Compila a `dist/`. |
 | `npm run typecheck` | `tsc --noEmit`. |
 | `npm start` | Ejecuta `dist/index.js`. |
-| `npm test` | Encadena las 24 pruebas sin red. |
+| `npm test` | Encadena las 25 pruebas sin red. |
 | `npm run db:generate` | `prisma generate`. |
 | `npm run db:migrate` | `prisma migrate dev`. |
 | `npm run db:studio` | `prisma studio`. |
@@ -213,14 +215,15 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 | `npm run pruebas:siembra-http` | Contrato HTTP de `/siembras` con servicios falsos y token firmado. |
 | `npm run pruebas:listeners` | Listeners de 5-A y recálculo por siembra/distrito, sin red ni base. |
 | `npm run pruebas:proyeccion` | Proyección de rendimiento e ingresos (5-B), sin red ni base. |
+| `npm run pruebas:recomendacion` | Semáforo, motivos y referencia CENTA (5-C), sin red ni base. |
 
 ---
 
 ## 6. Pruebas
 
-- 24 archivos `*.pruebas.ts` / `*.prueba.ts`.
+- 25 archivos `*.pruebas.ts` / `*.prueba.ts`.
 - Se ejecutan con `ts-node-dev --transpile-only`, sin red ni MySQL.
-- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición, estimación de costos, siembra (validación, servicio y contrato HTTP) listeners de estimación (eventos y recálculo) y proyección de rendimiento e ingresos.
+- Cubren: puerto y entorno, errores HTTP, seguridad, rate limit, salud, cierre, emisión de eventos, origen de viabilidad, validación de distritos, DTO de condición, job, mapeo de errores, normales, cliente de clima, clasificación, cambio de condición, estimación de costos, siembra (validación, servicio y contrato HTTP) listeners de estimación (eventos y recálculo), proyección de rendimiento e ingresos y recomendaciones por riesgo.
 - El orquestador tiene una prueba de integración con dobles (`orquestador.prueba.ts`).
 
 ---
@@ -239,6 +242,7 @@ Variables principales (ver `.env.example` y `architecture/api.md`):
 - `GET /siembras` no pagina: devuelve todas las siembras del usuario.
 - La suma del desglose de una siembra puede superar `inversionTotalUsd` (decisión MVP).
 - 5-B proyecta rendimiento e ingreso con datos del MAG 2022-2023 y factores climáticos supuestos; no persiste ni calcula costos.
+- 5-C asigna el semáforo solo con el clima; la viabilidad de CENTA se cita como referencia y no cambia el nivel.
 - Los listeners de 5-A no persisten resultados y son fire-and-forget; si el proceso se reinicia, el evento en vuelo se pierde.
 - El backend no sirve el frontend; en desarrollo se usa el proxy de Angular.
 

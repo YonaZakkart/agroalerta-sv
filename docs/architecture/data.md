@@ -132,7 +132,7 @@ El esquema no obliga a que `cantidadSemilla` y `unidadSemilla` vayan juntas ni a
 
 `POST /siembras` guarda una fila y emite `SiembraRegistrada` después del insert. `GET /siembras` filtra por `usuarioId`; no hay lectura de siembras ajenas.
 
-Los listeners de 5-A leen la siembra junto con `CondicionDistrito` de su distrito para armar `ContextoEstimacion`; no modifican ninguna tabla. 5-B usa ese contexto para proyectar rendimiento e ingreso; tampoco persiste (eso es 5-D).
+Los listeners de 5-A leen la siembra junto con `CondicionDistrito` de su distrito para armar `ContextoEstimacion`; no modifican ninguna tabla. 5-B usa ese contexto para proyectar rendimiento e ingreso; 5-C lee la viabilidad de CENTA del distrito como referencia. Ninguno persiste (eso es 5-D).
 
 ### Enums
 

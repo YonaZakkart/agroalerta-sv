@@ -1,6 +1,6 @@
 # Continuación — próximos pasos en orden
 
-- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado y 5-A/5-B hechos. Siguiente: 5-C.
+- **Estado del proyecto:** Partes 0–4 cerradas, Hito 1 cerrado, 6-D implementado y 5-A/5-B/5-C hechos. Siguiente: 5-D.
 - **Última actualización:** 24 de noviembre de 2026
 - **Regla:** cada punto se cierra con su rama, su PR, sus pruebas y su registro en `history/branches/`.
 
@@ -97,16 +97,17 @@
 
 ### 5-C — Recomendaciones
 
-**Depende de:** 5-B (listo). **Estado:** siguiente. **Tamaño:** M.
+**Depende de:** 5-B (listo). **Estado:** ✅ hecho. Reglas en `data/Info_Datos_Recomendaciones.md`. **Tamaño:** M.
 
 - Semáforo verde/amarillo/rojo según riesgo.
 - La viabilidad de CENTA se cita como referencia distrital, **no** como veredicto sobre la parcela.
 - La sequía meteorológica no equivale a pérdida de cultivo: redactarlo así.
 - **Criterio de aceptación:** cada recomendación cita el dato que la origina.
+- **Resultado:** `recomendar()` devuelve verde/amarillo/rojo y `motivos` con clima, factor, proyección y referencia CENTA; la viabilidad no cambia el semáforo.
 
 ### 5-D — Persistencia y reporte
 
-**Depende de:** 5-B y 5-C. **Tamaño:** M.
+**Depende de:** 5-B y 5-C (listos). **Estado:** siguiente. **Tamaño:** M.
 
 - Guardar el reporte, la última estimación y el historial.
 - Exponer `GET /estimaciones` (o el recurso que se acuerde) con `requireAuth`.
@@ -170,12 +171,12 @@
 
 ## 6. Orden recomendado si el tiempo aprieta
 
-1. 5-C (recomendaciones por riesgo).
+1. 5-D (persistencia y reporte).
 2. 6-E (una sola cifra real vale más que tres vistas).
 3. 6-C (historial).
 4. Parte 7.
 
-5-A y 5-B ya están hechos: los eventos disparan el recálculo y la proyección calcula rendimiento e ingreso con supuestos declarados.
+5-A, 5-B y 5-C ya están hechos: los eventos disparan el recálculo, la proyección calcula rendimiento e ingreso y la recomendación asigna un semáforo con motivos.
 
 **No se recorta:** Hito 1, que ya está cerrado.
 

@@ -1,8 +1,8 @@
 # Historia — Parte 5: estimación y recomendaciones
 
 - **Periodo:** 24 de noviembre de 2026 en adelante
-- **Ramas:** `feat/5-a-listeners`, `feat/5-b-proyeccion`
-- **Estado:** 5-A y 5-B implementados; 5-C y 5-D pendientes.
+- **Ramas:** `feat/5-a-listeners`, `feat/5-b-proyeccion`, `feat/5-c-recomendaciones`
+- **Estado:** 5-A, 5-B y 5-C implementados; 5-D pendiente.
 - **Fuente:** `git log` y el código en `main`.
 
 ## Resumen
@@ -11,6 +11,7 @@
 |---|---|---|---|---|
 | 5-A | `feat/5-a-listeners` | Yona | #58 | Listeners de siembra y clima, contexto de estimación y recálculo por distrito |
 | 5-B | `feat/5-b-proyeccion` | Yona | #59 | Proyección pura de rendimiento e ingresos con F1/F4 y factores climáticos supuestos |
+| 5-C | `feat/5-c-recomendaciones` | Yona | #60 | Semáforo verde/amarillo/rojo con motivos y referencia CENTA |
 
 ---
 
@@ -90,17 +91,52 @@
 
 ---
 
+## 5-C — Recomendaciones
+
+**Rama:** `feat/5-c-recomendaciones` · **Responsable:** Yona · **24 de noviembre de 2026** · PR #60
+
+**Qué se hizo:**
+
+- `backend/src/estimacion/recomendacion.ts`: función pura `recomendar(proyeccion, viabilidad)`.
+  - VERDE: `INVIERNO_ACEPTABLE`.
+  - AMARILLO: `null`, `EXCESO_LLUVIA`, `SEQUIA` débil/moderada o sin nivel.
+  - ROJO: `SEQUIA` fuerte o severa.
+  - `motivos` cita clima y fecha, factor aplicado, rendimiento/producción/ingreso y viabilidad CENTA.
+  - En sequía, el mensaje aclara que no equivale a pérdida total.
+- `backend/src/estimacion/viabilidad-referencia.ts`: lee la capa de potencial del cultivo en CENTA y resume la clase dominante; si falla, devuelve `null`.
+- `backend/src/estimacion/recalculo.ts`: `solicitarCalculo` ahora calcula proyección + recomendación y registra nivel y motivos en el log.
+- `backend/src/estimacion/recomendacion.pruebas.ts`: 11 casos de semáforo, motivos y referencia CENTA.
+- `docs/data/Info_Datos_Recomendaciones.md`: reglas, contrato y límites.
+
+**Decisiones MVP:**
+
+1. **El semáforo depende solo del clima.** La viabilidad de CENTA se cita como referencia distrital y no cambia el nivel.
+2. **Sin evaluación climática = AMARILLO**, no VERDE: no hay señal de riesgo, pero tampoco una condición evaluada.
+3. **La sequía reduce, no anula.** Los mensajes de sequía lo dicen explícitamente.
+4. **Cada recomendación cita sus datos.** Clima/fecha, factor, proyección y CENTA.
+5. **Sin persistencia ni interfaz.** El resultado se registra en el log; 5-D y 6-E lo guardan y muestran.
+
+**Verificación:** `npm run typecheck`, `npm run pruebas:recomendacion` (11/11), `npm test` (25 archivos) y `npm run build` en verde.
+
+**Pendientes que deja:**
+
+- 5-D: persistencia, reporte e historial.
+- Validar el semáforo y los factores con CENTA o un agrónomo (B8).
+- No combina costos ni margen de 4-C.
+
+---
+
 ## Archivos compartidos
 
 | Archivo | Punto | Riesgo |
 |---|---|---|
 | `backend/src/index.ts` | 5-A | Registro de listeners al arrancar. |
-| `backend/package.json` | 5-A / 5-B | Cadena de `npm test`. |
+| `backend/package.json` | 5-A / 5-B / 5-C | Cadena de `npm test`. |
 
 ---
 
 ## Qué sigue
 
-**5-C — Recomendaciones:** semáforo verde/amarillo/rojo, citando el dato que lo origina y sin presentar la viabilidad de CENTA como veredicto de la parcela.
+**5-D — Persistencia y reporte:** guardar la proyección y la recomendación, y exponerlas con `requireAuth`.
 
-**Después:** 5-D (persistencia y reporte), 6-E (estimación real en el dashboard) y 6-C (historial).
+**Después:** 6-E (estimación real en el dashboard) y 6-C (historial).

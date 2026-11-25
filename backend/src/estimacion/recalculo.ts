@@ -3,6 +3,8 @@ import type { CondicionClimatica } from "../events/types";
 import type { Cultivo, EstadoSiembra, NivelSequia } from "../generated/prisma/enums";
 import type { DecimalLike } from "../siembra/siembra.dto";
 import { proyectarEstimacion } from "./proyeccion";
+import { recomendar } from "./recomendacion";
+import { leerViabilidadReferencia } from "./viabilidad-referencia";
 
 // Recálculo de la estimación (5-A/5-B). Los listeners llaman a estas funciones
 // cuando hay una siembra nueva o cambia la condición de un distrito.
@@ -88,13 +90,16 @@ function aContexto(siembra: SiembraParaEstimar): ContextoEstimacion {
   };
 }
 
-// Cálculo real de 5-B. No persiste: 5-D guarda el reporte y el historial.
-function solicitarCalculo(contexto: ContextoEstimacion): void {
+// Cálculo real de 5-B y recomendación de 5-C. No persiste: 5-D guarda el reporte.
+async function solicitarCalculo(contexto: ContextoEstimacion): Promise<void> {
   const proyeccion = proyectarEstimacion(contexto);
+  const viabilidad = await leerViabilidadReferencia(contexto.distritoId, contexto.cultivo);
+  const recomendacion = recomendar(proyeccion, viabilidad);
   console.log(
-    `[estimacion] siembra ${proyeccion.siembraId}: ${proyeccion.produccionEstimadaQq} qq, ` +
-      `ingreso estimado $${proyeccion.ingresoEstimadoUsd.toFixed(2)} ` +
-      `(${proyeccion.cultivo}, ${proyeccion.areaMz} mz, clima ${proyeccion.condicion ?? "sin evaluar"})`,
+    `[estimacion] siembra ${proyeccion.siembraId}: riesgo ${recomendacion.nivel} ` +
+      `(${recomendacion.titulo}); ${proyeccion.produccionEstimadaQq} qq, ` +
+      `ingreso estimado $${proyeccion.ingresoEstimadoUsd.toFixed(2)}. ` +
+      `Motivos: ${recomendacion.motivos.join(" | ")}`,
   );
 }
 
