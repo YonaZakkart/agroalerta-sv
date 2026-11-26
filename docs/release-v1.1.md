@@ -6,7 +6,7 @@
 
 ## Cambios
 
-- **SPA en Vercel:** fallback `/(.*) → /index.html` para que recargar una ruta interna no dé 404. El rewrite de `/api` sigue primero.
+- **SPA en Vercel:** se pasó a `routes` con `handle: filesystem` y fallback `/(.*) → /index.html`; el rewrite de `/api` sigue primero. Corrige el 404 al recargar `/dashboard` o `/historial`.
 - **Encabezado climático:** se oculta cuando el distrito no tiene condición evaluada; ya no queda fijo “Sin evaluar”.
 - **Estimación:** se quitó la etiqueta textual del color (`VERDE`/`AMARILLO`/`ROJO`) del banner; el color y el título siguen comunicando el riesgo.
 - **Datos técnicos de siembra:** los checks ahora son tarjetas en una grilla, con checkbox de 18 px y tres columnas en escritorio.
