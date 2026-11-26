@@ -1,20 +1,34 @@
-# AgroAlerta Morazán
+<p align="center">
+  <img src="frontend/public/logo-mark.svg" width="88" alt="AgroAlerta Morazán">
+</p>
+
+<h1 align="center">AgroAlerta Morazán</h1>
+
+<p align="center">
+  <a href="https://agroalerta-sv-beta.vercel.app"><img alt="Vercel" src="https://img.shields.io/badge/Vercel-Ver%20app-000?logo=vercel&logoColor=white"></a>
+  <a href="https://agroalerta-api.onrender.com/health"><img alt="Render" src="https://img.shields.io/badge/Render-API-46E3B7?logo=render&logoColor=white"></a>
+  <a href="https://console.neon.tech"><img alt="Neon" src="https://img.shields.io/badge/Neon-Postgres-00E599?logo=neon&logoColor=white"></a>
+</p>
 
 Plataforma web orientada a eventos (EDA) para prevención de riesgos agrícolas en el departamento de Morazán, El Salvador. Combina la viabilidad de cultivo por distrito (referencia CENTA), la condición climática por distrito (Open-Meteo) y los datos de siembra del agricultor para estimar rendimiento, riesgo y recomendaciones.
-Avance actual: autenticación, catálogo, viabilidad de cultivo, clima por distrito, siembra y listeners de estimación en el backend; login, registro, dashboard y formulario de siembra en el frontend. Las Partes 4 y 5 están cerradas: siembra, listeners, proyección, recomendaciones y reporte persistido. El dashboard ya muestra la estimación real y el historial está disponible. v1.0 está desplegada; v1.1 (presentación visual y modo oscuro) está en `dev`. El detalle está en [`docs/INDEX.md`](docs/INDEX.md).
+**v1.2 en `dev`.** v1.0 y v1.1 están desplegadas. Incluye autenticación, viabilidad CENTA, clima por distrito, siembra, estimación de costos, proyección, recomendaciones, reporte persistido, historial, modo oscuro y correo real (desactivado por configuración).
+
+**Despliegue:** frontend en Vercel, backend en Render y Postgres en Neon. Detalle en [`docs/deployment.md`](docs/deployment.md). El resto de la documentación está en [`docs/INDEX.md`](docs/INDEX.md).
+
+> Capturas de login, registro y dashboard pendientes de añadir; no hay imágenes en el repositorio todavía.
 
 ## Stack
 
 - TypeScript
 - Node.js + Express (backend, EventEmitter nativo)
 - Angular 22 (frontend)
-- MySQL 8.4 en Docker
-- Prisma 7.10.0 (con `@prisma/adapter-mariadb`; no actualizar sin avisar)
+- Postgres en Neon (producción y desarrollo)
+- Prisma 7.10.0 con `@prisma/adapter-pg`
 
 ## Requisitos
 
 - Node.js 22.x. El frontend exige 22.22.3 o superior; el backend funciona desde 20.19
-- Docker y Docker Compose
+- Docker solo si se usa la base MySQL histórica; el flujo actual usa Neon
 - Git, con acceso al repositorio (privado)
 
 ## Instalación
@@ -28,33 +42,31 @@ git clone git@github.com:YonaZakkart/agroalerta-sv.git
 # git clone https://github.com/YonaZakkart/agroalerta-sv.git
 cd agroalerta-sv
 
-# 2. Levantar MySQL (desde la raíz; el puerto 3306 debe estar libre)
-docker compose up -d db
-
-# 3. Backend: instalar dependencias
+# 2. Backend: instalar dependencias
 cd backend
 npm install
 
-# 4. Backend: crear .env desde la plantilla (en Windows cmd: copy .env.example .env)
+# 3. Backend: crear .env desde la plantilla (en Windows cmd: copy .env.example .env)
 cp .env.example .env
+# Usa DATABASE_URL pooled de Neon y DATABASE_URL_UNPOOLED para migraciones.
 
-# 5. Generar los dos secretos obligatorios; corre el comando dos veces y pega uno en
+# 4. Generar los dos secretos obligatorios; corre el comando dos veces y pega uno en
 #    DUI_PEPPER y otro en JWT_SECRET (mínimo 32 caracteres) dentro de backend/.env
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
-# 6. Generar el cliente de Prisma
+# 5. Generar el cliente de Prisma
 npx prisma generate
 
-# 7. Crear las tablas en la base de datos
+# 6. Crear las tablas en la base de datos
 npx prisma migrate dev
 
-# 8. Cargar los datos de viabilidad (debe terminar con: municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312)
+# 7. Cargar los datos de viabilidad (debe terminar con: municipios 2, distritos 26, capas 4, clases_capa 12, areas_clase 312)
 npm run datos:cargar
 
-# 9. Arrancar el backend (queda en el puerto 3000)
+# 8. Arrancar el backend (queda en el puerto 3000)
 npm run dev
 
-# 10. Frontend, en otra terminal desde la raíz del repo: instalar y arrancar (puerto 4200)
+# 9. Frontend, en otra terminal desde la raíz del repo: instalar y arrancar (puerto 4200)
 cd frontend
 npm install
 npx ng serve
@@ -70,7 +82,8 @@ Las obligatorias son:
 
 | Variable | Uso |
 | --- | --- |
-| `DATABASE_URL` | Conexión MySQL que usan Prisma y el backend. |
+| `DATABASE_URL` | Conexión Postgres pooled de Neon. |
+| `DATABASE_URL_UNPOOLED` | Conexión directa para `prisma migrate`. |
 | `JWT_SECRET` | Firma de los tokens de sesión (mínimo 32 caracteres). |
 | `DUI_PEPPER` | Pepper del hash del DUI (mínimo 32 caracteres). No rotarlo: invalida la detección de duplicados. |
 
@@ -120,7 +133,7 @@ Si algo falla, revisa [`docs/gotchas.md`](docs/gotchas.md) antes de depurar desd
 ## Verificación
 
 ```bash
-curl http://localhost:3000/health      # {"status":"ok","baseDatos":"ok"} (503 si MySQL no responde)
+curl http://localhost:3000/health      # {"status":"ok","baseDatos":"ok"} (503 si Postgres no responde)
 curl http://localhost:3000/health/live # {"status":"ok"} (solo confirma que el proceso responde)
 curl http://localhost:3000/distritos   # los 26 distritos de Morazán
 ```
@@ -133,7 +146,7 @@ Abre `http://localhost:4200`: debe aparecer el inicio de sesión. Flujo de prueb
 
 ```text
 agroalerta-sv/
-├── docker-compose.yml        MySQL de desarrollo
+├── docker-compose.yml        MySQL histórico (ya no se usa en producción)
 ├── docker/                   privilegios para la shadow database de Prisma
 ├── docs/                     documentación del proyecto
 ├── backend/                  API, Prisma, datos CENTA y pruebas
@@ -164,12 +177,17 @@ Se trabaja siempre en una rama por parte y punto (`feat/`, `fix/`, `chore/` o `d
 
 El catálogo completo está en [`docs/gotchas.md`](docs/gotchas.md). Los más comunes al levantar el entorno:
 
-- El backend o `prisma migrate` "funcionan" pero no ves las tablas en Docker: otro MySQL (por ejemplo un servicio de Windows) ocupa el puerto 3306. Detén ese servicio y vuelve a crear el contenedor (`docker compose down -v` y `docker compose up -d db`); `docker ps` debe mostrar `0.0.0.0:3306->3306/tcp`.
+- Si usas la base MySQL histórica, revisa que el puerto 3306 no esté ocupado por otro MySQL. El flujo actual usa Neon/Postgres.
 - `npm install` falla con `Cannot read properties of null (reading 'edgesOut')`: es un bug de npm. Usa `npm install --legacy-peer-deps`.
 - `prisma migrate dev` falla con `P3014`: el contenedor es anterior al script de privilegios. Corre `docker compose down -v` y `docker compose up -d db` (borra los datos locales) y repite los pasos 7 y 8.
 - El backend aborta al arrancar diciendo que falta `JWT_SECRET` o `DUI_PEPPER`: es a propósito. Complétalos en `backend/.env` (paso 5).
 
 ## Despliegue
+
+- **Frontend:** https://agroalerta-sv-beta.vercel.app
+- **Backend:** https://agroalerta-api.onrender.com/health
+- **Base de datos:** Neon Postgres, branch `production`
+- **Documentación:** [`docs/deployment.md`](docs/deployment.md), [`docs/architecture/`](docs/architecture/) y [`docs/tasks/`](docs/tasks/).
 
 - **Neon Postgres** (branch `production`): `DATABASE_URL` pooled y `DATABASE_URL_UNPOOLED` para migraciones.
 - **Render** (backend): root `backend`, build `npm ci --legacy-peer-deps && npx prisma generate && npm run build`, start `npm start`, health `/health`.
