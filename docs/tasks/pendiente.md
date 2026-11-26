@@ -86,7 +86,7 @@ F1 y F4 ya existen (MAG 2022-2023); F2 sigue parcial. Los factores climáticos d
 | S1 | Validar el dígito verificador del DUI | Hoy solo se valida el formato de 9 dígitos. |
 | S2 | Revocación de sesión o refresh token | Un token robado es válido hasta expirar; el logout es solo del cliente. |
 | S3 | Rate limit compartido entre instancias | El actual es un `Map` en memoria por proceso. |
-| S4 | Envío real de correo | La verificación es simulada; `EXPONER_TOKEN_VERIFICACION` nunca debe estar activo en producción. |
+| S4 | Envío real de correo | La verificación es simulada; en producción se usa `VERIFICACION_AUTOMATICA=true` como decisión MVP. Integrar SMTP y volver a `false`. |
 | S5 | Rotación de `DUI_PEPPER` y `JWT_SECRET` | Rotar el pepper invalida los hashes; rotar el secreto invalida las sesiones. Falta un plan. |
 | S6 | Revisión de `npm audit` | 9 vulnerabilidades en backend y 18 en frontend (mayoría de desarrollo). No usar `npm audit fix` sin acuerdo. |
 | S7 | Scripts bloqueados por `allowScripts` | Cuatro paquetes del frontend; revisar si alguna vez falla `ng build`. |

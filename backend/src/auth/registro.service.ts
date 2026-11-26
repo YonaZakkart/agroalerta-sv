@@ -5,6 +5,7 @@ import { bus } from "../events/bus";
 import { EVENTOS, AgricultorRegistradoPayload } from "../events/types";
 import { normalizarNombre } from "../comun/normalizar";
 import { SELECT_DISTRITO } from "./distrito.select";
+import { verificacionAutomaticaActiva } from "./verificacion";
 
 export interface DatosRegistro {
     nombres: string;
@@ -49,6 +50,7 @@ export async function registrarUsuario(datos: DatosRegistro) {
     }
     const contrasenaHash = await argon2.hash(datos.contrasena);
     const duiHash = hashDui(datos.dui);
+    const automatica = verificacionAutomaticaActiva();
     const { token, tokenHash, expira: tokenVerificacionExpira } = generarTokenVerificacion();
 
     let usuario;
@@ -61,8 +63,9 @@ export async function registrarUsuario(datos: DatosRegistro) {
                 contrasenaHash,
                 duiHash,
                 distritoId: distrito.id,
-                tokenVerificacion: tokenHash,
-                tokenVerificacionExpira,
+                verificado: automatica,
+                tokenVerificacion: automatica ? null : tokenHash,
+                tokenVerificacionExpira: automatica ? null : tokenVerificacionExpira,
             },
             select: {
                 id: true, nombres: true, apellidos: true,
@@ -91,7 +94,8 @@ export async function registrarUsuario(datos: DatosRegistro) {
     }
 
     // El hash queda en BD; al llamador se le devuelve el token crudo (para el correo o la simulación).
-    return { ...usuario, tokenVerificacion: token };
+    // Con verificación automática no hay token: la cuenta ya está verificada.
+    return { ...usuario, tokenVerificacion: automatica ? null : token };
 }
 
 export async function verificarUsuario(token: string) {

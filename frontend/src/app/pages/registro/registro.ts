@@ -90,7 +90,8 @@ export class Registro {
           this.correoRegistrado.set(respuesta.correo);
           this.tokenDev.set(respuesta.tokenVerificacion_DEV ?? null);
           this.formulario.reset(); // no dejar la contraseña en memoria del formulario
-          this.estado.set('creada');
+          // Con VERIFICACION_AUTOMATICA=true el backend crea la cuenta ya verificada.
+          this.estado.set(respuesta.verificado ? 'verificada' : 'creada');
           this.cargando.set(false);
         },
         error: (error: unknown) => {

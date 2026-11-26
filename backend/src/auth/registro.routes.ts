@@ -38,7 +38,7 @@ router.post("/registro", async (req, res) => {
         // si EXPONER_TOKEN_VERIFICACION=true en .env (opt-in; por defecto NO se devuelve).
         // Retirar junto con el flag cuando se integre Nodemailer/SMTP.
         const { tokenVerificacion, ...usuarioPublico } = usuario;
-        if (process.env.EXPONER_TOKEN_VERIFICACION === "true") {
+        if (process.env.EXPONER_TOKEN_VERIFICACION === "true" && tokenVerificacion) {
             return res.status(201).json({ ...usuarioPublico, tokenVerificacion_DEV: tokenVerificacion });
         }
         return res.status(201).json(usuarioPublico);
