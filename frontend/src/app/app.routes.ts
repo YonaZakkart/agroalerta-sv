@@ -16,6 +16,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/registro/registro').then((m) => m.Registro),
   },
   {
+    path: 'verificar/:token',
+    title: 'Verificar correo | AgroAlerta',
+    loadComponent: () => import('./pages/verificar/verificar').then((m) => m.Verificar),
+  },
+  {
     path: '',
     component: Shell,
     canActivate: [authGuard],

@@ -1,0 +1,19 @@
+<section class="verificar">
+  <div class="card">
+    @if (estado() === 'cargando') {
+    <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+    <h1>Verificando tu correo…</h1>
+    <p>Espera un momento.</p>
+    } @else if (estado() === 'ok') {
+    <i class="fa-solid fa-circle-check ok" aria-hidden="true"></i>
+    <h1>Correo verificado</h1>
+    <p>Tu cuenta está lista. Ya puedes iniciar sesión.</p>
+    <a routerLink="/login" class="btn-primary">Ir a iniciar sesión</a>
+    } @else {
+    <i class="fa-solid fa-circle-exclamation error" aria-hidden="true"></i>
+    <h1>No se pudo verificar</h1>
+    <p>{{ mensaje() }}</p>
+    <a routerLink="/login" class="btn-primary">Volver al inicio de sesión</a>
+    }
+  </div>
+</section>

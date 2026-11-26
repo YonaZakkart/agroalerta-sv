@@ -74,6 +74,25 @@ curl http://127.0.0.1:3000/distritos
 
 Resultado esperado: `200 {"status":"ok","baseDatos":"ok"}` y 26 distritos.
 
-## 5. Release
+## 5. Correo real (v1.2)
+
+El backend ya envía el enlace de verificación por SMTP. Para activarlo:
+
+```text
+VERIFICACION_AUTOMATICA=false
+FRONTEND_URL=https://agroalerta-sv-beta.vercel.app
+SMTP_HOST=...
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=...
+SMTP_PASS=...
+SMTP_FROM=...
+```
+
+El correo enlaza a `FRONTEND_URL/verificar/<token>`. Si SMTP falla, el registro responde 201 y el error queda en logs; el usuario puede pedir reenvío.
+
+Mientras no haya SMTP, `VERIFICACION_AUTOMATICA=true` mantiene el registro usable.
+
+## 6. Release
 
 Tag previsto: `agroalerta-v1.0`, después de mergear la rama y verificar Render/Vercel.

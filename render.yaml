@@ -19,6 +19,20 @@ services:
         value: "false"
       - key: VERIFICACION_AUTOMATICA
         value: "true"
+      - key: FRONTEND_URL
+        value: "https://agroalerta-sv-beta.vercel.app"
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
