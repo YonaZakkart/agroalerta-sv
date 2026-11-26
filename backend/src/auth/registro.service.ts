@@ -6,6 +6,7 @@ import { EVENTOS, AgricultorRegistradoPayload } from "../events/types";
 import { normalizarNombre } from "../comun/normalizar";
 import { SELECT_DISTRITO } from "./distrito.select";
 import { verificacionAutomaticaActiva } from "./verificacion";
+import { enviarCorreoVerificacion } from "./correo";
 
 export interface DatosRegistro {
     nombres: string;
@@ -87,6 +88,14 @@ export async function registrarUsuario(datos: DatosRegistro) {
         distritoId: usuario.distrito.id,
         fechaRegistro: usuario.fechaRegistro,
     };
+    if (!automatica) {
+        try {
+            await enviarCorreoVerificacion(datos.correo, token);
+        } catch (error) {
+            console.error("No se pudo enviar el correo de verificación:", error);
+        }
+    }
+
     try {
         bus.emit(EVENTOS.AGRICULTOR_REGISTRADO, payload);
     } catch (err) {
