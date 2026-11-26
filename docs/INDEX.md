@@ -4,7 +4,8 @@ Este directorio reúne todo lo que necesita una persona para entender, levantar 
 
 - **Repositorio:** `agroalerta-sv` (privado)
 - **Documentación:** consolidada en `.md`; los antiguos `.txt` se retiraron, salvo `docs/4-A-doc.txt`, ya integrado en `history/branches/4-siembra.md` y pendiente de retirar.
-- **Última actualización de este índice:** 24 de noviembre de 2026
+- **Última actualización de este índice:** 26 de noviembre de 2026
+- **Versión desplegada:** v1.0 (`agroalerta-v1.0`); v1.1 en rama `dev`
 
 ---
 
@@ -37,6 +38,7 @@ docs/
 ├── INDEX.md                  ← usted está aquí
 ├── workflow.md               Cómo se trabaja: ramas, PR, pruebas, cierre de un punto
 ├── deployment.md             Neon, Render, Vercel y release
+├── release-v1.1.md           Presentación visual y backlog v1.2
 ├── conventions.md            Reglas de código, datos, API, frontend y documentación
 ├── gotchas.md                Trampas activas y problemas conocidos (leer antes de tocar código)
 │

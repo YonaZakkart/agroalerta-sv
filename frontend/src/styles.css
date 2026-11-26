@@ -189,3 +189,44 @@ select:focus {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Tema oscuro (opcional, activado desde el encabezado) */
+:root[data-theme='dark'] {
+  --primary: #10b981;
+  --primary-dark: #34d399;
+  --primary-light: #064e3b;
+  --surface: #111827;
+  --surface-subtle: #1f2937;
+  --bg-app: #070b14;
+  --text-dark: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border: #334155;
+  --success-light: #064e3b;
+  --warning-light: #451a03;
+  --danger-light: #450a0a;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
+}
+
+body {
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--primary) 8%, transparent), transparent 35%),
+    var(--bg-app);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  box-shadow: var(--shadow-sm);
+}
+
+.card,
+.item {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover,
+.item:hover {
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--primary) 25%, var(--border));
+}

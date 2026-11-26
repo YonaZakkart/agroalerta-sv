@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://agroalerta-api.onrender.com/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -20,6 +20,7 @@ export class Shell {
   private readonly router = inject(Router);
 
   protected readonly menuAbierto = signal(false);
+  protected readonly temaOscuro = signal(this.leerTema());
   protected readonly errorPerfil = signal(false);
   protected readonly perfil = this.perfilService.perfil;
 
@@ -41,7 +42,35 @@ export class Shell {
   });
 
   constructor() {
+    this.aplicarTema(this.temaOscuro());
     this.cargarPerfil();
+  }
+
+  private leerTema(): boolean {
+    try {
+      const guardado = localStorage.getItem('agroalerta_tema');
+      if (guardado) return guardado === 'oscuro';
+      return typeof matchMedia !== 'undefined' && matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch {
+      return false;
+    }
+  }
+
+  private aplicarTema(oscuro: boolean): void {
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset['theme'] = oscuro ? 'dark' : 'light';
+    }
+  }
+
+  protected alternarTema(): void {
+    const oscuro = !this.temaOscuro();
+    this.temaOscuro.set(oscuro);
+    this.aplicarTema(oscuro);
+    try {
+      localStorage.setItem('agroalerta_tema', oscuro ? 'oscuro' : 'claro');
+    } catch {
+      // almacenamiento no disponible
+    }
   }
 
   protected cargarPerfil(): void {

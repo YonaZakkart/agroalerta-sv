@@ -57,7 +57,6 @@ export class Siembra implements OnInit {
   readonly errorDistritos = signal(false);
   readonly enviando = signal(false);
   readonly erroresBackend = signal<string[]>([]);
-  readonly enviadaOk = signal(false);
   readonly hoy = hoyLocal();
 
   readonly form = this.fb.nonNullable.group(
@@ -135,7 +134,6 @@ export class Siembra implements OnInit {
 
   enviar(): void {
     this.erroresBackend.set([]);
-    this.enviadaOk.set(false);
     if (this.form.invalid || this.enviando()) {
       this.form.markAllAsTouched();
       return;
@@ -169,15 +167,8 @@ export class Siembra implements OnInit {
       .subscribe({
         next: () => {
           this.enviando.set(false);
-          this.enviadaOk.set(true);
-          this.form.reset({
-            cultivo: 'MAIZ',
-            distritoId: v.distritoId,
-            estado: 'POR_SEMBRAR',
-            alquilaTerreno: false,
-            usaMaquinaria: false,
-            usaRiego: false,
-          });
+          // La estimación se crea por evento; al volver al dashboard se consulta el reporte.
+          void this.router.navigateByUrl('/dashboard');
         },
         error: (error: unknown) => {
           this.enviando.set(false);
@@ -186,7 +177,4 @@ export class Siembra implements OnInit {
       });
   }
 
-  volverAlDashboard(): void {
-    this.router.navigateByUrl('/dashboard');
-  }
 }

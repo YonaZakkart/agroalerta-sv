@@ -42,6 +42,10 @@
         } @else {
         <div class="avatar" aria-hidden="true"><i class="fa-solid fa-user" aria-hidden="true"></i></div>
         }
+        <button type="button" class="icon-btn" [attr.aria-label]="temaOscuro() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+          [title]="temaOscuro() ? 'Tema claro' : 'Tema oscuro'" (click)="alternarTema()">
+          <i [class]="temaOscuro() ? 'fa-solid fa-sun' : 'fa-solid fa-moon'" aria-hidden="true"></i>
+        </button>
         <button type="button" class="icon-btn" aria-label="Cerrar sesión" title="Cerrar sesión"
           (click)="cerrarSesion()">
           <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
@@ -50,6 +54,7 @@
     </header>
 
     @if (perfil(); as p) {
+    @if (cargandoHeader() || condicionHeader()) {
     <header class="clima-header" role="region" aria-label="Condición climática de tu distrito" [class.cargando]="cargandoHeader()">
       <div class="clima-header-content">
         <div class="clima-header-distrito">
@@ -89,6 +94,7 @@
         }
       </div>
     </header>
+    }
     }
 
     <main class="content">
