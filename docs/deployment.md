@@ -58,7 +58,7 @@ No pongas `DATABASE_URL_UNPOOLED` en Render salvo que ejecutes migraciones desde
 - **Build Command:** `npm run build` (equivale a `npx ng build`)
 - **Output Directory:** `dist/frontend/browser`
 
-`frontend/vercel.json` redirige `/api/*` a Render **quitando el prefijo `/api`**: `/api/distritos` → `https://agroalerta-api.onrender.com/distritos`. Después tiene un fallback `/(.*) → /index.html` para que recargar una ruta de Angular no dé 404. Así el frontend sigue usando `API_URL = '/api'` y no hace falta CORS ni variable `API_URL`.
+`frontend/vercel.json` usa `routes`: primero `/api/(.*)` a Render **quitando el prefijo `/api`**, luego `handle: filesystem` y finalmente `/(.*) → /index.html`. Así recargar `/dashboard` o `/historial` no da 404 y el frontend sigue usando `API_URL = '/api'`.
 
 Si prefieres llamar directo a Render, cambia `API_URL` en `core/api.config.ts` y configura `CORS_ORIGINS` con el dominio de Vercel. La redirección es la opción recomendada.
 
