@@ -60,4 +60,9 @@ export class ClimaService {
   actualizar(distritoIds: number[]): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/clima/actualizar`, { distritoIds });
   }
+
+  /** POST /clima/actualizar sin cuerpo: actualiza todos los distritos con coordenadas. */
+  actualizarTodos(): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/clima/actualizar`, null);
+  }
 }

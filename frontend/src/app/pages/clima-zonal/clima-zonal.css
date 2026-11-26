@@ -307,3 +307,14 @@
     grid-column: span 1;
   }
 }
+.page-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.page-header .btn-primary {
+  width: auto;
+  padding: 0.65rem 1rem;
+}
