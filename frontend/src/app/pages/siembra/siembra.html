@@ -5,13 +5,6 @@
   </header>
   <link rel="stylesheet" href="./siembra.css" />
 
-  @if (enviadaOk()) {
-    <div class="alerta alerta-ok" role="status">
-      Siembra registrada.
-      <button type="button" class="btn-secundario" (click)="volverAlDashboard()">Volver al dashboard</button>
-    </div>
-  }
-
   @if (erroresBackend().length) {
     <div class="alerta alerta-error" role="alert">
       <ul>
