@@ -74,6 +74,9 @@ export class ClimaZonal {
   protected readonly datosClima = signal<Map<number, RespuestaClimaDistrito['condicion']>>(new Map());
   protected readonly cargandoClima = signal<Set<number>>(new Set());
   protected readonly errorClima = signal<Set<number>>(new Set());
+  protected readonly actualizando = signal(false);
+  protected readonly mensajeActualizacion = signal('');
+  protected readonly errorActualizacion = signal(false);
 
   constructor() {
     this.cargarCatalogo();
@@ -128,6 +131,24 @@ export class ClimaZonal {
         this.cargandoClima.set(cargandoNuevo);
       }),
     ).subscribe();
+  }
+
+  protected actualizarClima(): void {
+    if (this.actualizando()) return;
+    this.actualizando.set(true);
+    this.errorActualizacion.set(false);
+    this.mensajeActualizacion.set('');
+    this.climaService.actualizarTodos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.actualizando.set(false);
+        this.mensajeActualizacion.set('Clima actualizado. Recargando condiciones...');
+        this.cargarTodasCondiciones(this.distritos());
+      },
+      error: () => {
+        this.actualizando.set(false);
+        this.errorActualizacion.set(true);
+      },
+    });
   }
 
   protected reintentarCatalogo(): void {

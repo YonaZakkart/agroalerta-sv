@@ -1,8 +1,24 @@
 <div class="page">
   <header class="page-header">
-    <h1>Clima Zonal</h1>
-    <p class="page-subtitle">Condición climática por distrito</p>
+    <div>
+      <h1>Clima Zonal</h1>
+      <p class="page-subtitle">Condición climática por distrito</p>
+    </div>
+    <button type="button" class="btn-primary" [disabled]="actualizando()" (click)="actualizarClima()">
+      <i class="fa-solid fa-rotate" [class.fa-spin]="actualizando()" aria-hidden="true"></i>
+      {{ actualizando() ? 'Actualizando…' : 'Actualizar clima' }}
+    </button>
   </header>
+
+  @if (mensajeActualizacion()) {
+  <div class="alerta alerta-ok" role="status">{{ mensajeActualizacion() }}</div>
+  }
+  @if (errorActualizacion()) {
+  <div class="alerta alerta-error" role="alert">
+    <p>No se pudo actualizar el clima. Puede ser un límite temporal de Open-Meteo.</p>
+    <button type="button" class="btn-primary" (click)="actualizarClima()">Reintentar</button>
+  </div>
+  }
 
   @if (perfilNoDisponible()) {
   <div class="alerta alerta-error" role="alert">
