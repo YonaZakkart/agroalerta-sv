@@ -40,8 +40,11 @@ DUI_PEPPER=<32+ caracteres>
 NODE_ENV=production
 CORS_ORIGINS=https://<tu-frontend>.vercel.app
 EXPONER_TOKEN_VERIFICACION=false
+VERIFICACION_AUTOMATICA=true
 PORT=10000
 ```
+
+**Verificación automática:** `VERIFICACION_AUTOMATICA=true` crea la cuenta ya verificada porque aún no hay envío real de correo. Es una decisión MVP; al integrar SMTP se pone en `false`.
 
 No pongas `DATABASE_URL_UNPOOLED` en Render salvo que ejecutes migraciones desde el build; para migrar, corre `prisma migrate deploy` desde local apuntando a la directa.
 

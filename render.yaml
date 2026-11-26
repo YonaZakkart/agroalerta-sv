@@ -17,6 +17,8 @@ services:
         value: "10000"
       - key: EXPONER_TOKEN_VERIFICACION
         value: "false"
+      - key: VERIFICACION_AUTOMATICA
+        value: "true"
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
