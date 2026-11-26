@@ -12,7 +12,7 @@ export function enlaceVerificacion(
   token: string,
   base: string = process.env.FRONTEND_URL ?? "http://localhost:4200",
 ): string {
-  return `${base.replace(/\/+$/, "")}/verificar/${encodeURIComponent(token)}`;
+  return `${base.replace(/\/+$/, "")}/#/verificar/${encodeURIComponent(token)}`;
 }
 
 export async function enviarCorreoVerificacion(correo: string, token: string): Promise<void> {

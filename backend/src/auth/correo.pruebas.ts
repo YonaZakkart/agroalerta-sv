@@ -15,7 +15,7 @@ prueba("con host, puerto y remitente está configurado", () => {
   assert.equal(correoConfigurado({ SMTP_HOST: "smtp", SMTP_PORT: "587", SMTP_FROM: "a@b.c" } as NodeJS.ProcessEnv), true);
 });
 prueba("el enlace usa el frontend y el token", () => {
-  assert.equal(enlaceVerificacion("abc123", "https://app.example/"), "https://app.example/verificar/abc123");
+  assert.equal(enlaceVerificacion("abc123", "https://app.example/"), "https://app.example/#/verificar/abc123");
 });
 
 console.log(`\n${ok} ok, ${fallos} con fallas`);
